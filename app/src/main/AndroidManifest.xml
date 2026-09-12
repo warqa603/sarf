@@ -65,6 +65,10 @@
             android:exported="false" />
 
         <receiver
+            android:name="com.cash.guide.domain.reminder.GeneralReminderReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name="com.cash.guide.domain.reminder.CreditBootReceiver"
             android:exported="true">
             <intent-filter>

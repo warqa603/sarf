@@ -1,6 +1,7 @@
 package com.cash.guide.app
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -29,6 +30,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import com.cash.guide.data.CalculationRepository
 import com.cash.guide.data.ChecklistRepository
 import com.cash.guide.data.NoteRepository
+import com.cash.guide.data.ReminderRepository
 import com.cash.guide.data.SettingsRepository
 import com.cash.guide.feature.checklist.ChecklistScreen
 import com.cash.guide.feature.checklist.ChecklistViewModel
@@ -38,6 +40,8 @@ import com.cash.guide.feature.note.NotesOverviewScreen
 import com.cash.guide.feature.note.NotesOverviewViewModel
 import com.cash.guide.feature.note.NoteEditorScreen
 import com.cash.guide.feature.note.NoteViewModel
+import com.cash.guide.feature.reminders.RemindersOverviewScreen
+import com.cash.guide.feature.reminders.RemindersViewModel
 import com.cash.guide.feature.history.MonthCalculationsScreen
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -52,6 +56,7 @@ fun HssabiNavHost(
     calculationRepository: CalculationRepository,
     checklistRepository: ChecklistRepository,
     noteRepository: NoteRepository,
+    reminderRepository: ReminderRepository,
     settingsRepository: SettingsRepository,
     editorViewModelFactory: () -> CalculationEditorViewModel,
     modifier: Modifier = Modifier
@@ -100,6 +105,12 @@ fun HssabiNavHost(
                 },
                 onNewNote = {
                     navController.navigate(AppDestination.NoteDetail.createRoute(java.util.UUID.randomUUID().toString()))
+                },
+                onOpenReminders = {
+                    navController.navigate(AppDestination.Reminders.route)
+                },
+                onNewReminder = {
+                    navController.navigate(AppDestination.Reminders.createRoute(openCreate = true))
                 }
             )
         }
@@ -241,6 +252,30 @@ fun HssabiNavHost(
                 onOpenNote = { noteId ->
                     navController.navigate(AppDestination.NoteDetail.createRoute(noteId))
                 },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = AppDestination.Reminders.ROUTE_PATTERN,
+            arguments = listOf(navArgument("openCreate") {
+                type = NavType.BoolType
+                defaultValue = false
+            })
+        ) { backStackEntry ->
+            val openCreate = backStackEntry.arguments?.getBoolean("openCreate") ?: false
+            val remindersViewModel: RemindersViewModel = viewModel(
+                viewModelStoreOwner = backStackEntry
+            ) {
+                RemindersViewModel(reminderRepository)
+            }
+            LaunchedEffect(openCreate) {
+                if (openCreate) {
+                    remindersViewModel.openCreateDialog()
+                }
+            }
+            RemindersOverviewScreen(
+                viewModel = remindersViewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

@@ -34,6 +34,12 @@ class CreditBootReceiver : BroadcastReceiver() {
                             )
                         }
                     }
+
+                    // Also reschedule active general reminders
+                    val activeGeneralReminders = db.reminderDao().getAllActiveReminders()
+                    for (reminder in activeGeneralReminders) {
+                        GeneralReminderScheduler.scheduleReminder(context, reminder)
+                    }
                 } finally {
                     pendingResult.finish()
                 }

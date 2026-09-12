@@ -19,6 +19,10 @@ sealed class AppDestination(val route: String) {
         }
     }
     data object Calculs : AppDestination("calculs")
+    data object Reminders : AppDestination("reminders") {
+        const val ROUTE_PATTERN = "reminders?openCreate={openCreate}"
+        fun createRoute(openCreate: Boolean = false): String = "reminders?openCreate=$openCreate"
+    }
     data object Notes : AppDestination("notes")
     data object NoteDetail : AppDestination("note_detail") {
         const val ROUTE_PATTERN = "note_detail/{noteId}"

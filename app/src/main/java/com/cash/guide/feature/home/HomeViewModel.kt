@@ -367,6 +367,22 @@ class HomeViewModel(
 
         val activeWeekReminders = if (weekItems.isNotEmpty()) weekItems else reminders
 
+        // Top 5 items for the home sections (Notes, Checklists, Calculations)
+        val top5Notes: List<RecentActivityItem> = filteredNotes
+            .sortedByDescending { it.updatedAtEpochMs }
+            .take(5)
+            .map { RecentActivityItem.NoteActivity(it) }
+
+        val top5Checklists: List<RecentActivityItem> = filteredChecklists
+            .sortedByDescending { it.checklist.updatedAtEpochMs }
+            .take(5)
+            .map { RecentActivityItem.ChecklistActivity(it) }
+
+        val top5Calcs: List<RecentActivityItem> = filteredCalcs
+            .sortedByDescending { it.calculation.updatedAtEpochMs }
+            .take(5)
+            .map { RecentActivityItem.CalculationActivity(it) }
+
         _uiState.update {
             it.copy(
                 recentDateGroups = recentCalcGroups,
@@ -378,6 +394,9 @@ class HomeViewModel(
                 favoriteCalculations = favorites,
                 reminderCalculations = reminders,
                 weekReminders = activeWeekReminders,
+                recentNotes = top5Notes,
+                recentChecklists = top5Checklists,
+                recentCalculations = top5Calcs,
                 unpaidTotalCentimes = unpaidTotal,
                 monthTotalCentimes = monthTotal,
                 isLoading = false

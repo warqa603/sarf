@@ -48,7 +48,8 @@ enum class HisabiSymbol {
     Undo,
     Table,
     Lock,
-    Fingerprint
+    Fingerprint,
+    Bell
 }
 
 @Composable
@@ -512,6 +513,37 @@ fun HisabiSketchIcon(
                     lineTo(u(18.5f), u(16.5f))
                 }
                 drawPath(r3, tint, style = pen)
+            }
+            HisabiSymbol.Bell -> {
+                // Top loop / hanger
+                val loop = Path().apply {
+                    moveTo(u(10.5f), u(4.5f))
+                    cubicTo(u(10.5f), u(2.2f), u(13.5f), u(2.2f), u(13.5f), u(4.5f))
+                }
+                drawPath(loop, tint, style = fine)
+
+                // Bell dome and flared rim
+                val bellBody = Path().apply {
+                    moveTo(u(12f), u(4.5f))
+                    cubicTo(u(8.2f), u(4.8f), u(6.5f), u(9.5f), u(6.5f), u(14f))
+                    cubicTo(u(6.5f), u(15.5f), u(5.2f), u(16.5f), u(4.5f), u(17.2f))
+                    lineTo(u(19.5f), u(17.2f))
+                    cubicTo(u(18.8f), u(16.5f), u(17.5f), u(15.5f), u(17.5f), u(14f))
+                    cubicTo(u(17.5f), u(9.5f), u(15.8f), u(4.8f), u(12f), u(4.5f))
+                    close()
+                }
+                drawPath(bellBody, tint, style = pen)
+
+                // Bottom clapper peeking out
+                drawArc(
+                    color = tint,
+                    startAngle = 0f,
+                    sweepAngle = 180f,
+                    useCenter = false,
+                    topLeft = point(10.2f, 16.5f),
+                    size = Size(u(3.6f), u(3.2f)),
+                    style = pen
+                )
             }
         }
     }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -153,20 +154,30 @@ fun CalculsScreen(
                         // Pink Highlighter Pill for Title: "Calculs" / "الحسابات"
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(6.dp))
                                 .background(HighlighterPink.copy(alpha = 0.45f))
-                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                                .padding(horizontal = 8.dp, vertical = 3.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            val titleText = stringResource(R.string.home_action_calculs)
-                            Text(
-                                text = titleText,
-                                fontFamily = resolveJournalFont(titleText, isRtl),
-                                fontSize = if (isArabicScript(titleText) || isRtl) 17.sp else 17.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = JournalWritingInk,
-                                style = TextStyle(platformStyle = NoFontPadding)
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .background(Color(0xFFEF4444), CircleShape)
+                                )
+                                val titleText = stringResource(R.string.home_action_calculs)
+                                Text(
+                                    text = titleText,
+                                    fontFamily = resolveJournalFont(titleText, isRtl),
+                                    fontSize = if (isArabicScript(titleText) || isRtl) 15.sp else 15.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = JournalWritingInk,
+                                    style = TextStyle(platformStyle = NoFontPadding)
+                                )
+                            }
                         }
                     }
 
@@ -195,72 +206,164 @@ fun CalculsScreen(
                     isDateFiltered = state.selectedDateEpoch != null || state.selectedYear != null
                 )
 
-                // Line 3: 1 rule spacer
+                // Line 3: 1 rule spacer (tna9ez star)
                 Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-                // Line 4-5: Action Card 1: Nouveau calcul (2 rules tall)
-                NotebookHubActionCard(
-                    title = stringResource(R.string.home_new_calculation),
-                    subtitle = stringResource(R.string.calculs_action_new_calculation_subtitle),
-                    icon = {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFFFCE7F3))
-                                .border(0.8.dp, Color(0xFFF472B6).copy(alpha = 0.45f), RoundedCornerShape(8.dp)),
-                            contentAlignment = Alignment.Center
+                // Line 4: Action Buttons: "Nouveau calcul" + "Rendu de monnaie" (1 rule = 29dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(JournalRuleSpacing),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Primary: Nouveau calcul
+                    Box(
+                        modifier = Modifier
+                            .height(JournalRuleSpacing)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(HighlighterPink.copy(alpha = 0.35f))
+                            .clickable(
+                                role = Role.Button,
+                                onClickLabel = stringResource(R.string.home_new_calculation),
+                                onClick = { showNewCalcSetupSheet = true }
+                            )
+                            .padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
                         ) {
+                            HisabiSketchIcon(
+                                symbol = HisabiSymbol.Plus,
+                                contentDescription = null,
+                                tint = JournalWritingInk,
+                                size = 13.5.dp
+                            )
+                            val btnText = stringResource(R.string.home_new_calculation)
                             Text(
-                                text = "🧮",
-                                fontSize = 18.sp,
-                                modifier = Modifier.offset(y = (-0.5).dp)
+                                text = btnText,
+                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                fontSize = if (isRtl) 13.5.sp else 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = JournalWritingInk,
+                                style = TextStyle(platformStyle = NoFontPadding)
                             )
                         }
-                    },
-                    onClick = {
-                        showNewCalcSetupSheet = true
                     }
-                )
 
-                // 2dp spacing between action cards for separation
-                Spacer(modifier = Modifier.height(2.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
 
-                // Line 6-7: Action Card 2: Rendu de monnaie (2 rules tall)
-                NotebookHubActionCard(
-                    title = stringResource(R.string.calculs_action_change_title),
-                    subtitle = stringResource(R.string.calculs_action_change_subtitle),
-                    icon = {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color(0xFFDCFCE7))
-                                .border(0.8.dp, Color(0xFF4ADE80).copy(alpha = 0.45f), RoundedCornerShape(8.dp)),
-                            contentAlignment = Alignment.Center
+                    // Secondary: Rendu de monnaie
+                    Box(
+                        modifier = Modifier
+                            .height(JournalRuleSpacing)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFFDBEAFE).copy(alpha = 0.65f))
+                            .clickable(
+                                role = Role.Button,
+                                onClickLabel = stringResource(R.string.calculs_action_change_title),
+                                onClick = onOpenCashRegister
+                            )
+                            .padding(horizontal = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
                         ) {
+                            HisabiSketchIcon(
+                                symbol = HisabiSymbol.Wallet,
+                                contentDescription = null,
+                                tint = Color(0xFF1E40AF),
+                                size = 13.5.dp
+                            )
+                            val btnText = stringResource(R.string.calculs_action_change_title)
                             Text(
-                                text = "💵",
-                                fontSize = 18.sp,
-                                modifier = Modifier.offset(y = (-0.5).dp)
+                                text = btnText,
+                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                fontSize = if (isRtl) 13.5.sp else 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF1E3A8A),
+                                style = TextStyle(platformStyle = NoFontPadding)
                             )
                         }
-                    },
-                    onClick = onOpenCashRegister
-                )
+                    }
+                }
 
-                // Line 8: 1 rule spacer
+                // Line 5: 1 rule spacer (tna9ez star)
                 Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-                // Line 9: Section header: "Calculs récents" with soft yellow highlighter pill
-                NotebookSectionBand(
-                    title = stringResource(R.string.home_recent_title),
-                    highlightColor = HighlighterYellow,
-                    isCentered = false
-                )
+                // Line 6: "Calculs du mois" badge (1 rule = 29dp, touching top & bottom lines)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(JournalRuleSpacing)
+                        .padding(horizontal = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .height(JournalRuleSpacing)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFFE8EDD5))
+                            .padding(horizontal = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        val calculsDuMoisText = if (isRtl) "حسابات الشهر" else "Calculs du mois"
+                        Text(
+                            text = calculsDuMoisText,
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontSize = if (isRtl) 13.5.sp else 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = JournalWritingInk,
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                    }
 
-                // Line 10: 1 rule spacer before list
-                Spacer(modifier = Modifier.height(JournalRuleSpacing))
+                    val activeFilterDisplay = remember(state.selectedYear, state.selectedMonth, state.selectedDateEpoch, context) {
+                        val locale = context.resources.configuration.locales[0]
+                        when {
+                            state.selectedYear != null && state.selectedMonth != null -> {
+                                val cal = Calendar.getInstance().apply {
+                                    set(Calendar.YEAR, state.selectedYear!!)
+                                    set(Calendar.MONTH, state.selectedMonth!! - 1)
+                                }
+                                SimpleDateFormat("MMMM yyyy", locale).format(cal.time).replaceFirstChar {
+                                    if (it.isLowerCase()) it.titlecase(locale) else it.toString()
+                                }
+                            }
+                            state.selectedDateEpoch != null -> {
+                                SimpleDateFormat("d MMMM yyyy", locale).format(Date(state.selectedDateEpoch!!))
+                            }
+                            else -> null
+                        }
+                    }
+
+                    if (activeFilterDisplay != null) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Row(
+                            modifier = Modifier
+                                .height(JournalRuleSpacing)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(HighlighterYellow.copy(alpha = 0.50f))
+                                .clickable { viewModel.clearDateFilter() }
+                                .padding(horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "$activeFilterDisplay ✕",
+                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFFB45309),
+                                style = TextStyle(platformStyle = NoFontPadding)
+                            )
+                        }
+                    }
+                }
 
                 // Recent calculations list
                 if (!state.isEmpty) {
@@ -303,7 +406,7 @@ fun CalculsScreen(
                 }
 
                 // Bottom spacing for full scroll clearance
-                Spacer(modifier = Modifier.height(JournalRuleSpacing * 5))
+                Spacer(modifier = Modifier.height(JournalRuleSpacing * 4))
             }
         }
 

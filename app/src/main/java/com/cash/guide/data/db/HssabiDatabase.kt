@@ -14,9 +14,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CalculationGroupEntity::class,
         ChecklistEntity::class,
         ChecklistItemEntity::class,
-        NoteEntity::class
+        NoteEntity::class,
+        ReminderEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 abstract class HssabiDatabase : RoomDatabase() {
@@ -25,6 +26,7 @@ abstract class HssabiDatabase : RoomDatabase() {
     abstract fun calculationGroupDao(): CalculationGroupDao
     abstract fun checklistDao(): ChecklistDao
     abstract fun noteDao(): NoteDao
+    abstract fun reminderDao(): ReminderDao
 
 
     companion object {
@@ -130,6 +132,35 @@ abstract class HssabiDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `reminders` (
+                        `id` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `description` TEXT NOT NULL DEFAULT '',
+                        `targetEpochMs` INTEGER NOT NULL,
+                        `recurrenceType` TEXT NOT NULL DEFAULT 'ONCE',
+                        `repeatDays` TEXT NOT NULL DEFAULT '',
+                        `timeHour` INTEGER NOT NULL DEFAULT 9,
+                        `timeMinute` INTEGER NOT NULL DEFAULT 0,
+                        `isEnabled` INTEGER NOT NULL DEFAULT 1,
+                        `isCompleted` INTEGER NOT NULL DEFAULT 0,
+                        `colorTag` TEXT NOT NULL DEFAULT 'BLUE',
+                        `calculationId` TEXT DEFAULT NULL,
+                        `createdAtEpochMs` INTEGER NOT NULL,
+                        `updatedAtEpochMs` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_reminders_targetEpochMs` ON `reminders` (`targetEpochMs`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_reminders_isEnabled` ON `reminders` (`isEnabled`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_reminders_isCompleted` ON `reminders` (`isCompleted`)")
+            }
+        }
+
         fun getInstance(context: Context): HssabiDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -137,7 +168,7 @@ abstract class HssabiDatabase : RoomDatabase() {
                     HssabiDatabase::class.java,
                     "hssabi.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                     .build()
                     .also { INSTANCE = it }
             }

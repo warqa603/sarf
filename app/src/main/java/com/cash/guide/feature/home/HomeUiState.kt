@@ -22,6 +22,9 @@ data class HomeUiState(
     val favoriteCalculations: List<CalculationWithItems> = emptyList(),
     val reminderCalculations: List<CalculationWithItems> = emptyList(),
     val weekReminders: List<CalculationWithItems> = emptyList(),
+    val recentNotes: List<RecentActivityItem> = emptyList(),
+    val recentChecklists: List<RecentActivityItem> = emptyList(),
+    val recentCalculations: List<RecentActivityItem> = emptyList(),
     val favoriteGroups: List<CalculationGroupWithCalculations> = emptyList(),
     val pinnedCalculationIds: Set<String> = emptySet(),
     val searchQuery: String = "",
@@ -47,8 +50,8 @@ data class HomeUiState(
         get() = if (isFiltering) filteredActivityGroups else recentActivityGroups
 
     val isEmpty: Boolean
-        get() = !isLoading && recentActivityItems.isEmpty() && todayActivityItems.isEmpty() && displayActivityGroups.isEmpty()
+        get() = !isLoading && recentNotes.isEmpty() && recentChecklists.isEmpty() && recentCalculations.isEmpty() && displayActivityGroups.isEmpty()
 
     val isActivityEmpty: Boolean
-        get() = !isLoading && recentActivityItems.isEmpty() && todayActivityItems.isEmpty() && displayActivityGroups.isEmpty()
+        get() = !isLoading && recentNotes.isEmpty() && recentChecklists.isEmpty() && recentCalculations.isEmpty() && displayActivityGroups.isEmpty()
 }

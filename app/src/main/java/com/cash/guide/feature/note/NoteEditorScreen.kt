@@ -283,7 +283,7 @@ fun NoteEditorScreen(
                             // Pin Button next to Title (toggles pin/unpin directly)
                             Box(
                                 modifier = Modifier
-                                    .size(36.dp)
+                                    .size(40.dp)
                                     .clip(CircleShape)
                                     .clickable(role = Role.Button) {
                                         viewModel.togglePin()
@@ -294,15 +294,15 @@ fun NoteEditorScreen(
                                     HisabiSketchIcon(
                                         symbol = HisabiSymbol.PinFilled,
                                         contentDescription = "Épinglé",
-                                        tint = JournalInk,
-                                        size = 20.dp
+                                        tint = JournalWritingInk,
+                                        size = 24.dp
                                     )
                                 } else {
                                     HisabiSketchIcon(
                                         symbol = HisabiSymbol.Pin,
                                         contentDescription = "Épingler",
-                                        tint = JournalInk.copy(alpha = 0.35f),
-                                        size = 20.dp
+                                        tint = JournalInk.copy(alpha = 0.65f),
+                                        size = 24.dp
                                     )
                                 }
                             }
@@ -339,14 +339,13 @@ fun NoteEditorScreen(
                                     fontSize = 13.5.sp,
                                     color = JournalMutedInk.copy(alpha = 0.75f),
                                     style = TextStyle(platformStyle = NoFontPadding),
-                                    modifier = Modifier.padding(bottom = 2.dp)
+                                    modifier = Modifier.journalBaselineOnRule(opticalOffsetFromBottom = (-0.5).dp)
                                 )
 
-                                // Right: Color circle with palette, Share icon, Trash icon (in black)
+                                // Right: Color circle with palette, Share icon, Trash icon (sitting on the blue line)
                                 Row(
                                     verticalAlignment = Alignment.Bottom,
-                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                    modifier = Modifier.padding(bottom = 1.dp)
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     // Color Picker Circle Button with Dropdown Palette
                                     var showColorPalette by remember { mutableStateOf(false) }
@@ -356,7 +355,8 @@ fun NoteEditorScreen(
                                     ) {
                                         Box(
                                             modifier = Modifier
-                                                .size(28.dp)
+                                                .height(JournalRuleSpacing)
+                                                .width(30.dp)
                                                 .clip(CircleShape)
                                                 .clickable(role = Role.Button) {
                                                     showColorPalette = true
@@ -365,11 +365,11 @@ fun NoteEditorScreen(
                                         ) {
                                             Box(
                                                 modifier = Modifier
-                                                    .padding(bottom = 2.dp)
+                                                    .offset(y = 0.5.dp)
                                                     .size(16.dp)
                                                     .clip(CircleShape)
                                                     .background(noteLightColor)
-                                                    .border(1.2.dp, JournalInk.copy(alpha = 0.35f), CircleShape)
+                                                    .border(1.2.dp, JournalInk.copy(alpha = 0.45f), CircleShape)
                                             )
                                         }
 
@@ -428,7 +428,8 @@ fun NoteEditorScreen(
                                     // Share Button
                                     Box(
                                         modifier = Modifier
-                                            .size(28.dp)
+                                            .height(JournalRuleSpacing)
+                                            .width(32.dp)
                                             .clip(CircleShape)
                                             .clickable(role = Role.Button) {
                                                 viewModel.closeKeyboard()
@@ -447,14 +448,15 @@ fun NoteEditorScreen(
                                             contentDescription = "Partager",
                                             tint = JournalInk,
                                             size = 18.dp,
-                                            modifier = Modifier.padding(bottom = 1.dp)
+                                            modifier = Modifier.offset(y = 2.8.dp)
                                         )
                                     }
 
                                     // Trash / Poubelle Button (Black sketch ink, triggers delete confirmation)
                                     Box(
                                         modifier = Modifier
-                                            .size(28.dp)
+                                            .height(JournalRuleSpacing)
+                                            .width(32.dp)
                                             .clip(CircleShape)
                                             .clickable(role = Role.Button) {
                                                 showDeleteDialog = true
@@ -466,7 +468,7 @@ fun NoteEditorScreen(
                                             contentDescription = "Supprimer",
                                             tint = JournalInk,
                                             size = 18.dp,
-                                            modifier = Modifier.padding(bottom = 1.dp)
+                                            modifier = Modifier.offset(y = 2.5.dp)
                                         )
                                     }
                                 }
@@ -493,169 +495,159 @@ fun NoteEditorScreen(
                                 val textMeasurer = rememberTextMeasurer()
                                 val availableWidthPx = constraints.maxWidth
 
+                                val isArabicKeyboard = uiState.keyboardLanguage == com.cash.guide.domain.JournalKeyboardLanguage.ARABIC
+                                val isContentRtl = isRtl || (contentText.isNotEmpty() && isArabicScript(contentText)) || (contentText.isEmpty() && isArabicKeyboard)
+
                                 val contentStyle = TextStyle(
-                                    fontFamily = resolveJournalFont(contentText, isRtl),
-                                    fontSize = if (isRtl) 16.sp else 16.5.sp,
+                                    fontFamily = resolveJournalFont(contentText, isContentRtl),
+                                    fontSize = if (isContentRtl) 16.sp else 16.5.sp,
                                     fontWeight = FontWeight.Normal,
                                     color = JournalInk,
                                     platformStyle = NoFontPadding
                                 )
 
-                                Column(modifier = Modifier.fillMaxWidth()) {
-                                    if (contentText.isEmpty()) {
-                                    // Empty state: "Écrire une note..." sitting on Rule 3
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(JournalRuleSpacing),
-                                        verticalAlignment = Alignment.Bottom
-                                    ) {
-                                        Box(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .journalBaselineOnRule(opticalOffsetFromBottom = 2.dp),
-                                            contentAlignment = Alignment.BottomStart
-                                        ) {
-                                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                                if (isContentActive && cursorAlpha > 0f) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .width(2.dp)
-                                                            .height(18.dp)
-                                                            .background(cursorColor)
-                                                    )
-                                                    Spacer(modifier = Modifier.width(4.dp))
-                                                }
-                                                Text(
-                                                    text = if (isRtl) "اكتب ملاحظة..." else "Écrire une note...",
-                                                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                                                    fontSize = if (isRtl) 15.sp else 16.sp,
-                                                    color = JournalMutedInk.copy(alpha = 0.45f),
-                                                    style = TextStyle(platformStyle = NoFontPadding)
-                                                )
-                                            }
-                                        }
-                                    }
-                                } else {
-                                    // Multiline text broken into paragraphs and wrapped to exact 29dp rules
-                                    val paragraphs = remember(contentText) { contentText.split('\n') }
-                                    val paragraphStarts = remember(paragraphs) {
-                                        val starts = mutableListOf<Int>()
-                                        var cur = 0
-                                        paragraphs.forEach { p ->
-                                            starts.add(cur)
-                                            cur += p.length + 1
-                                        }
-                                        starts
-                                    }
-                                    val cursorPosition = uiState.content.selection.end
-
-                                    paragraphs.forEachIndexed { pIdx, paragraph ->
-                                        val currentGlobalCharIndex = paragraphStarts[pIdx]
-
-                                        if (paragraph.isEmpty()) {
-                                            // Empty paragraph takes exactly 1 rule (29dp)
-                                            val isCursorHere = isContentActive && (cursorPosition == currentGlobalCharIndex)
-                                            Row(
+                                CompositionLocalProvider(
+                                    LocalLayoutDirection provides if (isContentRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
+                                ) {
+                                    Column(modifier = Modifier.fillMaxWidth()) {
+                                        if (contentText.isEmpty()) {
+                                            // Empty state: "Écrire une note..." sitting on Rule 3
+                                            Box(
                                                 modifier = Modifier
                                                     .fillMaxWidth()
                                                     .height(JournalRuleSpacing)
-                                                    .clickable(
-                                                        interactionSource = remember { MutableInteractionSource() },
-                                                        indication = null
-                                                    ) {
-                                                        viewModel.focusContent(currentGlobalCharIndex)
-                                                    },
-                                                verticalAlignment = Alignment.Bottom
                                             ) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .journalBaselineOnRule(opticalOffsetFromBottom = 2.dp),
-                                                    contentAlignment = Alignment.BottomStart
-                                                ) {
-                                                    if (isCursorHere && cursorAlpha > 0f) {
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .width(2.dp)
-                                                                .height(18.dp)
-                                                                .background(cursorColor)
-                                                        )
-                                                    }
+                                                if (isContentActive && cursorAlpha > 0f) {
+                                                    Box(
+                                                        modifier = Modifier
+                                                            .align(Alignment.BottomStart)
+                                                            .padding(bottom = 0.5.dp)
+                                                            .width(2.dp)
+                                                            .height(19.dp)
+                                                            .background(cursorColor)
+                                                    )
                                                 }
+                                                Text(
+                                                    text = if (isContentRtl) "اكتب ملاحظة..." else "Écrire une note...",
+                                                    fontFamily = if (isContentRtl) TajawalFamily else PatrickHandFamily,
+                                                    fontSize = if (isContentRtl) 15.sp else 16.sp,
+                                                    color = JournalMutedInk.copy(alpha = 0.45f),
+                                                    style = TextStyle(platformStyle = NoFontPadding),
+                                                    modifier = Modifier
+                                                        .then(if (isContentActive) Modifier.padding(start = 6.dp) else Modifier)
+                                                        .journalBaselineOnRule(opticalOffsetFromBottom = (-0.5).dp)
+                                                )
                                             }
                                         } else {
-                                            val layoutResult = textMeasurer.measure(
-                                                text = AnnotatedString(paragraph),
-                                                style = contentStyle,
-                                                constraints = Constraints(maxWidth = availableWidthPx)
-                                            )
-                                            val lineCount = layoutResult.lineCount
+                                            // Multiline text broken into paragraphs and wrapped to exact 29dp rules
+                                            val paragraphs = remember(contentText) { contentText.split('\n') }
+                                            val paragraphStarts = remember(paragraphs) {
+                                                val starts = mutableListOf<Int>()
+                                                var cur = 0
+                                                paragraphs.forEach { p ->
+                                                    starts.add(cur)
+                                                    cur += p.length + 1
+                                                }
+                                                starts
+                                            }
+                                            val cursorPosition = uiState.content.selection.end
 
-                                            for (lineIndex in 0 until lineCount) {
-                                                val lineStartInP = layoutResult.getLineStart(lineIndex)
-                                                val lineEndInP = layoutResult.getLineEnd(lineIndex)
-                                                val lineText = paragraph.substring(lineStartInP, lineEndInP)
+                                            paragraphs.forEachIndexed { pIdx, paragraph ->
+                                                val currentGlobalCharIndex = paragraphStarts[pIdx]
 
-                                                val globalLineStart = currentGlobalCharIndex + lineStartInP
-                                                val globalLineEnd = currentGlobalCharIndex + lineEndInP
-
-                                                val isCursorInThisLine = isContentActive &&
-                                                        (cursorPosition >= globalLineStart &&
-                                                                (cursorPosition < globalLineEnd || (cursorPosition == globalLineEnd && lineIndex == lineCount - 1)))
-
-                                                Row(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(JournalRuleSpacing)
-                                                        .clickable(
-                                                            interactionSource = remember { MutableInteractionSource() },
-                                                            indication = null
-                                                        ) {
-                                                            viewModel.focusContent(globalLineStart + lineText.length)
-                                                        },
-                                                    verticalAlignment = Alignment.Bottom
-                                                ) {
+                                                if (paragraph.isEmpty()) {
+                                                    // Empty paragraph takes exactly 1 rule (29dp)
+                                                    val isCursorHere = isContentActive && (cursorPosition == currentGlobalCharIndex)
                                                     Box(
                                                         modifier = Modifier
                                                             .fillMaxWidth()
-                                                            .journalBaselineOnRule(opticalOffsetFromBottom = 2.dp),
-                                                        contentAlignment = Alignment.BottomStart
-                                                    ) {
-                                                        Text(
-                                                            text = lineText,
-                                                            style = contentStyle
-                                                        )
-
-                                                        if (isCursorInThisLine && cursorAlpha > 0f) {
-                                                            val offsetInLine = (cursorPosition - globalLineStart).coerceIn(0, lineText.length)
-                                                            val subLayout = textMeasurer.measure(
-                                                                text = AnnotatedString(lineText.take(offsetInLine)),
-                                                                style = contentStyle
-                                                            )
-                                                            val cursorX = if (isRtl) {
-                                                                -subLayout.size.width.toFloat()
-                                                            } else {
-                                                                subLayout.size.width.toFloat()
+                                                            .height(JournalRuleSpacing)
+                                                            .clickable(
+                                                                interactionSource = remember { MutableInteractionSource() },
+                                                                indication = null
+                                                            ) {
+                                                                viewModel.focusContent(currentGlobalCharIndex)
                                                             }
-
+                                                    ) {
+                                                        if (isCursorHere && cursorAlpha > 0f) {
                                                             Box(
                                                                 modifier = Modifier
-                                                                    .offset(x = with(LocalDensity.current) { cursorX.toDp() })
+                                                                    .align(Alignment.BottomStart)
+                                                                    .padding(bottom = 0.5.dp)
                                                                     .width(2.dp)
-                                                                    .height(18.dp)
+                                                                    .height(19.dp)
                                                                     .background(cursorColor)
                                                             )
+                                                        }
+                                                    }
+                                                } else {
+                                                    val layoutResult = textMeasurer.measure(
+                                                        text = AnnotatedString(paragraph),
+                                                        style = contentStyle,
+                                                        constraints = Constraints(maxWidth = availableWidthPx)
+                                                    )
+                                                    val lineCount = layoutResult.lineCount
+
+                                                    for (lineIndex in 0 until lineCount) {
+                                                        val lineStartInP = layoutResult.getLineStart(lineIndex)
+                                                        val lineEndInP = layoutResult.getLineEnd(lineIndex)
+                                                        val lineText = paragraph.substring(lineStartInP, lineEndInP)
+
+                                                        val globalLineStart = currentGlobalCharIndex + lineStartInP
+                                                        val globalLineEnd = currentGlobalCharIndex + lineEndInP
+
+                                                        val isCursorInThisLine = isContentActive &&
+                                                                (cursorPosition >= globalLineStart &&
+                                                                        (cursorPosition < globalLineEnd || (cursorPosition == globalLineEnd && lineIndex == lineCount - 1)))
+
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .fillMaxWidth()
+                                                                .height(JournalRuleSpacing)
+                                                                .clickable(
+                                                                    interactionSource = remember { MutableInteractionSource() },
+                                                                    indication = null
+                                                                ) {
+                                                                    viewModel.focusContent(globalLineStart + lineText.length)
+                                                                }
+                                                        ) {
+                                                            Text(
+                                                                text = lineText,
+                                                                style = contentStyle,
+                                                                modifier = Modifier.journalBaselineOnRule(opticalOffsetFromBottom = (-0.5).dp)
+                                                            )
+
+                                                            if (isCursorInThisLine && cursorAlpha > 0f) {
+                                                                val offsetInLine = (cursorPosition - globalLineStart).coerceIn(0, lineText.length)
+                                                                val subLayout = textMeasurer.measure(
+                                                                    text = AnnotatedString(lineText.take(offsetInLine)),
+                                                                    style = contentStyle
+                                                                )
+                                                                val cursorX = if (isContentRtl) {
+                                                                    -subLayout.size.width.toFloat()
+                                                                } else {
+                                                                    subLayout.size.width.toFloat()
+                                                                }
+
+                                                                Box(
+                                                                    modifier = Modifier
+                                                                        .align(Alignment.BottomStart)
+                                                                        .offset(x = with(LocalDensity.current) { cursorX.toDp() })
+                                                                        .padding(bottom = 0.5.dp)
+                                                                        .width(2.dp)
+                                                                        .height(19.dp)
+                                                                        .background(cursorColor)
+                                                                )
+                                                            }
                                                         }
                                                     }
                                                 }
                                             }
                                         }
-                                    }
-                                }
 
-                                // 4 blank rules at bottom for breathing room
-                                Spacer(modifier = Modifier.height(JournalRuleSpacing * 4))
+                                        // 4 blank rules at bottom for breathing room
+                                        Spacer(modifier = Modifier.height(JournalRuleSpacing * 4))
+                                    }
                                 }
                             }
                         }

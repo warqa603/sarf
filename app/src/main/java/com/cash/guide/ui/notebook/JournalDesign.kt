@@ -41,6 +41,7 @@ val JournalInk: Color get() = JournalTheme.currentPalette.ink
 val JournalWritingInk: Color get() = JournalTheme.currentPalette.writingInk
 val JournalMutedInk: Color get() = JournalTheme.currentPalette.mutedInk
 val JournalRule: Color get() = JournalTheme.currentPalette.rule
+val JournalAccent: Color get() = JournalTheme.currentPalette.accent
 
 // Pastel Marker Highlighters
 val HighlighterPink = Color(0xFFF3A7B9)    // Category, '=' button, '+' dab, double underline

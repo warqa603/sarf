@@ -59,6 +59,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -100,6 +101,7 @@ import com.cash.guide.domain.DateGroupHelper
 import com.cash.guide.domain.RecentActivityItem
 import com.cash.guide.ui.notebook.HighlighterYellow
 import com.cash.guide.ui.notebook.HighlighterBlue
+import com.cash.guide.ui.notebook.HighlighterGreen
 import com.cash.guide.ui.notebook.NotebookDateGroupBlock
 import com.cash.guide.ui.notebook.NotebookActivityDateGroupBlock
 import com.cash.guide.ui.notebook.NotebookActivityTimelineBlock
@@ -146,6 +148,8 @@ fun HomeScreen(
     onOpenNote: (String) -> Unit = {},
     onNewChecklist: () -> Unit = {},
     onNewNote: () -> Unit = {},
+    onOpenReminders: () -> Unit = {},
+    onNewReminder: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -269,7 +273,7 @@ fun HomeScreen(
                 onRappels = {
                     focusManager.clearFocus()
                     keyboardController?.hide()
-                    showRemindersSheet = true
+                    onOpenReminders()
                 }
             )
 
@@ -283,40 +287,10 @@ fun HomeScreen(
                 onOpenCalculation = onOpenCalculation
             )
 
-            // Line 10: 1 rule spacer before Activité récente section header
+            // 1 rule spacer before content
             Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-            // Section Header: Activité récente in soft pink highlighter pill
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(JournalRuleSpacing)
-                    .padding(horizontal = 14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val activityTitle = stringResource(R.string.home_recent_activity_title)
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(HighlighterPink.copy(alpha = 0.45f))
-                        .padding(horizontal = 10.dp, vertical = 2.5.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = activityTitle,
-                        fontFamily = resolveJournalFont(activityTitle, isRtl),
-                        fontSize = if (isArabicScript(activityTitle) || isRtl) 15.sp else 15.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = JournalWritingInk,
-                        style = TextStyle(platformStyle = NoFontPadding)
-                    )
-                }
-            }
-
-            // 1 rule spacer before activities list
-            Spacer(modifier = Modifier.height(JournalRuleSpacing))
-
-            // Recent activities list
+            // Main Content: Filtered Search Results OR the 3 sections (Notes, Checklists, Calculs)
             if (state.isFiltering) {
                 // When actively searching or filtering, show filtered groups
                 if (state.displayActivityGroups.isNotEmpty()) {
@@ -336,106 +310,97 @@ fun HomeScreen(
                     }
                 }
             } else if (!state.isActivityEmpty) {
-                // Section 1: Activités récentes - Top 6 items (2 Notes, 2 Calculs, 2 Checklists) directly without date tag
-                if (state.recentActivityItems.isNotEmpty()) {
-                    NotebookActivityTimelineBlock(
-                        items = state.recentActivityItems,
-                        onOpenCalculation = onOpenCalculation,
-                        onOpenChecklist = onOpenChecklistWithId,
-                        onOpenNote = onOpenNote,
-                        onMoreClick = { item -> viewModel.selectActivityForAction(item) },
-                        searchQuery = state.searchQuery
-                    )
-                }
-
-                // Section 2: Aujourd'hui (items from today not in recent top 6)
-                if (state.todayActivityItems.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(JournalRuleSpacing))
-
-                    NotebookActivityDateGroupBlock(
-                        header = stringResource(R.string.date_today),
-                        items = state.todayActivityItems,
-                        onOpenCalculation = onOpenCalculation,
-                        onOpenChecklist = onOpenChecklistWithId,
-                        onOpenNote = onOpenNote,
-                        onMoreClick = { item -> viewModel.selectActivityForAction(item) },
-                        searchQuery = state.searchQuery
-                    )
-                }
-
-                // "Voir tout" under the content on the right (with 1 skipped line before it)
-                if (state.displayActivityGroups.isNotEmpty() || state.recentActivityItems.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(JournalRuleSpacing))
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(JournalRuleSpacing)
-                            .padding(horizontal = 14.dp),
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            modifier = Modifier.clickable(
-                                role = Role.Button,
-                                onClick = {
-                                    focusManager.clearFocus()
-                                    keyboardController?.hide()
-                                    onOpenHistory()
-                                }
-                            )
-                        ) {
-                            if (isRtl) {
-                                Text(
-                                    text = stringResource(R.string.home_see_all),
-                                    fontFamily = TajawalFamily,
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = JournalWritingInk.copy(alpha = 0.85f),
-                                    style = TextStyle(platformStyle = NoFontPadding),
-                                    modifier = Modifier.journalBaselineOnRule()
-                                )
-                                // Left-pointing handwritten arrow
-                                Canvas(
-                                    modifier = Modifier
-                                        .size(13.dp, 10.dp)
-                                        .offset(y = (-3.5).dp)
-                                ) {
-                                    val strokeW = 1.35.dp.toPx()
-                                    val tint = JournalWritingInk.copy(alpha = 0.85f)
-                                    val midY = size.height / 2f
-                                    drawLine(tint, Offset(size.width, midY), Offset(1f, midY), strokeWidth = strokeW, cap = StrokeCap.Round)
-                                    drawLine(tint, Offset(4.5.dp.toPx(), 1f), Offset(1f, midY), strokeWidth = strokeW, cap = StrokeCap.Round)
-                                    drawLine(tint, Offset(4.5.dp.toPx(), size.height - 1f), Offset(1f, midY), strokeWidth = strokeW, cap = StrokeCap.Round)
-                                }
-                            } else {
-                                Text(
-                                    text = stringResource(R.string.home_see_all),
-                                    fontFamily = PatrickHandFamily,
-                                    fontSize = 14.5.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = JournalWritingInk.copy(alpha = 0.85f),
-                                    style = TextStyle(platformStyle = NoFontPadding),
-                                    modifier = Modifier.journalBaselineOnRule()
-                                )
-                                // Right-pointing handwritten arrow
-                                Canvas(
-                                    modifier = Modifier
-                                        .size(13.dp, 10.dp)
-                                        .offset(y = (-3.5).dp)
-                                ) {
-                                    val strokeW = 1.35.dp.toPx()
-                                    val tint = JournalWritingInk.copy(alpha = 0.85f)
-                                    val midY = size.height / 2f
-                                    drawLine(tint, Offset(0f, midY), Offset(size.width - 1f, midY), strokeWidth = strokeW, cap = StrokeCap.Round)
-                                    drawLine(tint, Offset(size.width - 4.5.dp.toPx(), 1f), Offset(size.width - 1f, midY), strokeWidth = strokeW, cap = StrokeCap.Round)
-                                    drawLine(tint, Offset(size.width - 4.5.dp.toPx(), size.height - 1f), Offset(size.width - 1f, midY), strokeWidth = strokeW, cap = StrokeCap.Round)
-                                }
-                            }
-                        }
+                // === SECTION 1: Mes Notes ===
+                HomeSectionHeaderRow(
+                    title = stringResource(R.string.home_section_my_notes),
+                    dotColor = Color(0xFFF59E0B),
+                    highlighterColor = HighlighterYellow,
+                    isRtl = isRtl,
+                    onSeeAll = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        onOpenNotes()
                     }
+                )
+                if (state.recentNotes.isNotEmpty()) {
+                    NotebookActivityTimelineBlock(
+                        items = state.recentNotes,
+                        onOpenCalculation = onOpenCalculation,
+                        onOpenChecklist = onOpenChecklistWithId,
+                        onOpenNote = onOpenNote,
+                        onMoreClick = { item -> viewModel.selectActivityForAction(item) },
+                        searchQuery = state.searchQuery,
+                        showIcon = false
+                    )
+                } else {
+                    HomeSectionEmptyRow(
+                        emptyText = stringResource(R.string.home_empty_notes),
+                        isRtl = isRtl
+                    )
+                }
+
+                // 1 rule spacer between sections
+                Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+                // === SECTION 2: Mes Checklists ===
+                HomeSectionHeaderRow(
+                    title = stringResource(R.string.home_section_my_checklists),
+                    dotColor = Color(0xFF10B981),
+                    highlighterColor = HighlighterGreen,
+                    isRtl = isRtl,
+                    onSeeAll = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        onOpenChecklist()
+                    }
+                )
+                if (state.recentChecklists.isNotEmpty()) {
+                    NotebookActivityTimelineBlock(
+                        items = state.recentChecklists,
+                        onOpenCalculation = onOpenCalculation,
+                        onOpenChecklist = onOpenChecklistWithId,
+                        onOpenNote = onOpenNote,
+                        onMoreClick = { item -> viewModel.selectActivityForAction(item) },
+                        searchQuery = state.searchQuery,
+                        showIcon = false
+                    )
+                } else {
+                    HomeSectionEmptyRow(
+                        emptyText = stringResource(R.string.home_empty_checklists),
+                        isRtl = isRtl
+                    )
+                }
+
+                // 1 rule spacer between sections
+                Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+                // === SECTION 3: Mes Calculs ===
+                HomeSectionHeaderRow(
+                    title = stringResource(R.string.home_section_my_calculs),
+                    dotColor = Color(0xFFEF4444),
+                    highlighterColor = HighlighterPink,
+                    isRtl = isRtl,
+                    onSeeAll = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        onOpenCalculs()
+                    }
+                )
+                if (state.recentCalculations.isNotEmpty()) {
+                    NotebookActivityTimelineBlock(
+                        items = state.recentCalculations,
+                        onOpenCalculation = onOpenCalculation,
+                        onOpenChecklist = onOpenChecklistWithId,
+                        onOpenNote = onOpenNote,
+                        onMoreClick = { item -> viewModel.selectActivityForAction(item) },
+                        searchQuery = state.searchQuery,
+                        showIcon = false
+                    )
+                } else {
+                    HomeSectionEmptyRow(
+                        emptyText = stringResource(R.string.home_empty_calculs),
+                        isRtl = isRtl
+                    )
                 }
             } else if (!state.isLoading) {
                 // Empty state sitting directly on the ruled line
@@ -502,6 +467,10 @@ fun HomeScreen(
                 onNewNote = {
                     viewModel.setFabExpanded(false)
                     onOpenNotes()
+                },
+                onNewReminder = {
+                    viewModel.setFabExpanded(false)
+                    onNewReminder()
                 }
             )
         }
@@ -1055,7 +1024,7 @@ private fun HomeWeekRemindersCarousel(
                         }
                     }
 
-                    // Row 2 (Middle): Calculation Title + Reminder bell
+                    // Row 2 (Middle): Calculation Title
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -1072,33 +1041,37 @@ private fun HomeWeekRemindersCarousel(
                             style = TextStyle(platformStyle = NoFontPadding),
                             modifier = Modifier.weight(1f, fill = false)
                         )
-                        if (item.calculation.reminderEnabled) {
-                            Text(
-                                text = "🔔",
-                                fontSize = 12.sp,
-                                style = TextStyle(platformStyle = NoFontPadding)
-                            )
-                        }
                     }
 
-                    // Row 3 (Bottom): Reminder date on start, Amount on end
+                    // Row 3 (Bottom): Reminder date with blue bell icon on start, Amount on end
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = "📅 $reminderDateStr",
-                            fontFamily = PatrickHandFamily,
-                            fontSize = 13.5.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = if (item.calculation.dueDateEpochMs != null && item.calculation.dueDateEpochMs <= System.currentTimeMillis() && item.calculation.paymentStatus == "UNPAID") {
-                                Color(0xFFDC2626)
-                            } else {
-                                Color(0xFFC2410C)
-                            },
-                            style = TextStyle(platformStyle = NoFontPadding)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            HisabiSketchIcon(
+                                symbol = HisabiSymbol.Bell,
+                                contentDescription = null,
+                                tint = Color(0xFF3B82F6),
+                                size = 13.dp
+                            )
+                            Text(
+                                text = reminderDateStr,
+                                fontFamily = PatrickHandFamily,
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = if (item.calculation.dueDateEpochMs != null && item.calculation.dueDateEpochMs <= System.currentTimeMillis() && item.calculation.paymentStatus == "UNPAID") {
+                                    Color(0xFFDC2626)
+                                } else {
+                                    Color(0xFFC2410C)
+                                },
+                                style = TextStyle(platformStyle = NoFontPadding)
+                            )
+                        }
 
                         Text(
                             text = totalFormatted,
@@ -1112,6 +1085,123 @@ private fun HomeWeekRemindersCarousel(
                 }
             }
         }
+    }
+}
+
+/**
+ * Clean Section Header Row on a single notebook rule line.
+ * Start: Colored category pill/dot + Section title (e.g. "Mes notes", "Mes checklists", "Mes calculs").
+ * End: Compact "Voir tout" ("voir tout suira") with small handwritten arrow.
+ */
+@Composable
+private fun HomeSectionHeaderRow(
+    title: String,
+    dotColor: Color,
+    highlighterColor: Color,
+    isRtl: Boolean,
+    onSeeAll: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(JournalRuleSpacing)
+            .padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        // Section title pill on the start
+        Box(
+            modifier = Modifier
+                .clip(RoundedCornerShape(6.dp))
+                .background(highlighterColor.copy(alpha = 0.40f))
+                .padding(horizontal = 8.dp, vertical = 2.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(5.5.dp)
+                        .background(dotColor, CircleShape)
+                )
+                Text(
+                    text = title,
+                    fontFamily = resolveJournalFont(title, isRtl),
+                    fontSize = if (isArabicScript(title) || isRtl) 14.sp else 14.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = JournalWritingInk,
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+            }
+        }
+
+        // Compact "Voir tout" ("voir tout suira") on the end
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier
+                .clip(RoundedCornerShape(4.dp))
+                .clickable(
+                    role = Role.Button,
+                    onClick = onSeeAll
+                )
+                .padding(horizontal = 4.dp, vertical = 2.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.home_see_all),
+                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                fontSize = 12.5.sp,
+                fontWeight = FontWeight.Medium,
+                color = JournalWritingInk.copy(alpha = 0.75f),
+                style = TextStyle(platformStyle = NoFontPadding)
+            )
+            Canvas(
+                modifier = Modifier.size(10.dp, 8.dp)
+            ) {
+                val strokeW = 1.15.dp.toPx()
+                val tint = JournalWritingInk.copy(alpha = 0.75f)
+                val midY = size.height / 2f
+                if (isRtl) {
+                    drawLine(tint, Offset(size.width, midY), Offset(1f, midY), strokeWidth = strokeW, cap = StrokeCap.Round)
+                    drawLine(tint, Offset(3.5.dp.toPx(), 1f), Offset(1f, midY), strokeWidth = strokeW, cap = StrokeCap.Round)
+                    drawLine(tint, Offset(3.5.dp.toPx(), size.height - 1f), Offset(1f, midY), strokeWidth = strokeW, cap = StrokeCap.Round)
+                } else {
+                    drawLine(tint, Offset(0f, midY), Offset(size.width - 1f, midY), strokeWidth = strokeW, cap = StrokeCap.Round)
+                    drawLine(tint, Offset(size.width - 3.5.dp.toPx(), 1f), Offset(size.width - 1f, midY), strokeWidth = strokeW, cap = StrokeCap.Round)
+                    drawLine(tint, Offset(size.width - 3.5.dp.toPx(), size.height - 1f), Offset(size.width - 1f, midY), strokeWidth = strokeW, cap = StrokeCap.Round)
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Placeholder row shown when a section is empty, sitting directly on a ruled line.
+ */
+@Composable
+private fun HomeSectionEmptyRow(
+    emptyText: String,
+    isRtl: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(JournalRuleSpacing)
+            .padding(horizontal = 18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = emptyText,
+            fontFamily = resolveJournalFont(emptyText, isRtl),
+            fontSize = 13.sp,
+            fontStyle = FontStyle.Italic,
+            color = JournalMutedInk.copy(alpha = 0.55f),
+            style = TextStyle(platformStyle = NoFontPadding)
+        )
     }
 }
 

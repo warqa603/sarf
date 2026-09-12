@@ -24,6 +24,12 @@
     <string name="home_category_rappels">تذكيرات</string>
     <string name="home_week_reminders_title">تذكيرات هذا الأسبوع</string>
     <string name="home_week_reminders_empty">لا توجد تذكيرات لهذا الأسبوع</string>
+    <string name="home_section_my_notes">ملاحظاتي</string>
+    <string name="home_section_my_checklists">قوائم المهام</string>
+    <string name="home_section_my_calculs">حساباتي</string>
+    <string name="home_empty_notes">لا توجد ملاحظات محفوظة</string>
+    <string name="home_empty_checklists">لا توجد قوائم مهام محفوظة</string>
+    <string name="home_empty_calculs">لا توجد حسابات محفوظة</string>
     <string name="reminders_sheet_title">التذكيرات والمواعيد</string>
     <string name="reminders_empty">لا توجد تذكيرات معلقة</string>
     <string name="home_quick_calculation">حساب</string>
@@ -36,6 +42,7 @@
     <string name="speed_dial_note">ملاحظة</string>
     <string name="speed_dial_checklist">قائمة مهام</string>
     <string name="speed_dial_calcul">حساب</string>
+    <string name="speed_dial_rappel">تذكير</string>
     <string name="checklist_untitled">قائمة مهام</string>
     <string name="home_favorites_title">الحسابات المفضلة</string>
     <string name="home_favorites_empty_hint">ثبّت حساباتك المهمة هنا (⋮)</string>

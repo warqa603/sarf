@@ -24,6 +24,12 @@
     <string name="home_category_rappels">Rappels</string>
     <string name="home_week_reminders_title">Rappels de la semaine</string>
     <string name="home_week_reminders_empty">Aucun rappel pour cette semaine</string>
+    <string name="home_section_my_notes">Mes notes</string>
+    <string name="home_section_my_checklists">Mes checklists</string>
+    <string name="home_section_my_calculs">Mes calculs</string>
+    <string name="home_empty_notes">Aucune note enregistrée</string>
+    <string name="home_empty_checklists">Aucune checklist enregistrée</string>
+    <string name="home_empty_calculs">Aucun calcul enregistré</string>
     <string name="reminders_sheet_title">Rappels &amp; Échéances</string>
     <string name="reminders_empty">Aucun rappel programmé</string>
     <string name="home_quick_calculation">Calcul</string>
@@ -36,6 +42,7 @@
     <string name="speed_dial_note">Note</string>
     <string name="speed_dial_checklist">Checklist</string>
     <string name="speed_dial_calcul">Calcul</string>
+    <string name="speed_dial_rappel">Rappel</string>
     <string name="checklist_untitled">Checklist</string>
     <string name="home_favorites_title">Vos favoris</string>
     <string name="home_favorites_empty_hint">Épinglez vos calculs importants ici (⋮)</string>

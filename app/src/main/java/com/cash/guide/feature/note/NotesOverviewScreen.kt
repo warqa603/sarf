@@ -1,7 +1,10 @@
 package com.cash.guide.feature.note
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -11,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -61,9 +66,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cash.guide.R
 import com.cash.guide.data.db.NoteEntity
+import androidx.compose.ui.graphics.PathEffect
 import com.cash.guide.ui.notebook.HighlighterBlue
 import com.cash.guide.ui.notebook.HighlighterPink
 import com.cash.guide.ui.notebook.HighlighterYellow
+import com.cash.guide.ui.notebook.NotebookSearchField
 import com.cash.guide.ui.notebook.HisabiSketchIcon
 import com.cash.guide.ui.notebook.HisabiSymbol
 import com.cash.guide.ui.notebook.JournalInk
@@ -75,7 +82,6 @@ import com.cash.guide.ui.notebook.JournalRuledDocument
 import com.cash.guide.ui.notebook.JournalWritingInk
 import com.cash.guide.ui.notebook.MonthPickerDialog
 import com.cash.guide.ui.notebook.NoFontPadding
-import com.cash.guide.ui.notebook.NotebookPrimaryActionButton
 import com.cash.guide.ui.notebook.PatrickHandFamily
 import com.cash.guide.ui.notebook.TajawalFamily
 import com.cash.guide.ui.notebook.isArabicScript
@@ -201,10 +207,10 @@ fun NotesOverviewScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Left: Back button + "Notes & idées" soft pink pill
+                    // Left: Back button + "Notes & idées" soft yellow pill
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         // Back Button
                         Box(
@@ -222,23 +228,33 @@ fun NotesOverviewScreen(
                             )
                         }
 
-                        // Pink Highlighter Pill for Title: "Notes & idées"
+                        // Yellow Highlighter Pill with yellow dot: "Notes & idées" / "ملاحظات وأفكار"
                         Box(
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(HighlighterPink.copy(alpha = 0.45f))
-                                .padding(horizontal = 10.dp, vertical = 4.dp),
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(HighlighterYellow.copy(alpha = 0.45f))
+                                .padding(horizontal = 8.dp, vertical = 3.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            val titleText = if (isRtl) "ملاحظات وأفكار" else "Notes & idées"
-                            Text(
-                                text = titleText,
-                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                                fontSize = 17.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = JournalWritingInk,
-                                style = TextStyle(platformStyle = NoFontPadding)
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(6.dp)
+                                        .background(Color(0xFFEAB308), CircleShape)
+                                )
+                                val titleText = if (isRtl) "ملاحظات وأفكار" else "Notes & idées"
+                                Text(
+                                    text = titleText,
+                                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                    fontSize = if (isRtl) 15.sp else 15.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = JournalWritingInk,
+                                    style = TextStyle(platformStyle = NoFontPadding)
+                                )
+                            }
                         }
                     }
 
@@ -268,136 +284,74 @@ fun NotesOverviewScreen(
                     .fillMaxWidth(),
                 clearFocusOnTap = true
             ) {
-                // Rule 1: Search Bar + Calendar Icon directly resting on the ruled blue line (29dp)
+                // Line 1: 1 rule spacer
+                Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+                // Line 2: Search Bar + Calendar Icon directly resting on the ruled blue line (29dp)
+                NotebookSearchField(
+                    query = uiState.searchQuery,
+                    onQueryChange = { query -> viewModel.updateSearchQuery(query) },
+                    placeholder = if (isRtl) "بحث في الملاحظات..." else "Rechercher dans vos notes...",
+                    onOpenCalendar = { showMonthPicker = true },
+                    isDateFiltered = uiState.selectedMonthKey != null
+                )
+
+                // Line 3: 1 rule spacer (tna9ez star)
+                Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+                // Line 4: Action Button: "Créer une nouvelle note" (1 rule = 29dp)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(JournalRuleSpacing)
-                        .padding(horizontal = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .height(JournalRuleSpacing),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Search Capsule touching both blue lines
                     Box(
                         modifier = Modifier
-                            .weight(1f)
                             .height(JournalRuleSpacing)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color(0xFF6B7067).copy(alpha = 0.14f))
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null
-                            ) {
-                                searchFocusRequester.requestFocus()
-                                keyboardController?.show()
-                            }
-                            .padding(horizontal = 10.dp),
-                        contentAlignment = Alignment.CenterStart
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            HisabiSketchIcon(
-                                symbol = HisabiSymbol.Search,
-                                contentDescription = null,
-                                tint = JournalInk.copy(alpha = 0.65f),
-                                size = 15.dp
-                            )
-
-                            val searchPlaceholder = if (isRtl) "بحث في الملاحظات..." else "Rechercher dans vos notes..."
-                            BasicTextField(
-                                value = uiState.searchQuery,
-                                onValueChange = { viewModel.updateSearchQuery(it) },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .focusRequester(searchFocusRequester)
-                                    .onFocusChanged { isSearchFocused = it.isFocused },
-                                singleLine = true,
-                                cursorBrush = if (isSearchFocused) SolidColor(JournalInk) else SolidColor(Color.Transparent),
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                                keyboardActions = KeyboardActions(
-                                    onSearch = {
-                                        focusManager.clearFocus()
-                                        keyboardController?.hide()
-                                    }
-                                ),
-                                textStyle = TextStyle(
-                                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                                    fontSize = if (isRtl) 15.sp else 15.5.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = JournalInk,
-                                    platformStyle = NoFontPadding
-                                ),
-                                decorationBox = { innerTextField ->
-                                    if (uiState.searchQuery.isEmpty() && !isSearchFocused) {
-                                        Text(
-                                            text = searchPlaceholder,
-                                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                                            fontSize = if (isRtl) 13.5.sp else 14.5.sp,
-                                            fontWeight = FontWeight.Normal,
-                                            color = JournalWritingInk.copy(alpha = 0.55f),
-                                            style = TextStyle(platformStyle = NoFontPadding)
-                                        )
-                                    }
-                                    innerTextField()
-                                }
-                            )
-
-                            if (uiState.searchQuery.isNotEmpty()) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(20.dp)
-                                        .clickable(role = Role.Button, onClick = {
-                                            viewModel.updateSearchQuery("")
-                                            focusManager.clearFocus()
-                                            keyboardController?.hide()
-                                        }),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = "✕",
-                                        fontFamily = PatrickHandFamily,
-                                        fontSize = 14.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = JournalMutedInk
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    // Calendar icon button (29dp)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Box(
-                        modifier = Modifier
-                            .size(JournalRuleSpacing)
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(if (uiState.selectedMonthKey != null) HighlighterYellow.copy(alpha = 0.50f) else Color.Transparent)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(HighlighterPink.copy(alpha = 0.35f))
                             .clickable(
                                 role = Role.Button,
+                                onClickLabel = if (isRtl) "إنشاء ملاحظة جديدة" else "Créer une nouvelle note",
                                 onClick = {
-                                    focusManager.clearFocus()
-                                    keyboardController?.hide()
-                                    showMonthPicker = true
+                                    coroutineScope.launch {
+                                        val newId = viewModel.createNewNote()
+                                        onOpenNote(newId)
+                                    }
                                 }
-                            ),
+                            )
+                            .padding(horizontal = 14.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        HisabiSketchIcon(
-                            symbol = HisabiSymbol.Calendar,
-                            contentDescription = stringResource(R.string.home_pick_date),
-                            tint = if (uiState.selectedMonthKey != null) JournalInk else JournalInk.copy(alpha = 0.85f),
-                            size = 23.dp
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            HisabiSketchIcon(
+                                symbol = HisabiSymbol.Plus,
+                                contentDescription = null,
+                                tint = JournalWritingInk,
+                                size = 13.5.dp
+                            )
+                            val btnText = if (isRtl) "إنشاء ملاحظة جديدة" else "Créer une nouvelle note"
+                            Text(
+                                text = btnText,
+                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                fontSize = if (isRtl) 13.5.sp else 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = JournalWritingInk,
+                                style = TextStyle(platformStyle = NoFontPadding)
+                            )
+                        }
                     }
                 }
 
-                // Rule 2: 1-rule spacing (29dp)
+                // Line 5: 1 rule spacer (tna9ez star)
                 Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-                // Rule 3: Section Badge "Notes récentes" with soft yellow highlight (29dp)
+                // Line 6: "Notes du mois" badge
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -407,15 +361,17 @@ fun NotesOverviewScreen(
                 ) {
                     Box(
                         modifier = Modifier
+                            .height(JournalRuleSpacing)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(HighlighterYellow.copy(alpha = 0.45f))
-                            .padding(horizontal = 10.dp, vertical = 2.dp)
+                            .background(Color(0xFFE8EDD5))
+                            .padding(horizontal = 10.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        val sectionText = if (isRtl) "أحدث الملاحظات" else "Notes récentes"
+                        val notesDuMoisText = if (isRtl) "ملاحظات الشهر" else "Notes du mois"
                         Text(
-                            text = sectionText,
+                            text = notesDuMoisText,
                             fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontSize = 16.sp,
+                            fontSize = if (isRtl) 13.5.sp else 14.sp,
                             fontWeight = FontWeight.Bold,
                             color = JournalWritingInk,
                             style = TextStyle(platformStyle = NoFontPadding)
@@ -423,15 +379,16 @@ fun NotesOverviewScreen(
                     }
 
                     if (uiState.selectedMonthKey != null) {
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         val activeMonthDisplay = uiState.availableMonths
                             .firstOrNull { it.first == uiState.selectedMonthKey }?.second ?: uiState.selectedMonthKey!!
                         Row(
                             modifier = Modifier
+                                .height(JournalRuleSpacing)
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(HighlighterYellow.copy(alpha = 0.50f))
                                 .clickable { viewModel.selectMonth(null) }
-                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                                .padding(horizontal = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
@@ -440,16 +397,14 @@ fun NotesOverviewScreen(
                                 fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color(0xFFB45309)
+                                color = Color(0xFFB45309),
+                                style = TextStyle(platformStyle = NoFontPadding)
                             )
                         }
                     }
                 }
 
-                // Rule 4: 1-rule breathing spacer before groups (29dp)
-                Spacer(modifier = Modifier.height(JournalRuleSpacing))
-
-                // Empty State
+                // Line 5+: Content dial notes kif kayn howa daba
                 if (uiState.monthGroups.isEmpty() && !uiState.isLoading) {
                     Column(
                         modifier = Modifier
@@ -483,77 +438,30 @@ fun NotesOverviewScreen(
                         )
                     }
                 } else {
-                    // Month groups with vertical guide line connecting notes
                     val allNotes = remember(uiState.monthGroups) {
                         uiState.monthGroups.flatMap { it.notes }
                     }
 
-                    uiState.monthGroups.forEach { monthGroup ->
-                        // Month Tag Pill (e.g. "Septembre 2026")
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(JournalRuleSpacing)
-                                .padding(horizontal = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(Color(0xFFE8EDD5))
-                                    .padding(horizontal = 8.dp, vertical = 2.dp)
-                            ) {
-                                Text(
-                                    text = monthGroup.displayTitle,
-                                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                                    fontSize = 13.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = JournalWritingInk,
-                                    style = TextStyle(platformStyle = NoFontPadding)
-                                )
-                            }
-                        }
+                    allNotes.forEachIndexed { noteIndex, note ->
+                        val dotColor = getNoteDotColor(note.colorTag, noteIndex)
+                        val shortDateStr = shortDateFormatter.format(Date(note.updatedAtEpochMs))
+                        val isLastInGroup = noteIndex == allNotes.lastIndex
 
-                        // Notes in this month group connected by a vertical guide
-                        monthGroup.notes.forEachIndexed { noteIndex, note ->
-                            val globalIndex = allNotes.indexOf(note).coerceAtLeast(0)
-                            val dotColor = getNoteDotColor(note.colorTag, globalIndex)
-                            val shortDateStr = shortDateFormatter.format(Date(note.updatedAtEpochMs))
-                            val isLastInGroup = noteIndex == monthGroup.notes.lastIndex
-
-                            NoteRowItem(
-                                note = note,
-                                dotColor = dotColor,
-                                shortDateStr = shortDateStr,
-                                isLastInGroup = isLastInGroup,
-                                isRtl = isRtl,
-                                onOpenNote = { onOpenNote(note.id) },
-                                onTogglePin = { viewModel.togglePin(note.id, !note.isPinned) },
-                                onSetColor = { colorTag -> viewModel.setColorTag(note.id, colorTag) },
-                                onDelete = { viewModel.deleteNote(note.id) }
-                            )
-                        }
-
-                        // 1-rule spacer after each group
-                        Spacer(modifier = Modifier.height(JournalRuleSpacing))
+                        NoteRowItem(
+                            note = note,
+                            dotColor = dotColor,
+                            shortDateStr = shortDateStr,
+                            isLastInGroup = isLastInGroup,
+                            isRtl = isRtl,
+                            onOpenNote = { onOpenNote(note.id) },
+                            onTogglePin = { viewModel.togglePin(note.id, !note.isPinned) },
+                            onSetColor = { colorTag -> viewModel.setColorTag(note.id, colorTag) },
+                            onDelete = { viewModel.deleteNote(note.id) }
+                        )
                     }
                 }
 
-                // 1-rule spacer before action button
-                Spacer(modifier = Modifier.height(JournalRuleSpacing))
-
-                // Primary Action Button: "+ Nouvelle note" (29dp)
-                NotebookPrimaryActionButton(
-                    text = if (isRtl) "ملاحظة جديدة" else "Nouvelle note",
-                    onClick = {
-                        coroutineScope.launch {
-                            val newId = viewModel.createNewNote()
-                            onOpenNote(newId)
-                        }
-                    }
-                )
-
-                // Bottom extra space
+                // Bottom extra space above navigation bar
                 Spacer(modifier = Modifier.height(JournalRuleSpacing * 3))
             }
         }
@@ -608,103 +516,102 @@ private fun NoteRowItem(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(JournalRuleSpacing * 2) // exactly 58dp = 2 rule boxes!
             .clickable(role = Role.Button, onClick = onOpenNote)
     ) {
-        // Line 1 (29dp): Guide line + dot + Title + Pin + Date + Menu (⋮)
+        // Line 1 (29dp): Guide line + dot + Title + Pin + Dashed line + Date + Menu (⋮)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(JournalRuleSpacing)
                 .padding(start = 14.dp, end = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Guide line segment + Dot column
+            // Start: Dot + Title + Pin
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                modifier = Modifier.widthIn(max = 240.dp)
+            ) {
+                // Little colored dot resting directly on the ruled line
+                Canvas(
+                    modifier = Modifier
+                        .size(6.dp)
+                        .offset(y = 0.5.dp)
+                ) {
+                    drawCircle(color = dotColor)
+                }
+
+                Text(
+                    text = displayTitle,
+                    fontFamily = resolveJournalFont(displayTitle, isRtl),
+                    fontSize = if (isArabicScript(displayTitle) || isRtl) 15.sp else 15.5.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = JournalWritingInk,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = TextStyle(platformStyle = NoFontPadding),
+                    modifier = Modifier.journalBaselineOnRule(opticalOffsetFromBottom = (-0.5).dp)
+                )
+
+                if (note.isPinned) {
+                    Box(
+                        modifier = Modifier
+                            .height(JournalRuleSpacing)
+                            .journalBaselineOnRule(opticalOffsetFromBottom = 0.dp),
+                        contentAlignment = Alignment.BottomCenter
+                    ) {
+                        HisabiSketchIcon(
+                            symbol = HisabiSymbol.PinFilled,
+                            contentDescription = "Épinglé",
+                            tint = JournalInk.copy(alpha = 0.85f),
+                            size = 13.dp,
+                            modifier = Modifier.offset(y = 0.5.dp)
+                        )
+                    }
+                }
+            }
+
+            // Connecting dashed line directly on the blue notebook line
             Box(
                 modifier = Modifier
-                    .width(24.dp)
+                    .weight(1f)
                     .height(JournalRuleSpacing)
+                    .padding(start = 5.dp, end = 6.dp)
                     .drawBehind {
-                        val centerX = size.width / 2f
-                        val centerY = size.height / 2f
-
-                        // Draw top half of vertical guide line
+                        val strokeW = 0.85.dp.toPx()
+                        val y = size.height
                         drawLine(
-                            color = guideLineColor,
-                            start = Offset(centerX, 0f),
-                            end = Offset(centerX, centerY),
-                            strokeWidth = 1.6.dp.toPx()
-                        )
-
-                        // If not last, draw bottom half of vertical guide line
-                        if (!isLastInGroup) {
-                            drawLine(
-                                color = guideLineColor,
-                                start = Offset(centerX, centerY),
-                                end = Offset(centerX, size.height),
-                                strokeWidth = 1.6.dp.toPx()
-                            )
-                        }
-
-                        // Draw filled circle (dot)
-                        drawCircle(
-                            color = dotColor,
-                            radius = 4.5.dp.toPx(),
-                            center = Offset(centerX, centerY)
+                            color = JournalWritingInk.copy(alpha = 0.28f),
+                            start = Offset(0f, y),
+                            end = Offset(size.width, y),
+                            strokeWidth = strokeW,
+                            pathEffect = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 3.5.dp.toPx()))
                         )
                     }
             )
 
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Title + Pin
+            // End: Short Date (e.g. "10 sept.") + 3-dots Menu Button (⋮)
             Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = displayTitle,
-                    fontFamily = resolveJournalFont(displayTitle, isRtl),
-                    fontSize = if (isArabicScript(displayTitle)) 16.sp else 16.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = JournalWritingInk,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = TextStyle(platformStyle = NoFontPadding)
+                    text = shortDateStr,
+                    fontFamily = PatrickHandFamily,
+                    fontSize = 13.sp,
+                    color = JournalMutedInk.copy(alpha = 0.70f),
+                    style = TextStyle(platformStyle = NoFontPadding),
+                    modifier = Modifier.journalBaselineOnRule()
                 )
 
-                if (note.isPinned) {
-                    HisabiSketchIcon(
-                        symbol = HisabiSymbol.PinFilled,
-                        contentDescription = "Épinglé",
-                        tint = JournalInk.copy(alpha = 0.85f),
-                        size = 13.dp
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Short Date (e.g. "10 sept.")
-            Text(
-                text = shortDateStr,
-                fontFamily = PatrickHandFamily,
-                fontSize = 13.sp,
-                color = JournalMutedInk.copy(alpha = 0.70f),
-                style = TextStyle(platformStyle = NoFontPadding)
-            )
-
-            Spacer(modifier = Modifier.width(4.dp))
-
-            // 3-dots Menu Button (⋮)
-            Box(
-                modifier = Modifier
-                    .size(28.dp)
-                    .clip(CircleShape)
-                    .clickable(role = Role.Button) { menuExpanded = true },
-                contentAlignment = Alignment.Center
-            ) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable(role = Role.Button) { menuExpanded = true }
+                        .journalBaselineOnRule(opticalOffsetFromBottom = 0.dp),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
                 Text(
                     text = "⋮",
                     fontFamily = PatrickHandFamily,
@@ -784,45 +691,28 @@ private fun NoteRowItem(
                 }
             }
         }
+    }
 
-        // Line 2 (29dp): Guide line continuing + Content preview
+        // Line 2 (29dp): Content preview sitting strictly ON the rule line
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(JournalRuleSpacing)
-                .padding(start = 14.dp, end = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(start = 27.dp, end = 14.dp),
+            verticalAlignment = Alignment.Bottom
         ) {
-            // Guide line segment
-            Box(
-                modifier = Modifier
-                    .width(24.dp)
-                    .height(JournalRuleSpacing)
-                    .drawBehind {
-                        if (!isLastInGroup) {
-                            val centerX = size.width / 2f
-                            drawLine(
-                                color = guideLineColor,
-                                start = Offset(centerX, 0f),
-                                end = Offset(centerX, size.height),
-                                strokeWidth = 1.6.dp.toPx()
-                            )
-                        }
-                    }
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            // Preview Text sitting on line 2
             Text(
                 text = previewContent.ifBlank { if (isRtl) "لا يوجد محتوى..." else "Aucun contenu..." },
                 fontFamily = resolveJournalFont(previewContent, isRtl),
-                fontSize = if (isArabicScript(previewContent)) 13.5.sp else 14.sp,
-                color = JournalMutedInk.copy(alpha = 0.65f),
+                fontSize = if (isArabicScript(previewContent)) 11.5.sp else 12.sp,
+                fontWeight = FontWeight.Normal,
+                color = JournalMutedInk.copy(alpha = 0.55f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 style = TextStyle(platformStyle = NoFontPadding),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .journalBaselineOnRule(opticalOffsetFromBottom = (-0.5).dp)
             )
         }
     }

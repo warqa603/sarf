@@ -16,6 +16,7 @@ import androidx.navigation.compose.rememberNavController
 import com.cash.guide.data.CalculationRepository
 import com.cash.guide.data.ChecklistRepository
 import com.cash.guide.data.NoteRepository
+import com.cash.guide.data.ReminderRepository
 import com.cash.guide.data.SecurityRepository
 import com.cash.guide.data.SettingsRepository
 import com.cash.guide.data.TemplateRepository
@@ -79,6 +80,9 @@ fun HssabiApp(
     }
     val noteRepository = remember {
         NoteRepository(database.noteDao())
+    }
+    val reminderRepository = remember {
+        ReminderRepository(database.reminderDao(), context)
     }
     val settingsRepository = remember { SettingsRepository(context) }
     val securityRepository = remember { SecurityRepository(context) }
@@ -255,6 +259,7 @@ fun HssabiApp(
                     calculationRepository = calculationRepository,
                     checklistRepository = checklistRepository,
                     noteRepository = noteRepository,
+                    reminderRepository = reminderRepository,
                     settingsRepository = settingsRepository,
                     editorViewModelFactory = {
                         CalculationEditorViewModel(
