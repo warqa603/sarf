@@ -458,7 +458,7 @@ fun HomeScreen(
                 onDismiss = { viewModel.setFabExpanded(false) },
                 onNewCalcul = {
                     viewModel.setFabExpanded(false)
-                    onOpenCalculs()
+                    showNewCalcSetupSheet = true
                 },
                 onNewChecklist = {
                     viewModel.setFabExpanded(false)
