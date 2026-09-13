@@ -1,5 +1,7 @@
 package com.cash.guide.feature.cashregister
 
+import android.media.AudioManager
+import android.media.ToneGenerator
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -34,9 +36,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Alignment
@@ -121,6 +126,39 @@ fun CashRegisterScreen(
         }
     }
 
+    // Sound effect setup
+    var isSoundEnabled by remember { mutableStateOf(true) }
+    val toneGenerator = remember {
+        try {
+            ToneGenerator(AudioManager.STREAM_MUSIC, 60)
+        } catch (_: Exception) {
+            null
+        }
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            try {
+                toneGenerator?.release()
+            } catch (_: Exception) {}
+        }
+    }
+
+    val playSound: (String) -> Unit = remember(isSoundEnabled, toneGenerator) {
+        { key ->
+            if (isSoundEnabled && toneGenerator != null) {
+                try {
+                    when (key) {
+                        "C" -> toneGenerator.startTone(ToneGenerator.TONE_PROP_NACK, 35)
+                        "=" -> toneGenerator.startTone(ToneGenerator.TONE_PROP_ACK, 40)
+                        "+", "−", "-", "×", "*", "÷", "/" -> toneGenerator.startTone(ToneGenerator.TONE_PROP_PROMPT, 30)
+                        "⌫" -> toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 20)
+                        else -> toneGenerator.startTone(ToneGenerator.TONE_PROP_BEEP, 25)
+                    }
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
     val currencySuffix = if (state.currencyUnit == MoneyUnit.DIRHAM) {
         stringResource(R.string.currency_dirham)
     } else {
@@ -189,6 +227,7 @@ fun CashRegisterScreen(
                                 .clickable(
                                     role = Role.Button,
                                     onClick = {
+                                        playSound("back")
                                         if (state.step == CashRegisterStep.CHANGE_RETURN) {
                                             viewModel.goToCalculator()
                                         } else {
@@ -247,29 +286,60 @@ fun CashRegisterScreen(
                         }
                     }
 
-                    // Currency toggle chip
+                    // Actions: Sound Toggle + Currency Toggle
                     Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(Color.White.copy(alpha = 0.70f))
-                            .clickable(role = Role.Button) { viewModel.toggleCurrency() }
-                            .padding(horizontal = 10.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text(
-                            text = currencySuffix,
-                            fontFamily = resolveJournalFont(currencySuffix, isRtl),
-                            fontSize = 13.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = JournalWritingInk,
-                            style = TextStyle(platformStyle = NoFontPadding)
-                        )
-                        Text(
-                            text = "⇅",
-                            fontSize = 12.sp,
-                            color = JournalMutedInk
-                        )
+                        // Sound feedback toggle
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.White.copy(alpha = 0.70f))
+                                .clickable(role = Role.Button) {
+                                    isSoundEnabled = !isSoundEnabled
+                                    if (isSoundEnabled) {
+                                        try {
+                                            toneGenerator?.startTone(ToneGenerator.TONE_PROP_BEEP, 25)
+                                        } catch (_: Exception) {}
+                                    }
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (isSoundEnabled) "🔊" else "🔇",
+                                fontSize = 13.5.sp
+                            )
+                        }
+
+                        // Currency toggle chip
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.White.copy(alpha = 0.70f))
+                                .clickable(role = Role.Button) {
+                                    playSound("currency")
+                                    viewModel.toggleCurrency()
+                                }
+                                .padding(horizontal = 10.dp, vertical = 5.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = currencySuffix,
+                                fontFamily = resolveJournalFont(currencySuffix, isRtl),
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = JournalWritingInk,
+                                style = TextStyle(platformStyle = NoFontPadding)
+                            )
+                            Text(
+                                text = "⇅",
+                                fontSize = 12.sp,
+                                color = JournalMutedInk
+                            )
+                        }
                     }
                 }
             }
@@ -281,8 +351,14 @@ fun CashRegisterScreen(
                         state = state,
                         currencySuffix = currencySuffix,
                         isRtl = isRtl,
-                        onKeyClick = { viewModel.applyCalculatorKey(it) },
-                        onNext = { viewModel.goToChangeReturn() },
+                        onKeyClick = { key ->
+                            playSound(key)
+                            viewModel.applyCalculatorKey(key)
+                        },
+                        onNext = {
+                            playSound("=")
+                            viewModel.goToChangeReturn()
+                        },
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
@@ -295,9 +371,18 @@ fun CashRegisterScreen(
                         isRtl = isRtl,
                         onPurchaseChange = { viewModel.setPurchaseText(it) },
                         onReceivedChange = { viewModel.setReceivedText(it) },
-                        onPresetSelect = { viewModel.selectPresetReceived(it) },
-                        onBackToCalc = { viewModel.goToCalculator() },
-                        onNextClient = { viewModel.clear() },
+                        onPresetSelect = { noteDh ->
+                            playSound(noteDh.toString())
+                            viewModel.selectPresetReceived(noteDh)
+                        },
+                        onBackToCalc = {
+                            playSound("back")
+                            viewModel.goToCalculator()
+                        },
+                        onNextClient = {
+                            playSound("C")
+                            viewModel.clear()
+                        },
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth()
@@ -974,7 +1059,10 @@ private fun CashRegisterChangeReturnContent(
             )
         }
 
-        // Rule 3 (29dp): Montant reçu du client (Header sitting directly on Rule 3)
+        // Rule spacing: 1 empty notebook line between Total des achats and Montant reçu
+        Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+        // Montant reçu du client (Header sitting on rule)
         val labelReceived = stringResource(R.string.cash_register_amount_received)
         Row(
             modifier = Modifier
@@ -1021,7 +1109,7 @@ private fun CashRegisterChangeReturnContent(
             }
         }
 
-        // Rule 4 (29dp): Received input row resting strictly on Rule 4
+        // Received input row resting strictly on rule
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1081,55 +1169,105 @@ private fun CashRegisterChangeReturnContent(
             )
         }
 
-        // Rule 5: Preset Banknote Chips [20 DH] [50 DH] [100 DH] [200 DH]
-        val presetNotes = listOf(20L, 50L, 100L, 200L)
-        Row(
+        // Spacing before preset banknote chips
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // 8 Preset Banknote Chips (4 over 4)
+        val presetRow1 = listOf(20L, 50L, 100L, 200L)
+        val presetRow2 = listOf(300L, 500L, 800L, 1000L)
+
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(JournalRuleSpacing)
                 .padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            verticalArrangement = Arrangement.spacedBy(7.dp)
         ) {
-            presetNotes.forEach { noteDh ->
-                val chipText = if (state.currencyUnit == MoneyUnit.DIRHAM) {
-                    "$noteDh DH"
-                } else {
-                    "${noteDh * 20} ريال"
+            // Row 1: 20, 50, 100, 200
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                presetRow1.forEach { noteDh ->
+                    val chipText = if (state.currencyUnit == MoneyUnit.DIRHAM) {
+                        "$noteDh DH"
+                    } else {
+                        "${noteDh * 20} ريال"
+                    }
+                    val isSelected = state.receivedCentimes == (noteDh * 100L)
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (isSelected) HighlighterYellow.copy(alpha = 0.70f)
+                                else Color.White.copy(alpha = 0.85f)
+                            )
+                            .border(
+                                width = if (isSelected) 1.2.dp else 0.9.dp,
+                                color = if (isSelected) Color(0xFFD97706) else JournalWritingInk.copy(alpha = 0.25f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .clickable { onPresetSelect(noteDh) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = chipText,
+                            fontFamily = PatrickHandFamily,
+                            fontSize = if (state.currencyUnit != MoneyUnit.DIRHAM && noteDh >= 800L) 12.sp else 13.5.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                            color = JournalWritingInk,
+                            style = TextStyle(platformStyle = NoFontPadding),
+                            maxLines = 1
+                        )
+                    }
                 }
-                val isSelected = state.receivedCentimes == (noteDh * 100L)
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(26.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(
-                            if (isSelected) HighlighterYellow.copy(alpha = 0.70f)
-                            else Color.White.copy(alpha = 0.75f)
+            }
+
+            // Row 2: 300, 500, 800, 1000
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                presetRow2.forEach { noteDh ->
+                    val chipText = if (state.currencyUnit == MoneyUnit.DIRHAM) {
+                        "$noteDh DH"
+                    } else {
+                        "${noteDh * 20} ريال"
+                    }
+                    val isSelected = state.receivedCentimes == (noteDh * 100L)
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(32.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (isSelected) HighlighterYellow.copy(alpha = 0.70f)
+                                else Color.White.copy(alpha = 0.85f)
+                            )
+                            .border(
+                                width = if (isSelected) 1.2.dp else 0.9.dp,
+                                color = if (isSelected) Color(0xFFD97706) else JournalWritingInk.copy(alpha = 0.25f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .clickable { onPresetSelect(noteDh) },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = chipText,
+                            fontFamily = PatrickHandFamily,
+                            fontSize = if (state.currencyUnit != MoneyUnit.DIRHAM && noteDh >= 800L) 12.sp else 13.5.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.SemiBold,
+                            color = JournalWritingInk,
+                            style = TextStyle(platformStyle = NoFontPadding),
+                            maxLines = 1
                         )
-                        .then(
-                            if (!isSelected) {
-                                Modifier.border(
-                                    width = 0.8.dp,
-                                    color = JournalInk.copy(alpha = 0.10f),
-                                    shape = RoundedCornerShape(6.dp)
-                                )
-                            } else Modifier
-                        )
-                        .clickable { onPresetSelect(noteDh) },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = chipText,
-                        fontFamily = PatrickHandFamily,
-                        fontSize = 13.5.sp,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = JournalWritingInk,
-                        style = TextStyle(platformStyle = NoFontPadding)
-                    )
+                    }
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
         // Rules 6-8: Change Due Result Band
         if (state.changeCentimes > 0L) {
