@@ -64,6 +64,7 @@ import com.cash.guide.ui.notebook.JournalMutedInk
 import com.cash.guide.ui.notebook.JournalPaper
 import com.cash.guide.ui.notebook.JournalRuleSpacing
 import com.cash.guide.ui.notebook.JournalRuledDocument
+import com.cash.guide.ui.notebook.JournalSectionBadge
 import com.cash.guide.ui.notebook.JournalWritingInk
 import com.cash.guide.ui.notebook.MonthPickerDialog
 import com.cash.guide.ui.notebook.NoFontPadding
@@ -261,7 +262,7 @@ fun RemindersOverviewScreen(
                 Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
                 // Line 6: Section Badge: "Tous les rappels" (using unified seamless path!)
-                RemindersSectionBadge(
+                JournalSectionBadge(
                     title = if (isRtl) "جميع التذكيرات (${uiState.filteredReminders.size})" else "Tous les rappels (${uiState.filteredReminders.size})",
                     badgeColor = HighlighterBlue.copy(alpha = 0.30f)
                 )
@@ -561,96 +562,6 @@ private fun ReminderRowItem(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun RemindersSectionBadge(
-    title: String,
-    badgeColor: Color,
-    modifier: Modifier = Modifier
-) {
-    val layoutDirection = LocalLayoutDirection.current
-    val isRtl = layoutDirection == LayoutDirection.Rtl
-    val textStyle = TextStyle(
-        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-        fontSize = if (isRtl) 14.5.sp else 15.sp,
-        fontWeight = FontWeight.Bold,
-        platformStyle = NoFontPadding
-    )
-    val textMeasurer = rememberTextMeasurer()
-    val textLayoutResult = remember(title, textStyle) {
-        textMeasurer.measure(AnnotatedString(title), textStyle)
-    }
-    val density = LocalDensity.current
-    val badgeWidthDp = with(density) {
-        textLayoutResult.size.width.toDp() + 24.dp
-    }
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(JournalRuleSpacing)
-            .padding(start = 14.dp, end = 0.dp)
-            .drawBehind {
-                val badgeW = badgeWidthDp.toPx().coerceAtMost(size.width - 16.dp.toPx())
-                val totalW = size.width
-                val h = size.height
-                val r = 6.dp.toPx()
-                val lineH = 5.dp.toPx()
-                val filletR = 2.5.dp.toPx()
-
-                val unifiedPath = Path().apply {
-                    if (!isRtl) {
-                        moveTo(0f, r)
-                        quadraticTo(0f, 0f, r, 0f)
-                        lineTo(badgeW - r, 0f)
-                        quadraticTo(badgeW, 0f, badgeW, r)
-                        lineTo(badgeW, h - lineH - filletR)
-                        quadraticTo(badgeW, h - lineH, badgeW + filletR, h - lineH)
-                        lineTo(totalW, h - lineH)
-                        lineTo(totalW, h)
-                        lineTo(r, h)
-                        quadraticTo(0f, h, 0f, h - r)
-                        close()
-                    } else {
-                        val badgeStart = totalW - badgeW
-                        moveTo(totalW, r)
-                        quadraticTo(totalW, 0f, totalW - r, 0f)
-                        lineTo(badgeStart + r, 0f)
-                        quadraticTo(badgeStart, 0f, badgeStart, r)
-                        lineTo(badgeStart, h - lineH - filletR)
-                        quadraticTo(badgeStart, h - lineH, badgeStart - filletR, h - lineH)
-                        lineTo(0f, h - lineH)
-                        lineTo(0f, h)
-                        lineTo(totalW - r, h)
-                        quadraticTo(totalW, h, totalW, h - r)
-                        close()
-                    }
-                }
-
-                drawPath(
-                    path = unifiedPath,
-                    color = badgeColor
-                )
-            },
-        contentAlignment = if (isRtl) Alignment.CenterEnd else Alignment.CenterStart
-    ) {
-        Box(
-            modifier = Modifier
-                .width(badgeWidthDp)
-                .height(JournalRuleSpacing),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = title,
-                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                fontSize = if (isRtl) 14.5.sp else 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = JournalWritingInk,
-                style = TextStyle(platformStyle = NoFontPadding)
-            )
         }
     }
 }

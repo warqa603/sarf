@@ -54,6 +54,7 @@ import com.cash.guide.ui.notebook.JournalMutedInk
 import com.cash.guide.ui.notebook.JournalPaper
 import com.cash.guide.ui.notebook.JournalRuleSpacing
 import com.cash.guide.ui.notebook.JournalRuledDocument
+import com.cash.guide.ui.notebook.JournalSectionBadge
 import com.cash.guide.ui.notebook.JournalWritingInk
 import com.cash.guide.ui.notebook.MonthPickerDialog
 import com.cash.guide.ui.notebook.NewCalculationSetupSheet
@@ -295,75 +296,54 @@ fun CalculsScreen(
                 // Line 5: 1 rule spacer (tna9ez star)
                 Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-                // Line 6: "Calculs du mois" badge (1 rule = 29dp, touching top & bottom lines)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(JournalRuleSpacing)
-                        .padding(horizontal = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .height(JournalRuleSpacing)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFFE8EDD5))
-                            .padding(horizontal = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val calculsDuMoisText = if (isRtl) "حسابات الشهر" else "Calculs du mois"
-                        Text(
-                            text = calculsDuMoisText,
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontSize = if (isRtl) 13.5.sp else 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = JournalWritingInk,
-                            style = TextStyle(platformStyle = NoFontPadding)
-                        )
-                    }
-
-                    val activeFilterDisplay = remember(state.selectedYear, state.selectedMonth, state.selectedDateEpoch, context) {
-                        val locale = context.resources.configuration.locales[0]
-                        when {
-                            state.selectedYear != null && state.selectedMonth != null -> {
-                                val cal = Calendar.getInstance().apply {
-                                    set(Calendar.YEAR, state.selectedYear!!)
-                                    set(Calendar.MONTH, state.selectedMonth!! - 1)
-                                }
-                                SimpleDateFormat("MMMM yyyy", locale).format(cal.time).replaceFirstChar {
-                                    if (it.isLowerCase()) it.titlecase(locale) else it.toString()
-                                }
+                // Line 6: "Calculs du mois" badge with unified background "X"
+                val calculsDuMoisText = if (isRtl) "حسابات الشهر" else "Calculs du mois"
+                val activeFilterDisplay = remember(state.selectedYear, state.selectedMonth, state.selectedDateEpoch, context) {
+                    val locale = context.resources.configuration.locales[0]
+                    when {
+                        state.selectedYear != null && state.selectedMonth != null -> {
+                            val cal = Calendar.getInstance().apply {
+                                set(Calendar.YEAR, state.selectedYear!!)
+                                set(Calendar.MONTH, state.selectedMonth!! - 1)
                             }
-                            state.selectedDateEpoch != null -> {
-                                SimpleDateFormat("d MMMM yyyy", locale).format(Date(state.selectedDateEpoch!!))
+                            SimpleDateFormat("MMMM yyyy", locale).format(cal.time).replaceFirstChar {
+                                if (it.isLowerCase()) it.titlecase(locale) else it.toString()
                             }
-                            else -> null
                         }
-                    }
-
-                    if (activeFilterDisplay != null) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Row(
-                            modifier = Modifier
-                                .height(JournalRuleSpacing)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(HighlighterYellow.copy(alpha = 0.50f))
-                                .clickable { viewModel.clearDateFilter() }
-                                .padding(horizontal = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "$activeFilterDisplay ✕",
-                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFB45309),
-                                style = TextStyle(platformStyle = NoFontPadding)
-                            )
+                        state.selectedDateEpoch != null -> {
+                            SimpleDateFormat("d MMMM yyyy", locale).format(Date(state.selectedDateEpoch!!))
                         }
+                        else -> null
                     }
                 }
+
+                JournalSectionBadge(
+                    title = calculsDuMoisText,
+                    badgeColor = HighlighterPink.copy(alpha = 0.30f),
+                    trailingContent = if (activeFilterDisplay != null) {
+                        {
+                            Row(
+                                modifier = Modifier
+                                    .height(JournalRuleSpacing)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(HighlighterYellow.copy(alpha = 0.50f))
+                                    .clickable { viewModel.clearDateFilter() }
+                                    .padding(horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "$activeFilterDisplay ✕",
+                                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFB45309),
+                                    style = TextStyle(platformStyle = NoFontPadding)
+                                )
+                            }
+                        }
+                    } else null
+                )
 
                 // Recent calculations list
                 if (!state.isEmpty) {

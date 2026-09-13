@@ -79,6 +79,7 @@ import com.cash.guide.ui.notebook.JournalPaper
 import com.cash.guide.ui.notebook.JournalRule
 import com.cash.guide.ui.notebook.JournalRuleSpacing
 import com.cash.guide.ui.notebook.JournalRuledDocument
+import com.cash.guide.ui.notebook.JournalSectionBadge
 import com.cash.guide.ui.notebook.JournalWritingInk
 import com.cash.guide.ui.notebook.MonthPickerDialog
 import com.cash.guide.ui.notebook.NoFontPadding
@@ -311,7 +312,7 @@ fun NotesOverviewScreen(
                         modifier = Modifier
                             .height(JournalRuleSpacing)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(HighlighterPink.copy(alpha = 0.35f))
+                            .background(HighlighterYellow.copy(alpha = 0.35f))
                             .clickable(
                                 role = Role.Button,
                                 onClickLabel = if (isRtl) "إنشاء ملاحظة جديدة" else "Créer une nouvelle note",
@@ -351,58 +352,37 @@ fun NotesOverviewScreen(
                 // Line 5: 1 rule spacer (tna9ez star)
                 Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-                // Line 6: "Notes du mois" badge
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(JournalRuleSpacing)
-                        .padding(horizontal = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .height(JournalRuleSpacing)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFFE8EDD5))
-                            .padding(horizontal = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val notesDuMoisText = if (isRtl) "ملاحظات الشهر" else "Notes du mois"
-                        Text(
-                            text = notesDuMoisText,
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontSize = if (isRtl) 13.5.sp else 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = JournalWritingInk,
-                            style = TextStyle(platformStyle = NoFontPadding)
-                        )
-                    }
-
-                    if (uiState.selectedMonthKey != null) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        val activeMonthDisplay = uiState.availableMonths
-                            .firstOrNull { it.first == uiState.selectedMonthKey }?.second ?: uiState.selectedMonthKey!!
-                        Row(
-                            modifier = Modifier
-                                .height(JournalRuleSpacing)
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(HighlighterYellow.copy(alpha = 0.50f))
-                                .clickable { viewModel.selectMonth(null) }
-                                .padding(horizontal = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Text(
-                                text = "$activeMonthDisplay ✕",
-                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFB45309),
-                                style = TextStyle(platformStyle = NoFontPadding)
-                            )
+                // Line 6: "Notes du mois" badge with unified background "X"
+                val notesDuMoisText = if (isRtl) "ملاحظات الشهر" else "Notes du mois"
+                JournalSectionBadge(
+                    title = notesDuMoisText,
+                    badgeColor = HighlighterYellow.copy(alpha = 0.35f),
+                    trailingContent = if (uiState.selectedMonthKey != null) {
+                        {
+                            val activeMonthDisplay = uiState.availableMonths
+                                .firstOrNull { it.first == uiState.selectedMonthKey }?.second ?: uiState.selectedMonthKey!!
+                            Row(
+                                modifier = Modifier
+                                    .height(JournalRuleSpacing)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(HighlighterYellow.copy(alpha = 0.50f))
+                                    .clickable { viewModel.selectMonth(null) }
+                                    .padding(horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "$activeMonthDisplay ✕",
+                                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFB45309),
+                                    style = TextStyle(platformStyle = NoFontPadding)
+                                )
+                            }
                         }
-                    }
-                }
+                    } else null
+                )
 
                 // Line 5+: Content dial notes kif kayn howa daba
                 if (uiState.monthGroups.isEmpty() && !uiState.isLoading) {

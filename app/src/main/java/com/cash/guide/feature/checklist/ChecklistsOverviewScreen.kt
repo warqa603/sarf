@@ -70,6 +70,7 @@ import com.cash.guide.ui.notebook.JournalMutedInk
 import com.cash.guide.ui.notebook.JournalPaper
 import com.cash.guide.ui.notebook.JournalRuleSpacing
 import com.cash.guide.ui.notebook.JournalRuledDocument
+import com.cash.guide.ui.notebook.JournalSectionBadge
 import com.cash.guide.ui.notebook.JournalWritingInk
 import com.cash.guide.ui.notebook.NoFontPadding
 import com.cash.guide.ui.notebook.JournalInlineSearchRow
@@ -266,7 +267,7 @@ fun ChecklistsOverviewScreen(
                         modifier = Modifier
                             .height(JournalRuleSpacing)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(HighlighterPink.copy(alpha = 0.35f))
+                            .background(HighlighterGreen.copy(alpha = 0.35f))
                             .clickable(
                                 role = Role.Button,
                                 onClickLabel = if (isRtl) "إنشاء قائمة جديدة" else "Créer une nouvelle checklist",
@@ -301,33 +302,12 @@ fun ChecklistsOverviewScreen(
                 // Line 5: 1 rule spacer (tna9ez star)
                 Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-                // Line 6: "Toutes les checklists" badge ta7t search bar (1 rule = 29dp, touching top & bottom lines)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(JournalRuleSpacing)
-                        .padding(horizontal = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .height(JournalRuleSpacing)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFFE8EDD5))
-                            .padding(horizontal = 10.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val sectionText = if (isRtl) "جميع القوائم" else "Toutes les checklists"
-                        Text(
-                            text = sectionText,
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontSize = if (isRtl) 13.5.sp else 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = JournalWritingInk,
-                            style = TextStyle(platformStyle = NoFontPadding)
-                        )
-                    }
-                }
+                // Line 6: "Toutes les checklists" badge with unified background "X" (1 rule = 29dp)
+                val sectionText = if (isRtl) "جميع القوائم" else "Toutes les checklists"
+                JournalSectionBadge(
+                    title = sectionText,
+                    badgeColor = HighlighterGreen.copy(alpha = 0.30f)
+                )
 
                 // Line 5+: Content dial checklists
                 if (filteredChecklists.isEmpty()) {

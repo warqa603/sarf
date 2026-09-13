@@ -94,6 +94,8 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
@@ -2606,6 +2608,114 @@ fun NotebookSearchField(
         onClick = onClick,
         modifier = modifier
     )
+}
+
+/**
+ * Notebook Category / Section Badge with unified seamless path (Background "X"):
+ * Rounded tab/badge on start seamlessly joined with a 5dp thick ruled line extending across the page width.
+ */
+@Composable
+fun JournalSectionBadge(
+    title: String,
+    badgeColor: Color,
+    modifier: Modifier = Modifier,
+    trailingContent: (@Composable () -> Unit)? = null
+) {
+    val layoutDirection = LocalLayoutDirection.current
+    val isRtl = layoutDirection == LayoutDirection.Rtl
+    val textStyle = TextStyle(
+        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+        fontSize = if (isRtl) 14.5.sp else 15.sp,
+        fontWeight = FontWeight.Bold,
+        platformStyle = NoFontPadding
+    )
+    val textMeasurer = rememberTextMeasurer()
+    val textLayoutResult = remember(title, textStyle) {
+        textMeasurer.measure(AnnotatedString(title), textStyle)
+    }
+    val density = LocalDensity.current
+    val badgeWidthDp = with(density) {
+        textLayoutResult.size.width.toDp() + 24.dp
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(JournalRuleSpacing)
+            .padding(start = 14.dp, end = 0.dp)
+            .drawBehind {
+                val badgeW = badgeWidthDp.toPx().coerceAtMost(size.width - 16.dp.toPx())
+                val totalW = size.width
+                val h = size.height
+                val r = 6.dp.toPx()
+                val lineH = 5.dp.toPx()
+                val filletR = 2.5.dp.toPx()
+
+                val unifiedPath = Path().apply {
+                    if (!isRtl) {
+                        moveTo(0f, r)
+                        quadraticTo(0f, 0f, r, 0f)
+                        lineTo(badgeW - r, 0f)
+                        quadraticTo(badgeW, 0f, badgeW, r)
+                        lineTo(badgeW, h - lineH - filletR)
+                        quadraticTo(badgeW, h - lineH, badgeW + filletR, h - lineH)
+                        lineTo(totalW, h - lineH)
+                        lineTo(totalW, h)
+                        lineTo(r, h)
+                        quadraticTo(0f, h, 0f, h - r)
+                        close()
+                    } else {
+                        val badgeStart = totalW - badgeW
+                        moveTo(totalW, r)
+                        quadraticTo(totalW, 0f, totalW - r, 0f)
+                        lineTo(badgeStart + r, 0f)
+                        quadraticTo(badgeStart, 0f, badgeStart, r)
+                        lineTo(badgeStart, h - lineH - filletR)
+                        quadraticTo(badgeStart, h - lineH, badgeStart - filletR, h - lineH)
+                        lineTo(0f, h - lineH)
+                        lineTo(0f, h)
+                        lineTo(totalW - r, h)
+                        quadraticTo(totalW, h, totalW, h - r)
+                        close()
+                    }
+                }
+
+                drawPath(
+                    path = unifiedPath,
+                    color = badgeColor
+                )
+            },
+        contentAlignment = if (isRtl) Alignment.CenterEnd else Alignment.CenterStart
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(JournalRuleSpacing)
+                .padding(end = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(badgeWidthDp)
+                    .height(JournalRuleSpacing),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = title,
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontSize = if (isRtl) 14.5.sp else 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = JournalWritingInk,
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+            }
+
+            if (trailingContent != null) {
+                trailingContent()
+            }
+        }
+    }
 }
 
 /**
