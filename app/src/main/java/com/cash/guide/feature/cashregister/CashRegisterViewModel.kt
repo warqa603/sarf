@@ -19,6 +19,7 @@ data class CashRegisterUiState(
     val calcExpression: String = "",
     val calcResult: String = "",
     val calcHasError: Boolean = false,
+    val isEvaluated: Boolean = false,
     val purchaseText: String = "",
     val receivedText: String = "",
     val currencyUnit: MoneyUnit = MoneyUnit.DIRHAM,
@@ -42,27 +43,33 @@ class CashRegisterViewModel : ViewModel() {
         _uiState.update { current ->
             var expr = current.calcExpression
             var hasErr = false
+            var isEvaluated = current.isEvaluated
 
             when (key) {
                 "C" -> {
                     expr = ""
+                    isEvaluated = false
                 }
                 "⌫" -> {
+                    isEvaluated = false
                     if (expr.isNotEmpty()) {
                         expr = expr.dropLast(1)
                     }
                 }
                 "=" -> {
-                    if (expr.isNotBlank()) {
-                        val evaluated = MoneyMath.evaluate(expr)
+                    val sanitized = expr.trimEnd('+', '−', '-', '×', '*', '÷', '/')
+                    if (sanitized.isNotBlank()) {
+                        val evaluated = MoneyMath.evaluate(sanitized)
                         if (evaluated != null && evaluated.signum() >= 0) {
-                            expr = evaluated.stripTrailingZeros().toPlainString()
+                            expr = sanitized
+                            isEvaluated = true
                         } else {
                             hasErr = true
                         }
                     }
                 }
                 "+", "−", "-", "×", "*", "÷", "/" -> {
+                    isEvaluated = false
                     val op = when (key) {
                         "-", "−" -> "−"
                         "*", "×" -> "×"
@@ -81,26 +88,37 @@ class CashRegisterViewModel : ViewModel() {
                     }
                 }
                 "." -> {
-                    // Check if current number segment already has a dot
-                    val lastSegment = expr.split(Regex("[+\\−\\-×*÷/]")).lastOrNull() ?: ""
-                    if (!lastSegment.contains('.')) {
-                        expr = if (lastSegment.isEmpty()) expr + "0." else expr + "."
+                    if (isEvaluated) {
+                        expr = "0."
+                        isEvaluated = false
+                    } else {
+                        // Check if current number segment already has a dot
+                        val lastSegment = expr.split(Regex("[+\\−\\-×*÷/]")).lastOrNull() ?: ""
+                        if (!lastSegment.contains('.')) {
+                            expr = if (lastSegment.isEmpty()) expr + "0." else expr + "."
+                        }
                     }
                 }
                 else -> {
-                    // Digits 0-9
-                    expr += key
+                    // Digits 0-9 and 00
+                    if (isEvaluated) {
+                        expr = if (key == "00") "0" else key
+                        isEvaluated = false
+                    } else {
+                        expr += key
+                    }
                 }
             }
 
             // Real-time evaluation
-            val previewVal = if (expr.isNotBlank()) MoneyMath.evaluate(expr) else null
+            val evalTarget = expr.trimEnd('+', '−', '-', '×', '*', '÷', '/')
+            val previewVal = if (evalTarget.isNotBlank()) MoneyMath.evaluate(evalTarget) else null
             val resultStr = if (previewVal != null && previewVal.signum() >= 0) {
                 previewVal.stripTrailingZeros().toPlainString()
             } else ""
 
             val effectivePurchase = resultStr.ifBlank {
-                if (expr.isNotBlank() && MoneyMath.isValidExpression(expr)) expr else ""
+                if (evalTarget.isNotBlank() && MoneyMath.isValidExpression(evalTarget)) evalTarget else ""
             }
 
             computeState(
@@ -110,7 +128,8 @@ class CashRegisterViewModel : ViewModel() {
                 calcHasError = hasErr,
                 purchaseText = effectivePurchase,
                 receivedText = current.receivedText,
-                currencyUnit = current.currencyUnit
+                currencyUnit = current.currencyUnit,
+                isEvaluated = isEvaluated
             )
         }
     }
@@ -120,7 +139,8 @@ class CashRegisterViewModel : ViewModel() {
             // If current expression has something not yet evaluated
             var purchase = current.purchaseText
             if (purchase.isBlank() && current.calcExpression.isNotBlank()) {
-                val eval = MoneyMath.evaluate(current.calcExpression)
+                val evalTarget = current.calcExpression.trimEnd('+', '−', '-', '×', '*', '÷', '/')
+                val eval = MoneyMath.evaluate(evalTarget)
                 if (eval != null && eval.signum() >= 0) {
                     purchase = eval.stripTrailingZeros().toPlainString()
                 }
@@ -132,7 +152,8 @@ class CashRegisterViewModel : ViewModel() {
                 calcHasError = false,
                 purchaseText = purchase,
                 receivedText = current.receivedText,
-                currencyUnit = current.currencyUnit
+                currencyUnit = current.currencyUnit,
+                isEvaluated = current.isEvaluated
             )
         }
     }
@@ -166,7 +187,8 @@ class CashRegisterViewModel : ViewModel() {
                 calcHasError = current.calcHasError,
                 purchaseText = current.purchaseText,
                 receivedText = text,
-                currencyUnit = current.currencyUnit
+                currencyUnit = current.currencyUnit,
+                isEvaluated = current.isEvaluated
             )
         }
     }
@@ -194,7 +216,8 @@ class CashRegisterViewModel : ViewModel() {
                 calcHasError = false,
                 purchaseText = convertedPurchase,
                 receivedText = convertedReceived,
-                currencyUnit = nextUnit
+                currencyUnit = nextUnit,
+                isEvaluated = current.isEvaluated
             )
         }
     }
@@ -212,7 +235,8 @@ class CashRegisterViewModel : ViewModel() {
         calcHasError: Boolean,
         purchaseText: String,
         receivedText: String,
-        currencyUnit: MoneyUnit
+        currencyUnit: MoneyUnit,
+        isEvaluated: Boolean = false
     ): CashRegisterUiState {
         val purchaseTrimmed = purchaseText.trim()
         val receivedTrimmed = receivedText.trim()
@@ -273,6 +297,7 @@ class CashRegisterViewModel : ViewModel() {
             calcExpression = calcExpression,
             calcResult = calcResult,
             calcHasError = calcHasError,
+            isEvaluated = isEvaluated,
             purchaseText = purchaseText,
             receivedText = receivedText,
             currencyUnit = currencyUnit,

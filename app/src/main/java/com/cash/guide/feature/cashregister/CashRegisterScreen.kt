@@ -50,7 +50,10 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.AlignmentLine
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.FirstBaseline
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -60,6 +63,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -308,6 +312,26 @@ fun CashRegisterScreen(
 // STEP 1: CALCULATOR VIEW (AUTHENTIC JOURNAL KEYPAD & LEDGER DISPLAY)
 // -----------------------------------------------------------------------------
 
+private fun Modifier.journalMultilineOnRules(
+    firstLineHeight: Dp = JournalRuleSpacing,
+    totalLines: Int = 3
+): Modifier = this.layout { measurable, constraints ->
+    val placeable = measurable.measure(
+        constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity)
+    )
+    val baseline = placeable[FirstBaseline]
+    val rowHeight = firstLineHeight.roundToPx()
+    val totalHeightPx = (firstLineHeight * totalLines).roundToPx()
+    val yOffset = if (baseline != AlignmentLine.Unspecified) {
+        rowHeight - baseline
+    } else {
+        0
+    }
+    layout(placeable.width, totalHeightPx) {
+        placeable.placeRelative(0, yOffset)
+    }
+}
+
 @Composable
 private fun CashRegisterCalculatorContent(
     state: CashRegisterUiState,
@@ -335,11 +359,16 @@ private fun CashRegisterCalculatorContent(
     ) {
         val totalLines = (maxHeight / JournalRuleSpacing).toInt()
         // Fixed vertical budget:
-        // Display: Header (1 line) + Expression (2 lines) + Result (1 line) = 4 lines (116dp)
+        // Display:
+        //   - Header (1 line = 29dp)
+        //   - Operations area (3 lines = 87dp)
+        //   - Gap between operations & result (1 line = 29dp)
+        //   - Result (1 line = 29dp)
+        //   Total display = 6 lines (174dp)
         // Keypad: 5 rows * 2 lines = 10 lines (290dp)
         // Bottom Action Card: 2 lines (58dp)
-        // Total fixed lines = 16 lines (464dp)
-        val spacerLines = maxOf(0, totalLines - 16)
+        // Total fixed lines = 6 + 10 + 2 = 18 lines (522dp)
+        val spacerLines = maxOf(0, totalLines - 18)
 
         Column(
             modifier = Modifier
@@ -413,13 +442,13 @@ private fun CashRegisterCalculatorContent(
                 }
             }
 
-            // Rules 2 & 3: Math Expression (takes 2 notebook spaces = 58dp)
+            // Rules 2, 3 & 4: Math Expression (takes 3 notebook spaces = 87dp)
+            // Comfortable vertical space for operations as requested: "o lblassa dial l3amalyat khalli fiha espace verticaly"
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(JournalRuleSpacing * 2)
-                    .padding(horizontal = 2.dp),
-                contentAlignment = Alignment.CenterStart
+                    .height(JournalRuleSpacing * 3)
+                    .padding(horizontal = 2.dp)
             ) {
                 val expressionText = state.calcExpression.ifBlank {
                     stringResource(R.string.cash_register_calc_hint)
@@ -427,16 +456,21 @@ private fun CashRegisterCalculatorContent(
                 Text(
                     text = expressionText,
                     fontFamily = if (state.calcExpression.isBlank()) resolveJournalFont(expressionText, isRtl) else PatrickHandFamily,
-                    fontSize = if (state.calcExpression.isBlank()) 15.sp else 32.sp,
+                    fontSize = if (state.calcExpression.isBlank()) 15.sp else 28.sp,
+                    lineHeight = 29.sp,
                     fontWeight = if (state.calcExpression.isBlank()) FontWeight.Normal else FontWeight.Bold,
                     color = if (state.calcExpression.isBlank()) JournalMutedInk.copy(alpha = 0.45f) else JournalWritingInk,
-                    maxLines = 2,
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
-                    style = TextStyle(platformStyle = NoFontPadding)
+                    style = TextStyle(platformStyle = NoFontPadding),
+                    modifier = Modifier.journalMultilineOnRules(firstLineHeight = JournalRuleSpacing, totalLines = 3)
                 )
             }
 
-            // Rule 4: Evaluated Total & Secondary Currency (1 line = 29dp)
+            // Rule 5: Breathing gap rule separating operations from result as requested: "o resultat ba3edha hta hya chwya 3la l3amalyat"
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            // Rule 6: Evaluated Total & Secondary Currency (1 line = 29dp)
             val displayTotal = state.purchaseText.ifBlank { "0" }
             Row(
                 modifier = Modifier
@@ -488,29 +522,6 @@ private fun CashRegisterCalculatorContent(
                         modifier = Modifier.journalBaselineOnRule()
                     )
                 }
-            }
-
-            // Double notebook underline under total resting right on the rule
-            Canvas(
-                modifier = Modifier
-                    .width(140.dp)
-                    .height(6.dp)
-            ) {
-                val strokeW = 1.3.dp.toPx()
-                drawLine(
-                    color = HighlighterPink.copy(alpha = 0.85f),
-                    start = Offset(0f, 1.dp.toPx()),
-                    end = Offset(size.width, 1.dp.toPx()),
-                    strokeWidth = strokeW,
-                    cap = StrokeCap.Round
-                )
-                drawLine(
-                    color = HighlighterPink.copy(alpha = 0.85f),
-                    start = Offset(0f, 4.dp.toPx()),
-                    end = Offset(size.width, 4.dp.toPx()),
-                    strokeWidth = strokeW,
-                    cap = StrokeCap.Round
-                )
             }
 
             // -----------------------------------------------------------------

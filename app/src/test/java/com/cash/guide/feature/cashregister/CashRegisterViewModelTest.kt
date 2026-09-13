@@ -159,4 +159,55 @@ class CashRegisterViewModelTest {
         assertEquals("", clearedState.purchaseText)
         assertEquals("", clearedState.receivedText)
     }
+
+    @Test
+    fun equalsKey_preservesOperationOnTop_andCalculatesResult() {
+        // Type 25 + 13
+        viewModel.applyCalculatorKey("2")
+        viewModel.applyCalculatorKey("5")
+        viewModel.applyCalculatorKey("+")
+        viewModel.applyCalculatorKey("1")
+        viewModel.applyCalculatorKey("3")
+
+        // Press '='
+        viewModel.applyCalculatorKey("=")
+
+        val stateAfterEquals = viewModel.uiState.value
+        // Operation remains visible on top!
+        assertEquals("25+13", stateAfterEquals.calcExpression)
+        // Result in orange at bottom is 38
+        assertEquals("38", stateAfterEquals.purchaseText)
+        assertEquals(3800L, stateAfterEquals.purchaseCentimes)
+        assertTrue(stateAfterEquals.isEvaluated)
+
+        // Typing a new digit starts a new operation
+        viewModel.applyCalculatorKey("5")
+        val stateAfterNewDigit = viewModel.uiState.value
+        assertEquals("5", stateAfterNewDigit.calcExpression)
+        assertEquals("5", stateAfterNewDigit.purchaseText)
+        assertFalse(stateAfterNewDigit.isEvaluated)
+    }
+
+    @Test
+    fun equalsKey_thenOperator_continuesExpression() {
+        // Type 10 + 20
+        viewModel.applyCalculatorKey("1")
+        viewModel.applyCalculatorKey("0")
+        viewModel.applyCalculatorKey("+")
+        viewModel.applyCalculatorKey("2")
+        viewModel.applyCalculatorKey("0")
+        viewModel.applyCalculatorKey("=")
+
+        val state1 = viewModel.uiState.value
+        assertEquals("10+20", state1.calcExpression)
+        assertEquals("30", state1.purchaseText)
+
+        // Press '+' after '=' continues operation
+        viewModel.applyCalculatorKey("+")
+        viewModel.applyCalculatorKey("5")
+
+        val state2 = viewModel.uiState.value
+        assertEquals("10+20+5", state2.calcExpression)
+        assertEquals("35", state2.purchaseText)
+    }
 }
