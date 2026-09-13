@@ -999,20 +999,11 @@ private fun CashRegisterChangeReturnContent(
             }
         }
 
-        // Rule 2 (29dp): Purchase input row resting strictly on Rule 2
+        // Purchase input row (resting naturally on blue rule, NO harsh black underline)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(JournalRuleSpacing)
-                .drawBehind {
-                    // Crisp dividing line right on the blue rule (size.height)
-                    drawLine(
-                        color = JournalWritingInk.copy(alpha = 0.38f),
-                        start = Offset(14.dp.toPx(), size.height),
-                        end = Offset(size.width - 14.dp.toPx(), size.height),
-                        strokeWidth = 1.dp.toPx()
-                    )
-                }
                 .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -1059,8 +1050,28 @@ private fun CashRegisterChangeReturnContent(
             )
         }
 
-        // Rule spacing: 1 empty notebook line between Total des achats and Montant reçu
-        Spacer(modifier = Modifier.height(JournalRuleSpacing))
+        // Zone de séparation entre les deux blocs: saut de ligne + ligne de séparation pointillée
+        Spacer(modifier = Modifier.height(JournalRuleSpacing * 0.6f))
+
+        // Dividing line between the two sections (khatt fasel binatouma)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(JournalRuleSpacing * 0.8f),
+            contentAlignment = Alignment.Center
+        ) {
+            Canvas(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp).height(1.dp)) {
+                drawLine(
+                    color = JournalWritingInk.copy(alpha = 0.22f),
+                    start = Offset(0f, 0f),
+                    end = Offset(size.width, 0f),
+                    strokeWidth = 1.2.dp.toPx(),
+                    pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(JournalRuleSpacing * 0.6f))
 
         // Montant reçu du client (Header sitting on rule)
         val labelReceived = stringResource(R.string.cash_register_amount_received)
@@ -1109,20 +1120,11 @@ private fun CashRegisterChangeReturnContent(
             }
         }
 
-        // Received input row resting strictly on rule
+        // Received input row (resting naturally on blue rule, NO harsh black underline)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(JournalRuleSpacing)
-                .drawBehind {
-                    // Crisp dividing line right on the blue rule (size.height)
-                    drawLine(
-                        color = JournalWritingInk.copy(alpha = 0.25f),
-                        start = Offset(14.dp.toPx(), size.height),
-                        end = Offset(size.width - 14.dp.toPx(), size.height),
-                        strokeWidth = 0.8.dp.toPx()
-                    )
-                }
                 .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.SpaceBetween
