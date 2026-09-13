@@ -1118,10 +1118,7 @@ private fun CashRegisterChangeReturnContent(
                 }
         )
 
-        // Rule 5 (29dp): Empty skipped line
-        Spacer(modifier = Modifier.height(JournalRuleSpacing))
-
-        // Rule 6 (29dp): Montant reçu du client (Header sitting on Rule 6)
+        // Rule 5 (29dp): Montant reçu du client (Header sitting on Rule 5 directly after dashed divider)
         val labelReceived = stringResource(R.string.cash_register_amount_received)
         Row(
             modifier = Modifier
@@ -1168,10 +1165,10 @@ private fun CashRegisterChangeReturnContent(
             }
         }
 
-        // Rule 7 (29dp): Empty skipped line
+        // Rule 6 (29dp): Empty skipped line
         Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-        // Rule 8 (29dp): Received input row resting strictly on Rule 8
+        // Rule 7 (29dp): Received input row resting strictly on Rule 7
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1222,15 +1219,13 @@ private fun CashRegisterChangeReturnContent(
             )
         }
 
-        // Rule 9 (29dp): Empty skipped line between received amount and preset chips
-        Spacer(modifier = Modifier.height(JournalRuleSpacing))
-
-        // Rules 10-13 (116dp = exactly 4 notebook rules): 8 Preset Banknote Chips (4 over 4) with generous spacing
+        // Rules 8-10 (87dp = exactly 3 notebook rules): 8 Preset Banknote Chips (4 over 4)
+        // Top edge rests directly under the received amount rule (attached to the blue rule)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(JournalRuleSpacing * 4),
-            contentAlignment = Alignment.Center
+                .height(JournalRuleSpacing * 3),
+            contentAlignment = Alignment.TopCenter
         ) {
             val presetRow1 = listOf(20L, 50L, 100L, 200L)
             val presetRow2 = listOf(300L, 500L, 800L, 1000L)
@@ -1238,8 +1233,9 @@ private fun CashRegisterChangeReturnContent(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                    .padding(horizontal = 14.dp)
+                    .padding(top = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Row 1: 20, 50, 100, 200
                 Row(
@@ -1327,24 +1323,24 @@ private fun CashRegisterChangeReturnContent(
             }
         }
 
-        // Rule 10 (29dp): Empty skipped line
+        // Rule 11 (29dp): Empty skipped line
         Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-        // Rules 11-13: Change Due Result Band
+        // Rules 12-13: Change Due Result Band
         if (state.changeCentimes > 0L) {
             val changeDh = MoneyMath.fromCentimes(state.changeCentimes, MoneyUnit.DIRHAM)
             val changeRial = MoneyMath.fromCentimes(state.changeCentimes, MoneyUnit.RIAL)
             val changeFormatted = if (state.currencyUnit == MoneyUnit.DIRHAM) changeDh else changeRial
             val changeLabel = stringResource(R.string.cash_register_change_due)
 
-            // Rule 11 (29dp): Change Label
+            // Rule 12 (29dp): Change Label on the Left (Start aligned)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(JournalRuleSpacing)
                     .padding(horizontal = 14.dp),
                 verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.Center
+                horizontalArrangement = Arrangement.Start
             ) {
                 Text(
                     text = changeLabel,
@@ -1357,18 +1353,24 @@ private fun CashRegisterChangeReturnContent(
                 )
             }
 
-            // Rule 12 (29dp): Primary Change Amount
-            Row(
+            // Rule 13 (29dp): Total in Center, Rial equivalent on the Right on the SAME line
+            val secondaryText = if (state.currencyUnit == MoneyUnit.DIRHAM) {
+                "≈ $changeRial ${stringResource(R.string.currency_rial)}"
+            } else {
+                "≈ $changeDh ${stringResource(R.string.currency_dirham)}"
+            }
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(JournalRuleSpacing)
                     .padding(horizontal = 14.dp),
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.Center
+                contentAlignment = Alignment.BottomCenter
             ) {
+                // Center: = 30 DH
                 Row(
                     verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.align(Alignment.BottomCenter)
                 ) {
                     Text(
                         text = "= $changeFormatted",
@@ -1389,30 +1391,18 @@ private fun CashRegisterChangeReturnContent(
                         modifier = Modifier.journalBaselineOnRule()
                     )
                 }
-            }
 
-            // Rule 13 (29dp): Secondary Currency Representation
-            val secondaryText = if (state.currencyUnit == MoneyUnit.DIRHAM) {
-                "= $changeRial ${stringResource(R.string.currency_rial)}"
-            } else {
-                "= $changeDh ${stringResource(R.string.currency_dirham)}"
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(JournalRuleSpacing)
-                    .padding(horizontal = 14.dp),
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.Center
-            ) {
+                // Right: ≈ 600 rial
                 Text(
                     text = secondaryText,
                     fontFamily = resolveJournalFont(secondaryText, isRtl),
                     fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.SemiBold,
                     color = JournalMutedInk,
                     style = TextStyle(platformStyle = NoFontPadding),
-                    modifier = Modifier.journalBaselineOnRule()
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .journalBaselineOnRule()
                 )
             }
         } else if (state.isExactAmount) {
