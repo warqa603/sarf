@@ -408,43 +408,42 @@ fun JournalDenominationsBoard(
     val coins = remember(pieces) { pieces.filter { it.denomination.valueCentimes < 2_000L } }
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
+        modifier = modifier.fillMaxWidth()
     ) {
         // Section: Banknotes (L-Wra9)
         if (banknotes.isNotEmpty()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(JournalRuleSpacing),
+                    .height(JournalRuleSpacing)
+                    .padding(horizontal = 14.dp),
                 verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 HisabiSketchIcon(
                     symbol = HisabiSymbol.Banknote,
                     contentDescription = null,
                     tint = JournalWritingInk,
-                    size = 21.dp,
-                    modifier = Modifier.journalVisualOnRule(lineHeight = JournalRuleSpacing, gapAboveRule = 4.dp)
+                    size = 20.dp,
+                    modifier = Modifier.journalVisualOnRule(lineHeight = JournalRuleSpacing)
                 )
                 Text(
                     text = headingBanknotes,
                     fontFamily = resolveJournalFont(headingBanknotes, isRtl),
                     color = JournalWritingInk,
-                    fontSize = if (isRtl) 14.sp else 14.5.sp,
+                    fontSize = if (isRtl) 14.5.sp else 15.sp,
                     fontWeight = FontWeight.Bold,
                     style = TextStyle(platformStyle = NoFontPadding),
                     modifier = Modifier.journalBaselineOnRule()
                 )
             }
 
-            Spacer(Modifier.height(4.dp))
-
             FlowRow(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
                 banknotes.forEach { piece ->
                     BanknoteDisplayItem(piece = piece)
@@ -453,7 +452,7 @@ fun JournalDenominationsBoard(
         }
 
         if (banknotes.isNotEmpty() && coins.isNotEmpty()) {
-            Spacer(Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
         }
 
         // Section: Coins (L-Coins / D-Drahem)
@@ -461,34 +460,35 @@ fun JournalDenominationsBoard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(JournalRuleSpacing),
+                    .height(JournalRuleSpacing)
+                    .padding(horizontal = 14.dp),
                 verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 HisabiSketchIcon(
                     symbol = HisabiSymbol.Coin,
                     contentDescription = null,
                     tint = JournalWritingInk,
-                    size = 20.dp,
-                    modifier = Modifier.journalVisualOnRule(lineHeight = JournalRuleSpacing, gapAboveRule = 4.dp)
+                    size = 19.dp,
+                    modifier = Modifier.journalVisualOnRule(lineHeight = JournalRuleSpacing)
                 )
                 Text(
                     text = headingCoins,
                     fontFamily = resolveJournalFont(headingCoins, isRtl),
                     color = JournalWritingInk,
-                    fontSize = if (isRtl) 13.5.sp else 14.sp,
+                    fontSize = if (isRtl) 14.sp else 14.5.sp,
                     fontWeight = FontWeight.Bold,
                     style = TextStyle(platformStyle = NoFontPadding),
                     modifier = Modifier.journalBaselineOnRule()
                 )
             }
 
-            Spacer(Modifier.height(4.dp))
-
             FlowRow(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
                 coins.forEach { piece ->
                     CoinDisplayItem(piece = piece)

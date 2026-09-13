@@ -612,8 +612,8 @@ fun HisabiSketchIcon(
                 // Outer note rectangle
                 drawRoundRect(
                     color = tint,
-                    topLeft = point(2.5f, 6.5f),
-                    size = Size(u(19f), u(11f)),
+                    topLeft = point(2.5f, 6f),
+                    size = Size(u(19f), u(14.8f)),
                     cornerRadius = CornerRadius(u(2f), u(2f)),
                     style = pen
                 )
@@ -624,12 +624,12 @@ fun HisabiSketchIcon(
                     sweepAngle = 360f,
                     useCenter = false,
                     topLeft = point(9f, 8.5f),
-                    size = Size(u(6f), u(7f)),
+                    size = Size(u(6f), u(9.8f)),
                     style = fine
                 )
                 // Side decorative hash strokes
-                drawLine(tint, point(5f, 9.5f), point(5f, 14.5f), u(1.1f), StrokeCap.Round)
-                drawLine(tint, point(19f, 9.5f), point(19f, 14.5f), u(1.1f), StrokeCap.Round)
+                drawLine(tint, point(5f, 9.5f), point(5f, 17f), u(1.1f), StrokeCap.Round)
+                drawLine(tint, point(19f, 9.5f), point(19f, 17f), u(1.1f), StrokeCap.Round)
             }
         }
     }

@@ -100,18 +100,20 @@ fun Modifier.editableTextOnPaperRules(): Modifier = journalBaselineOnRule()
  */
 fun Modifier.journalVisualOnRule(
     lineHeight: Dp = JournalRuleSpacing,
-    gapAboveRule: Dp = 2.dp
+    gapAboveRule: Dp = 0.dp,
+    opticalBottomShift: Dp = 2.dp
 ): Modifier = this.layout { measurable, constraints ->
     val placeable = measurable.measure(
         constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity)
     )
     val rowHeight = lineHeight.roundToPx()
-    val yOffset = (rowHeight - gapAboveRule.roundToPx() - placeable.height)
+    val yOffset = (rowHeight - gapAboveRule.roundToPx() - placeable.height + opticalBottomShift.roundToPx())
         .coerceAtLeast(0)
     layout(placeable.width, rowHeight) {
         placeable.placeRelative(0, yOffset)
     }
 }
+
 
 /**
  * Aligns single-line or multi-line text (up to 2 lines) directly onto the 29dp notebook rules.
