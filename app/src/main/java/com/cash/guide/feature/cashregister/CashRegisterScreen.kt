@@ -1055,17 +1055,6 @@ private fun CashRegisterChangeReturnContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(JournalRuleSpacing)
-                .drawBehind {
-                    // Dashed divider line directly ON the blue rule under purchase total
-                    val y = size.height
-                    drawLine(
-                        color = JournalWritingInk.copy(alpha = 0.35f),
-                        start = Offset(14.dp.toPx(), y),
-                        end = Offset(size.width - 14.dp.toPx(), y),
-                        strokeWidth = 1.2.dp.toPx(),
-                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f)
-                    )
-                }
                 .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -1112,7 +1101,27 @@ private fun CashRegisterChangeReturnContent(
             )
         }
 
-        // Rule 4 (29dp): Montant reçu du client (Header sitting on rule directly after divider)
+        // Rule 4 (29dp): Dashed divider line resting strictly on the blue rule under purchase row
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(JournalRuleSpacing)
+                .drawBehind {
+                    val y = size.height
+                    drawLine(
+                        color = JournalWritingInk.copy(alpha = 0.35f),
+                        start = Offset(14.dp.toPx(), y),
+                        end = Offset(size.width - 14.dp.toPx(), y),
+                        strokeWidth = 1.2.dp.toPx(),
+                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(10f, 8f), 0f)
+                    )
+                }
+        )
+
+        // Rule 5 (29dp): Empty skipped line
+        Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+        // Rule 6 (29dp): Montant reçu du client (Header sitting on Rule 6)
         val labelReceived = stringResource(R.string.cash_register_amount_received)
         Row(
             modifier = Modifier
@@ -1159,10 +1168,10 @@ private fun CashRegisterChangeReturnContent(
             }
         }
 
-        // Rule 5 (29dp): Empty skipped line
+        // Rule 7 (29dp): Empty skipped line
         Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-        // Rule 6 (29dp): Received input row resting strictly on Rule 6
+        // Rule 8 (29dp): Received input row resting strictly on Rule 8
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1213,11 +1222,14 @@ private fun CashRegisterChangeReturnContent(
             )
         }
 
-        // Rules 7-9 (87dp = exactly 3 notebook rules): 8 Preset Banknote Chips (4 over 4)
+        // Rule 9 (29dp): Empty skipped line between received amount and preset chips
+        Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+        // Rules 10-13 (116dp = exactly 4 notebook rules): 8 Preset Banknote Chips (4 over 4) with generous spacing
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(JournalRuleSpacing * 3),
+                .height(JournalRuleSpacing * 4),
             contentAlignment = Alignment.Center
         ) {
             val presetRow1 = listOf(20L, 50L, 100L, 200L)
@@ -1227,7 +1239,7 @@ private fun CashRegisterChangeReturnContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 14.dp),
-                verticalArrangement = Arrangement.spacedBy(7.dp)
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // Row 1: 20, 50, 100, 200
                 Row(
