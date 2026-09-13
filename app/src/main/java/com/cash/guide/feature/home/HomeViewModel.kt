@@ -547,6 +547,20 @@ class HomeViewModel(
             }
         }
     }
+
+    fun assignNoteToGroup(noteId: String, groupId: String?, context: Context) {
+        viewModelScope.launch {
+            noteRepository?.assignNoteToGroup(noteId, groupId)
+            loadRecent(context)
+        }
+    }
+
+    fun assignChecklistToGroup(checklistId: String, groupId: String?, context: Context) {
+        viewModelScope.launch {
+            checklistRepository?.assignChecklistToGroup(checklistId, groupId)
+            loadRecent(context)
+        }
+    }
 }
 
 private data class HomeSourceData(

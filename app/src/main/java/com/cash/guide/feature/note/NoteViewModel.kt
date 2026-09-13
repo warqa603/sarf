@@ -40,6 +40,7 @@ data class NoteEditorUiState(
     val isSaved: Boolean = false,
     val isLoading: Boolean = true,
     val activeInputTarget: NoteInputTarget = NoteInputTarget.NONE,
+    val groupId: String? = null,
     val keyboardLanguage: JournalKeyboardLanguage = JournalKeyboardLanguage.FRENCH,
     val keyboardExpanded: Boolean = true,
     val shiftMode: JournalShiftMode = JournalShiftMode.OFF,
@@ -96,6 +97,7 @@ class NoteViewModel(
                             content = TextFieldValue(existing.content, TextRange(existing.content.length)),
                             colorTag = existing.colorTag,
                             isPinned = existing.isPinned,
+                            groupId = existing.groupId,
                             createdAtEpochMs = existing.createdAtEpochMs,
                             keyboardLanguage = initialLang,
                             isLoading = false
@@ -341,12 +343,35 @@ class NoteViewModel(
                     colorTag = current.colorTag,
                     isPinned = current.isPinned
                 )
+                noteRepository.assignNoteToGroup(current.id, current.groupId)
             } else {
-                noteRepository.createNote(
-                    title = current.title.text,
-                    content = current.content.text,
-                    colorTag = current.colorTag
+                noteRepository.insertNote(
+                    NoteEntity(
+                        id = current.id,
+                        title = current.title.text.trim(),
+                        content = current.content.text.trim(),
+                        colorTag = current.colorTag,
+                        isPinned = current.isPinned,
+                        groupId = current.groupId,
+                        createdAtEpochMs = current.createdAtEpochMs,
+                        updatedAtEpochMs = System.currentTimeMillis()
+                    )
                 )
+            }
+        }
+    }
+
+    fun assignToGroup(groupId: String?) {
+        _uiState.update { it.copy(groupId = groupId) }
+        val id = _uiState.value.id
+        if (id.isNotBlank()) {
+            viewModelScope.launch {
+                val existing = noteRepository.getNote(id)
+                if (existing != null) {
+                    noteRepository.assignNoteToGroup(id, groupId)
+                } else {
+                    saveChanges()
+                }
             }
         }
     }
@@ -371,6 +396,7 @@ class NoteViewModel(
             content = s.content.text,
             colorTag = s.colorTag,
             isPinned = s.isPinned,
+            groupId = s.groupId,
             createdAtEpochMs = s.createdAtEpochMs,
             updatedAtEpochMs = System.currentTimeMillis()
         )

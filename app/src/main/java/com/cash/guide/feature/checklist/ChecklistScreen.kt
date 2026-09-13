@@ -79,7 +79,10 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cash.guide.R
+import com.cash.guide.data.CalculationRepository
 import com.cash.guide.domain.ChecklistShareHelper
+import com.cash.guide.domain.GroupCategory
+import com.cash.guide.feature.groups.AssignToGroupDialog
 import com.cash.guide.ui.notebook.HisabiSketchIcon
 import com.cash.guide.ui.notebook.HisabiSymbol
 import com.cash.guide.ui.notebook.HighlighterPink
@@ -105,6 +108,7 @@ private val ColorCoral = Color(0xFFD9534F)
 @Composable
 fun ChecklistScreen(
     viewModel: ChecklistViewModel,
+    calculationRepository: CalculationRepository,
     onNavigateBack: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -112,6 +116,8 @@ fun ChecklistScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+
+    var showAssignGroupDialog by remember { mutableStateOf(false) }
 
     val layoutDirection = LocalLayoutDirection.current
     val isRtl = layoutDirection == LayoutDirection.Rtl
@@ -260,8 +266,26 @@ fun ChecklistScreen(
                             }
                         }
 
-                        // Balancing Spacer so Title is centered
-                        Spacer(modifier = Modifier.size(42.dp))
+                        // Folder / Group button
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .clip(CircleShape)
+                                .clickable(role = Role.Button, onClick = {
+                                    if (state.activeInputTarget != ChecklistInputTarget.NONE) {
+                                        viewModel.hideKeyboard()
+                                    }
+                                    showAssignGroupDialog = true
+                                }),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            HisabiSketchIcon(
+                                symbol = HisabiSymbol.Folder,
+                                contentDescription = "Groupe",
+                                tint = if (current?.checklist?.groupId != null) JournalWritingInk else JournalMutedInk,
+                                size = 20.dp
+                            )
+                        }
                     }
 
                     // --- Row 2: Sub-toolbar (Left: Count & Status, Right: Partager ↗) ---
@@ -796,6 +820,19 @@ fun ChecklistScreen(
                         color = JournalMutedInk
                     )
                 }
+            }
+        )
+    }
+
+    if (showAssignGroupDialog && current != null) {
+        AssignToGroupDialog(
+            category = GroupCategory.CHECKLISTS,
+            currentGroupId = current.checklist.groupId,
+            calculationRepository = calculationRepository,
+            onDismiss = { showAssignGroupDialog = false },
+            onAssignGroup = { groupId ->
+                viewModel.assignToGroup(groupId)
+                showAssignGroupDialog = false
             }
         )
     }

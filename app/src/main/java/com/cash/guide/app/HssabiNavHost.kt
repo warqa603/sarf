@@ -228,6 +228,7 @@ fun HssabiNavHost(
             }
             ChecklistsOverviewScreen(
                 viewModel = overviewViewModel,
+                calculationRepository = calculationRepository,
                 onOpenChecklist = { checklistId ->
                     navController.navigate(AppDestination.ChecklistDetail.createRoute(checklistId))
                 },
@@ -252,6 +253,7 @@ fun HssabiNavHost(
             }
             ChecklistScreen(
                 viewModel = checklistViewModel,
+                calculationRepository = calculationRepository,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
@@ -264,6 +266,7 @@ fun HssabiNavHost(
             }
             NotesOverviewScreen(
                 viewModel = overviewViewModel,
+                calculationRepository = calculationRepository,
                 onOpenNote = { noteId ->
                     navController.navigate(AppDestination.NoteDetail.createRoute(noteId))
                 },
@@ -311,6 +314,7 @@ fun HssabiNavHost(
             }
             NoteEditorScreen(
                 viewModel = noteViewModel,
+                calculationRepository = calculationRepository,
                 onNavigateBack = { navController.popBackStack() }
             )
         }

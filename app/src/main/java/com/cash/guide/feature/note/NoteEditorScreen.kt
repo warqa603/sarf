@@ -77,6 +77,9 @@ import com.cash.guide.ui.notebook.HisabiSymbol
 import com.cash.guide.ui.notebook.JournalActionDelete
 import com.cash.guide.ui.notebook.JournalInk
 import com.cash.guide.ui.notebook.JournalMutedInk
+import com.cash.guide.data.CalculationRepository
+import com.cash.guide.domain.GroupCategory
+import com.cash.guide.feature.groups.AssignToGroupDialog
 import com.cash.guide.ui.notebook.JournalPaper
 import com.cash.guide.ui.notebook.JournalRule
 import com.cash.guide.ui.notebook.JournalRuleSpacing
@@ -97,6 +100,7 @@ import java.util.Locale
 @Composable
 fun NoteEditorScreen(
     viewModel: NoteViewModel,
+    calculationRepository: CalculationRepository,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -109,6 +113,7 @@ fun NoteEditorScreen(
     val focusManager = LocalFocusManager.current
 
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showAssignGroupDialog by remember { mutableStateOf(false) }
     val titleScrollState = rememberScrollState()
 
     LaunchedEffect(titleScrollState.maxValue, uiState.title.text, uiState.activeInputTarget) {
@@ -425,6 +430,27 @@ fun NoteEditorScreen(
                                         }
                                     }
 
+                                    // Group / Folder Button
+                                    Box(
+                                        modifier = Modifier
+                                            .height(JournalRuleSpacing)
+                                            .width(32.dp)
+                                            .clip(CircleShape)
+                                            .clickable(role = Role.Button) {
+                                                viewModel.closeKeyboard()
+                                                showAssignGroupDialog = true
+                                            },
+                                        contentAlignment = Alignment.BottomCenter
+                                    ) {
+                                        HisabiSketchIcon(
+                                            symbol = HisabiSymbol.Folder,
+                                            contentDescription = "Groupe",
+                                            tint = if (uiState.groupId != null) JournalInk else JournalMutedInk.copy(alpha = 0.65f),
+                                            size = 18.dp,
+                                            modifier = Modifier.offset(y = 2.8.dp)
+                                        )
+                                    }
+
                                     // Share Button
                                     Box(
                                         modifier = Modifier
@@ -724,6 +750,19 @@ fun NoteEditorScreen(
                             }
                         },
                         containerColor = JournalPaper
+                    )
+                }
+
+                if (showAssignGroupDialog) {
+                    AssignToGroupDialog(
+                        category = GroupCategory.NOTES,
+                        currentGroupId = uiState.groupId,
+                        calculationRepository = calculationRepository,
+                        onDismiss = { showAssignGroupDialog = false },
+                        onAssignGroup = { groupId ->
+                            viewModel.assignToGroup(groupId)
+                            showAssignGroupDialog = false
+                        }
                     )
                 }
             }

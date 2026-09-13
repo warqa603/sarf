@@ -349,4 +349,11 @@ class ChecklistViewModel(
             activeId = newId
         }
     }
+
+    fun assignToGroup(groupId: String?) {
+        val currentId = activeId ?: return
+        viewModelScope.launch {
+            checklistRepository.assignChecklistToGroup(currentId, groupId)
+        }
+    }
 }

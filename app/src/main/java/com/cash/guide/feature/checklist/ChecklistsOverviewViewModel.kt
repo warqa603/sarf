@@ -156,4 +156,10 @@ class ChecklistsOverviewViewModel(
             _dialogState.update { it.copy(checklistToDelete = null) }
         }
     }
+
+    fun assignChecklistToGroup(checklistId: String, groupId: String?) {
+        viewModelScope.launch {
+            checklistRepository.assignChecklistToGroup(checklistId, groupId)
+        }
+    }
 }

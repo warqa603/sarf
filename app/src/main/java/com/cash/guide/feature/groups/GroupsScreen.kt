@@ -62,6 +62,8 @@ import com.cash.guide.domain.MoneyUnit
 import com.cash.guide.domain.UnifiedGroupItem
 import com.cash.guide.ui.notebook.HisabiSketchIcon
 import com.cash.guide.ui.notebook.HisabiSymbol
+import com.cash.guide.ui.notebook.HighlighterGreen
+import com.cash.guide.ui.notebook.HighlighterPink
 import com.cash.guide.ui.notebook.HighlighterYellow
 import com.cash.guide.ui.notebook.JournalActionDelete
 import com.cash.guide.ui.notebook.JournalInk
@@ -175,6 +177,7 @@ fun GroupsScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .height(JournalRuleSpacing)
                 .padding(horizontal = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -197,7 +200,7 @@ fun GroupsScreen(
                 val symbol = when (cat) {
                     null -> HisabiSymbol.Folder
                     GroupCategory.CALCULATIONS -> HisabiSymbol.Calculator
-                    GroupCategory.NOTES -> HisabiSymbol.Pencil
+                    GroupCategory.NOTES -> HisabiSymbol.Page
                     GroupCategory.CHECKLISTS -> HisabiSymbol.Check
                 }
 
@@ -255,7 +258,7 @@ fun GroupsScreen(
                 HisabiSketchIcon(
                     symbol = when (state.filteredCategory) {
                         GroupCategory.CALCULATIONS -> HisabiSymbol.Calculator
-                        GroupCategory.NOTES -> HisabiSymbol.Pencil
+                        GroupCategory.NOTES -> HisabiSymbol.Page
                         GroupCategory.CHECKLISTS -> HisabiSymbol.Check
                         null -> HisabiSymbol.Folder
                     },
@@ -402,8 +405,14 @@ private fun NotebookGroupRow(
 
     val categorySymbol = when (groupItem.category) {
         GroupCategory.CALCULATIONS -> HisabiSymbol.Calculator
-        GroupCategory.NOTES -> HisabiSymbol.Pencil
+        GroupCategory.NOTES -> HisabiSymbol.Page
         GroupCategory.CHECKLISTS -> HisabiSymbol.Check
+    }
+
+    val categoryBadgeColor = when (groupItem.category) {
+        GroupCategory.CALCULATIONS -> HighlighterPink.copy(alpha = 0.50f)
+        GroupCategory.NOTES -> HighlighterYellow.copy(alpha = 0.55f)
+        GroupCategory.CHECKLISTS -> HighlighterGreen.copy(alpha = 0.50f)
     }
 
     var menuExpanded by remember { mutableStateOf(false) }
@@ -429,20 +438,20 @@ private fun NotebookGroupRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.weight(1f, fill = false)
             ) {
-                // Sketched folder badge with group highlight tint & category icon
+                // Sketched folder badge with category highlight tint & category icon (100% on the rule line)
                 Box(
                     modifier = Modifier
-                        .journalVisualOnRule(gapAboveRule = 2.dp)
+                        .journalVisualOnRule(gapAboveRule = 0.dp, opticalBottomShift = 0.dp)
                         .size(24.dp)
                         .clip(RoundedCornerShape(6.dp))
-                        .background(groupColor.copy(alpha = 0.45f)),
+                        .background(categoryBadgeColor),
                     contentAlignment = Alignment.Center
                 ) {
                     HisabiSketchIcon(
                         symbol = categorySymbol,
                         contentDescription = null,
                         tint = JournalInk,
-                        size = 14.dp
+                        size = 17.5.dp
                     )
                 }
 
@@ -454,7 +463,7 @@ private fun NotebookGroupRow(
                     color = JournalInk,
                     maxLines = 1,
                     style = TextStyle(platformStyle = NoFontPadding),
-                    modifier = Modifier.journalBaselineOnRule()
+                    modifier = Modifier.journalBaselineOnRule(opticalOffsetFromBottom = 0.dp)
                 )
             }
 
@@ -582,7 +591,7 @@ private fun NotebookGroupRow(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(start = 32.dp)
-                    .journalBaselineOnRule()
+                    .journalBaselineOnRule(opticalOffsetFromBottom = 0.dp)
             )
         }
     }
@@ -637,7 +646,7 @@ private fun CreateOrEditGroupDialog(
                     ) {
                         val categories = listOf(
                             Triple(GroupCategory.CALCULATIONS, stringResource(R.string.group_category_calculations), HisabiSymbol.Calculator),
-                            Triple(GroupCategory.NOTES, stringResource(R.string.group_category_notes), HisabiSymbol.Pencil),
+                            Triple(GroupCategory.NOTES, stringResource(R.string.group_category_notes), HisabiSymbol.Page),
                             Triple(GroupCategory.CHECKLISTS, stringResource(R.string.group_category_checklists), HisabiSymbol.Check)
                         )
                         categories.forEach { (cat, label, symbol) ->

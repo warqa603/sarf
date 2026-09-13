@@ -401,6 +401,7 @@ fun NotebookActivityActionsSheet(
     title: String,
     onOpen: () -> Unit,
     onShare: () -> Unit,
+    onAssignToGroup: (() -> Unit)? = null,
     onDelete: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -491,7 +492,20 @@ fun NotebookActivityActionsSheet(
                 }
             )
 
-            // Row 4: Action Supprimer (Destructive)
+            // Row 4: Action Ajouter à un groupe
+            if (onAssignToGroup != null) {
+                ActionSheetRuledItem(
+                    label = stringResource(R.string.action_add_to_group),
+                    symbol = HisabiSymbol.Folder,
+                    badgeColor = HighlighterBlue.copy(alpha = 0.55f),
+                    onClick = {
+                        onDismiss()
+                        onAssignToGroup()
+                    }
+                )
+            }
+
+            // Row 5: Action Supprimer (Destructive)
             ActionSheetRuledItem(
                 label = stringResource(R.string.action_delete),
                 symbol = HisabiSymbol.Trash,

@@ -59,7 +59,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cash.guide.data.CalculationRepository
 import com.cash.guide.data.db.ChecklistWithItems
+import com.cash.guide.domain.GroupCategory
+import com.cash.guide.feature.groups.AssignToGroupDialog
 import com.cash.guide.ui.notebook.HisabiSketchIcon
 import com.cash.guide.ui.notebook.HisabiSymbol
 import com.cash.guide.ui.notebook.HighlighterGreen
@@ -93,6 +96,7 @@ private val ColorOrange = Color(0xFFEA580C)
 @Composable
 fun ChecklistsOverviewScreen(
     viewModel: ChecklistsOverviewViewModel,
+    calculationRepository: CalculationRepository,
     onOpenChecklist: (String) -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
@@ -106,6 +110,7 @@ fun ChecklistsOverviewScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     var showMonthPicker by remember { mutableStateOf(false) }
+    var checklistToAssignToGroup by remember { mutableStateOf<ChecklistWithItems?>(null) }
 
     val currentMonthHeaderFormatter = remember {
         SimpleDateFormat("MMMM yyyy", Locale.getDefault())
@@ -395,6 +400,7 @@ fun ChecklistsOverviewScreen(
                             isDone = isDone,
                             isRtl = isRtl,
                             onOpenChecklist = { onOpenChecklist(item.checklist.id) },
+                            onAssignToGroup = { checklistToAssignToGroup = item },
                             onDelete = { viewModel.promptDeleteChecklist(item) }
                         )
                     }
@@ -575,6 +581,20 @@ fun ChecklistsOverviewScreen(
             }
         )
     }
+
+    // Assign to Group Dialog
+    checklistToAssignToGroup?.let { checklistItem ->
+        AssignToGroupDialog(
+            category = GroupCategory.CHECKLISTS,
+            currentGroupId = checklistItem.checklist.groupId,
+            calculationRepository = calculationRepository,
+            onDismiss = { checklistToAssignToGroup = null },
+            onAssignGroup = { groupId ->
+                viewModel.assignChecklistToGroup(checklistItem.checklist.id, groupId)
+                checklistToAssignToGroup = null
+            }
+        )
+    }
 }
 
 /**
@@ -591,6 +611,7 @@ private fun ChecklistRowItem(
     isDone: Boolean,
     isRtl: Boolean,
     onOpenChecklist: () -> Unit,
+    onAssignToGroup: () -> Unit,
     onDelete: () -> Unit
 ) {
     val displayTitle = item.checklist.title.ifBlank { if (isRtl) "قائمة بدون عنوان" else "Checklist sans titre" }
@@ -685,6 +706,26 @@ private fun ChecklistRowItem(
                     style = TextStyle(platformStyle = NoFontPadding),
                     modifier = Modifier.journalBaselineOnRule(opticalOffsetFromBottom = (-0.5).dp)
                 )
+
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clickable(
+                            role = Role.Button,
+                            onClickLabel = "Ajouter à un groupe",
+                            onClick = onAssignToGroup
+                        )
+                        .journalBaselineOnRule(opticalOffsetFromBottom = 0.dp),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    HisabiSketchIcon(
+                        symbol = HisabiSymbol.Folder,
+                        contentDescription = "Groupe",
+                        tint = if (item.checklist.groupId != null) JournalInk else JournalMutedInk.copy(alpha = 0.65f),
+                        size = 14.5.dp,
+                        modifier = Modifier.offset(y = 0.5.dp)
+                    )
+                }
 
                 Box(
                     modifier = Modifier

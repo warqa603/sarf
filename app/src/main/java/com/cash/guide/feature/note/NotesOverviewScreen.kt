@@ -65,7 +65,10 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cash.guide.R
+import com.cash.guide.data.CalculationRepository
 import com.cash.guide.data.db.NoteEntity
+import com.cash.guide.domain.GroupCategory
+import com.cash.guide.feature.groups.AssignToGroupDialog
 import androidx.compose.ui.graphics.PathEffect
 import com.cash.guide.ui.notebook.HighlighterBlue
 import com.cash.guide.ui.notebook.HighlighterPink
@@ -140,6 +143,7 @@ fun getNoteHighlightPillColor(colorTag: String, fallbackIndex: Int = 0): Color {
 @Composable
 fun NotesOverviewScreen(
     viewModel: NotesOverviewViewModel,
+    calculationRepository: CalculationRepository,
     onNavigateBack: () -> Unit,
     onOpenNote: (String) -> Unit,
     modifier: Modifier = Modifier
@@ -152,6 +156,7 @@ fun NotesOverviewScreen(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     var showMonthPicker by remember { mutableStateOf(false) }
+    var noteToAssignToGroup by remember { mutableStateOf<NoteEntity?>(null) }
 
     val shortDateFormatter = remember {
         SimpleDateFormat("d MMM", Locale.getDefault())
@@ -395,7 +400,7 @@ fun NotesOverviewScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         HisabiSketchIcon(
-                            symbol = HisabiSymbol.Pencil,
+                            symbol = HisabiSymbol.Page,
                             contentDescription = null,
                             tint = JournalMutedInk.copy(alpha = 0.40f),
                             size = 38.dp
@@ -435,6 +440,7 @@ fun NotesOverviewScreen(
                             isRtl = isRtl,
                             onOpenNote = { onOpenNote(note.id) },
                             onTogglePin = { viewModel.togglePin(note.id, !note.isPinned) },
+                            onAssignToGroup = { noteToAssignToGroup = note },
                             onSetColor = { colorTag -> viewModel.setColorTag(note.id, colorTag) },
                             onDelete = { viewModel.deleteNote(note.id) }
                         )
@@ -466,6 +472,20 @@ fun NotesOverviewScreen(
                 }
             )
         }
+
+        // Assign to Group Dialog
+        noteToAssignToGroup?.let { note ->
+            AssignToGroupDialog(
+                category = GroupCategory.NOTES,
+                currentGroupId = note.groupId,
+                calculationRepository = calculationRepository,
+                onDismiss = { noteToAssignToGroup = null },
+                onAssignGroup = { groupId ->
+                    viewModel.assignNoteToGroup(note.id, groupId)
+                    noteToAssignToGroup = null
+                }
+            )
+        }
     }
 }
 
@@ -484,6 +504,7 @@ private fun NoteRowItem(
     isRtl: Boolean,
     onOpenNote: () -> Unit,
     onTogglePin: () -> Unit,
+    onAssignToGroup: () -> Unit,
     onSetColor: (String) -> Unit,
     onDelete: () -> Unit
 ) {
@@ -620,6 +641,20 @@ private fun NoteRowItem(
                         onClick = {
                             menuExpanded = false
                             onTogglePin()
+                        }
+                    )
+
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                text = if (isRtl) "إضافة إلى مجموعة" else stringResource(R.string.action_add_to_group),
+                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                color = JournalWritingInk
+                            )
+                        },
+                        onClick = {
+                            menuExpanded = false
+                            onAssignToGroup()
                         }
                     )
 

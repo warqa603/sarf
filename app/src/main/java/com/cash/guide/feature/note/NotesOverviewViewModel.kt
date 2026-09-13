@@ -160,6 +160,12 @@ class NotesOverviewViewModel(
         }
     }
 
+    fun assignNoteToGroup(id: String, groupId: String?) {
+        viewModelScope.launch {
+            noteRepository.assignNoteToGroup(id, groupId)
+        }
+    }
+
     suspend fun createNewNote(): String {
         return noteRepository.createNote()
     }

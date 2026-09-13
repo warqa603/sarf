@@ -36,6 +36,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cash.guide.R
 import com.cash.guide.data.CalculationRepository
+import com.cash.guide.domain.GroupCategory
+import com.cash.guide.ui.notebook.HighlighterGreen
+import com.cash.guide.ui.notebook.HighlighterPink
+import com.cash.guide.ui.notebook.HighlighterYellow
 import com.cash.guide.ui.notebook.HisabiSketchIcon
 import com.cash.guide.ui.notebook.HisabiSymbol
 import com.cash.guide.ui.notebook.JournalInk
@@ -50,17 +54,31 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun AssignToGroupDialog(
-    calculationId: String,
+    category: GroupCategory,
     currentGroupId: String?,
     calculationRepository: CalculationRepository,
     onDismiss: () -> Unit,
-    onAssigned: () -> Unit
+    onAssignGroup: (String?) -> Unit
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val isRtl = layoutDirection == LayoutDirection.Rtl
-    val coroutineScope = rememberCoroutineScope()
 
-    val groups by calculationRepository.observeAllGroups().collectAsState(initial = emptyList())
+    val allGroups by calculationRepository.observeAllGroups().collectAsState(initial = emptyList())
+    val groups = remember(allGroups, category) {
+        allGroups.filter { it.category == category.name }
+    }
+
+    val categoryBadgeColor = when (category) {
+        GroupCategory.CALCULATIONS -> HighlighterPink.copy(alpha = 0.50f)
+        GroupCategory.NOTES -> HighlighterYellow.copy(alpha = 0.55f)
+        GroupCategory.CHECKLISTS -> HighlighterGreen.copy(alpha = 0.50f)
+    }
+
+    val categorySymbol = when (category) {
+        GroupCategory.CALCULATIONS -> HisabiSymbol.Calculator
+        GroupCategory.NOTES -> HisabiSymbol.Page
+        GroupCategory.CHECKLISTS -> HisabiSymbol.Check
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -82,9 +100,9 @@ fun AssignToGroupDialog(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 260.dp)
+                        .heightIn(max = 280.dp)
                 ) {
-                    // Option 1: None (ungrouped)
+                    // Option 1: None (ungrouped / retirer du groupe)
                     item {
                         val noneText = stringResource(R.string.group_none)
                         Row(
@@ -92,10 +110,7 @@ fun AssignToGroupDialog(
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable(role = Role.Button) {
-                                    coroutineScope.launch {
-                                        calculationRepository.assignCalculationToGroup(calculationId, null)
-                                        onAssigned()
-                                    }
+                                    onAssignGroup(null)
                                 }
                                 .padding(vertical = 10.dp, horizontal = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
@@ -125,54 +140,68 @@ fun AssignToGroupDialog(
                         }
                     }
 
-                    // Existing groups
-                    items(groups, key = { it.id }) { group ->
-                        val isCurrent = group.id == currentGroupId
-                        val color = remember(group.colorHex) { parseGroupColor(group.colorHex) }
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(8.dp))
-                                .clickable(role = Role.Button) {
-                                    coroutineScope.launch {
-                                        calculationRepository.assignCalculationToGroup(calculationId, group.id)
-                                        onAssigned()
-                                    }
-                                }
-                                .padding(vertical = 10.dp, horizontal = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
+                    // Existing groups for this category
+                    if (groups.isEmpty()) {
+                        item {
                             Box(
                                 modifier = Modifier
-                                    .size(26.dp)
-                                    .clip(RoundedCornerShape(6.dp))
-                                    .background(color.copy(alpha = 0.45f)),
+                                    .fillMaxWidth()
+                                    .padding(vertical = 16.dp, horizontal = 8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                HisabiSketchIcon(
-                                    symbol = HisabiSymbol.Folder,
-                                    contentDescription = null,
-                                    tint = JournalInk,
-                                    size = 15.dp
+                                Text(
+                                    text = stringResource(R.string.groups_empty_title),
+                                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                    fontSize = 14.sp,
+                                    color = JournalMutedInk
                                 )
                             }
-                            Text(
-                                text = group.name,
-                                fontFamily = resolveJournalFont(group.name, isRtl),
-                                fontSize = if (isArabicScript(group.name) || isRtl) 14.5.sp else 15.sp,
-                                color = JournalInk,
-                                fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                                modifier = Modifier.weight(1f)
-                            )
-                            if (isCurrent) {
-                                HisabiSketchIcon(
-                                    symbol = HisabiSymbol.Check,
-                                    contentDescription = null,
-                                    tint = JournalInk,
-                                    size = 14.dp
+                        }
+                    } else {
+                        items(groups, key = { it.id }) { group ->
+                            val isCurrent = group.id == currentGroupId
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable(role = Role.Button) {
+                                        onAssignGroup(group.id)
+                                    }
+                                    .padding(vertical = 10.dp, horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(26.dp)
+                                        .clip(RoundedCornerShape(6.dp))
+                                        .background(categoryBadgeColor),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    HisabiSketchIcon(
+                                        symbol = categorySymbol,
+                                        contentDescription = null,
+                                        tint = JournalInk,
+                                        size = 17.5.dp
+                                    )
+                                }
+                                Text(
+                                    text = group.name,
+                                    fontFamily = resolveJournalFont(group.name, isRtl),
+                                    fontSize = if (isArabicScript(group.name) || isRtl) 14.5.sp else 15.sp,
+                                    color = JournalInk,
+                                    fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                                    modifier = Modifier.weight(1f)
                                 )
+                                if (isCurrent) {
+                                    HisabiSketchIcon(
+                                        symbol = HisabiSymbol.Check,
+                                        contentDescription = null,
+                                        tint = JournalInk,
+                                        size = 14.dp
+                                    )
+                                }
                             }
                         }
                     }
@@ -189,6 +218,32 @@ fun AssignToGroupDialog(
                     fontSize = if (isRtl) 13.5.sp else 14.sp,
                     color = JournalMutedInk
                 )
+            }
+        }
+    )
+}
+
+/**
+ * Backward compatibility overload specifically for Calculations.
+ */
+@Composable
+fun AssignToGroupDialog(
+    calculationId: String,
+    currentGroupId: String?,
+    calculationRepository: CalculationRepository,
+    onDismiss: () -> Unit,
+    onAssigned: () -> Unit
+) {
+    val coroutineScope = rememberCoroutineScope()
+    AssignToGroupDialog(
+        category = GroupCategory.CALCULATIONS,
+        currentGroupId = currentGroupId,
+        calculationRepository = calculationRepository,
+        onDismiss = onDismiss,
+        onAssignGroup = { groupId ->
+            coroutineScope.launch {
+                calculationRepository.assignCalculationToGroup(calculationId, groupId)
+                onAssigned()
             }
         }
     )

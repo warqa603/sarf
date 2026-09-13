@@ -170,6 +170,8 @@ fun HomeScreen(
     var showRemindersSheet by remember { mutableStateOf(false) }
     var showNewCalcSetupSheet by remember { mutableStateOf(false) }
     var calcToAssignToGroup by remember { mutableStateOf<com.cash.guide.data.db.CalculationWithItems?>(null) }
+    var noteToAssignToGroup by remember { mutableStateOf<com.cash.guide.data.db.NoteEntity?>(null) }
+    var checklistToAssignToGroup by remember { mutableStateOf<com.cash.guide.data.db.ChecklistWithItems?>(null) }
     var creditDueDateCalc by remember { mutableStateOf<com.cash.guide.data.db.CalculationWithItems?>(null) }
     val currentMonthYear = remember(context) {
         val locale = context.resources.configuration.locales[0]
@@ -675,6 +677,18 @@ fun HomeScreen(
                     }
                     viewModel.selectActivityForAction(null)
                 },
+                onAssignToGroup = {
+                    when (selectedAct) {
+                        is RecentActivityItem.NoteActivity -> {
+                            noteToAssignToGroup = selectedAct.note
+                        }
+                        is RecentActivityItem.ChecklistActivity -> {
+                            checklistToAssignToGroup = selectedAct.checklistWithItems
+                        }
+                        else -> Unit
+                    }
+                    viewModel.selectActivityForAction(null)
+                },
                 onDelete = {
                     viewModel.promptDeleteActivity(selectedAct)
                 },
@@ -684,7 +698,7 @@ fun HomeScreen(
             )
         }
 
-        // Assign to Group Dialog
+        // Assign to Group Dialog (Calculations)
         calcToAssignToGroup?.let { calc ->
             AssignToGroupDialog(
                 calculationId = calc.calculation.id,
@@ -694,6 +708,34 @@ fun HomeScreen(
                 onAssigned = {
                     calcToAssignToGroup = null
                     viewModel.loadRecent(context)
+                }
+            )
+        }
+
+        // Assign to Group Dialog (Notes)
+        noteToAssignToGroup?.let { note ->
+            AssignToGroupDialog(
+                category = com.cash.guide.domain.GroupCategory.NOTES,
+                currentGroupId = note.groupId,
+                calculationRepository = viewModel.repository,
+                onDismiss = { noteToAssignToGroup = null },
+                onAssignGroup = { groupId ->
+                    viewModel.assignNoteToGroup(note.id, groupId, context)
+                    noteToAssignToGroup = null
+                }
+            )
+        }
+
+        // Assign to Group Dialog (Checklists)
+        checklistToAssignToGroup?.let { checklistItem ->
+            AssignToGroupDialog(
+                category = com.cash.guide.domain.GroupCategory.CHECKLISTS,
+                currentGroupId = checklistItem.checklist.groupId,
+                calculationRepository = viewModel.repository,
+                onDismiss = { checklistToAssignToGroup = null },
+                onAssignGroup = { groupId ->
+                    viewModel.assignChecklistToGroup(checklistItem.checklist.id, groupId, context)
+                    checklistToAssignToGroup = null
                 }
             )
         }
