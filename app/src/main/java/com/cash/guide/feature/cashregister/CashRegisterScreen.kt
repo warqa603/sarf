@@ -1219,8 +1219,10 @@ private fun CashRegisterChangeReturnContent(
             )
         }
 
-        // Rules 8-10 (87dp = exactly 3 notebook rules): 8 Preset Banknote Chips (4 over 4)
-        // Top edge rests directly under the received amount rule (attached to the blue rule)
+        // Rule 8 (29dp): Empty skipped line between received amount and preset chips (moves chips down to the line below)
+        Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+        // Rules 9-11 (87dp = exactly 3 notebook rules): 8 Preset Banknote Chips (4 over 4)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
