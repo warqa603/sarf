@@ -563,19 +563,20 @@ fun CoinDisplayItem(
     val bitmap = rememberBanknoteImage(piece.denomination.assetPath)
     val count = piece.count
     val sizeDp = when (piece.denomination.valueCentimes) {
-        1_000L -> 52.dp // 10 DH (bimetallic, large)
-        500L -> 48.dp   // 5 DH (bimetallic)
-        200L -> 45.dp   // 2 DH
-        100L -> 42.dp   // 1 DH
-        50L -> 38.dp    // 50c
-        20L -> 35.dp    // 20c
-        10L -> 32.dp    // 10c
-        else -> 38.dp
+        1_000L -> 76.dp // 10 DH (bimetallic, large)
+        500L -> 71.dp   // 5 DH (bimetallic)
+        200L -> 67.dp   // 2 DH
+        100L -> 63.dp   // 1 DH
+        50L -> 58.dp    // 50c
+        20L -> 55.dp    // 20c
+        10L -> 52.dp    // 10c
+        else -> 60.dp
     }
+    val containerHeight = 87.dp // exactly 3 ruled lines (29dp * 3)
 
     Box(
         modifier = modifier
-            .size(width = sizeDp + 10.dp, height = 58.dp),
+            .size(width = sizeDp + 12.dp, height = containerHeight),
         contentAlignment = Alignment.BottomCenter
     ) {
         if (bitmap != null) {
@@ -594,16 +595,16 @@ fun CoinDisplayItem(
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .offset(x = 5.dp, y = (58.dp - sizeDp - 4.dp))
+                    .offset(x = 6.dp, y = (containerHeight - sizeDp - 6.dp))
                     .clip(RoundedCornerShape(8.dp))
                     .background(HighlighterYellow)
                     .border(BorderStroke(1.dp, JournalPaper), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 6.dp, vertical = 1.dp)
+                    .padding(horizontal = 7.dp, vertical = 1.5.dp)
             ) {
                 Text(
                     text = "${count}×",
                     fontFamily = PatrickHandFamily,
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = JournalWritingInk,
                     style = TextStyle(platformStyle = NoFontPadding)
