@@ -49,7 +49,11 @@ enum class HisabiSymbol {
     Table,
     Lock,
     Fingerprint,
-    Bell
+    Bell,
+    VolumeHigh,
+    VolumeMute,
+    Coin,
+    Banknote
 }
 
 @Composable
@@ -544,6 +548,88 @@ fun HisabiSketchIcon(
                     size = Size(u(3.6f), u(3.2f)),
                     style = pen
                 )
+            }
+            HisabiSymbol.VolumeHigh -> {
+                // Speaker body (box + flared cone)
+                val speaker = Path().apply {
+                    moveTo(u(3.5f), u(9f))
+                    lineTo(u(7.5f), u(9f))
+                    lineTo(u(13.5f), u(5f))
+                    lineTo(u(13.5f), u(19f))
+                    lineTo(u(7.5f), u(15f))
+                    lineTo(u(3.5f), u(15f))
+                    close()
+                }
+                drawPath(speaker, tint, style = pen)
+                // Sound wave 1
+                drawArc(
+                    color = tint,
+                    startAngle = -40f,
+                    sweepAngle = 80f,
+                    useCenter = false,
+                    topLeft = point(13f, 8f),
+                    size = Size(u(5f), u(8f)),
+                    style = pen
+                )
+                // Sound wave 2
+                drawArc(
+                    color = tint,
+                    startAngle = -45f,
+                    sweepAngle = 90f,
+                    useCenter = false,
+                    topLeft = point(14.5f, 5.5f),
+                    size = Size(u(7.5f), u(13f)),
+                    style = fine
+                )
+            }
+            HisabiSymbol.VolumeMute -> {
+                // Speaker body
+                val speaker = Path().apply {
+                    moveTo(u(3.5f), u(9f))
+                    lineTo(u(7.5f), u(9f))
+                    lineTo(u(13.5f), u(5f))
+                    lineTo(u(13.5f), u(19f))
+                    lineTo(u(7.5f), u(15f))
+                    lineTo(u(3.5f), u(15f))
+                    close()
+                }
+                drawPath(speaker, tint, style = pen)
+                // Mute X mark
+                drawLine(tint, point(16f, 9.5f), point(21.5f, 15f), u(1.4f), StrokeCap.Round)
+                drawLine(tint, point(21.5f, 9.5f), point(16f, 15f), u(1.4f), StrokeCap.Round)
+            }
+            HisabiSymbol.Coin -> {
+                // Outer circle rim
+                drawCircle(tint, u(8.5f), point(12f, 12f), style = pen)
+                // Inner groove
+                drawCircle(tint, u(6.2f), point(12f, 12f), style = fine)
+                // Center denomination numeral 1
+                drawLine(tint, point(12f, 8.5f), point(12f, 15.5f), u(1.4f), StrokeCap.Round)
+                drawLine(tint, point(10.5f, 10.2f), point(12f, 8.5f), u(1.2f), StrokeCap.Round)
+                drawLine(tint, point(10.2f, 15.5f), point(13.8f, 15.5f), u(1.2f), StrokeCap.Round)
+            }
+            HisabiSymbol.Banknote -> {
+                // Outer note rectangle
+                drawRoundRect(
+                    color = tint,
+                    topLeft = point(2.5f, 6.5f),
+                    size = Size(u(19f), u(11f)),
+                    cornerRadius = CornerRadius(u(2f), u(2f)),
+                    style = pen
+                )
+                // Center watermark ellipse
+                drawArc(
+                    color = tint,
+                    startAngle = 0f,
+                    sweepAngle = 360f,
+                    useCenter = false,
+                    topLeft = point(9f, 8.5f),
+                    size = Size(u(6f), u(7f)),
+                    style = fine
+                )
+                // Side decorative hash strokes
+                drawLine(tint, point(5f, 9.5f), point(5f, 14.5f), u(1.1f), StrokeCap.Round)
+                drawLine(tint, point(19f, 9.5f), point(19f, 14.5f), u(1.1f), StrokeCap.Round)
             }
         }
     }

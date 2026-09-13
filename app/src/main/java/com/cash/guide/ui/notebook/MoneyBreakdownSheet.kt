@@ -418,20 +418,21 @@ fun JournalDenominationsBoard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(JournalRuleSpacing),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 HisabiSketchIcon(
-                    symbol = HisabiSymbol.Wallet,
+                    symbol = HisabiSymbol.Banknote,
                     contentDescription = null,
                     tint = JournalWritingInk,
-                    size = 16.dp
+                    size = 21.dp,
+                    modifier = Modifier.journalVisualOnRule(lineHeight = JournalRuleSpacing, gapAboveRule = 4.dp)
                 )
                 Text(
                     text = headingBanknotes,
                     fontFamily = resolveJournalFont(headingBanknotes, isRtl),
                     color = JournalWritingInk,
-                    fontSize = if (isRtl) 13.5.sp else 14.sp,
+                    fontSize = if (isRtl) 14.sp else 14.5.sp,
                     fontWeight = FontWeight.Bold,
                     style = TextStyle(platformStyle = NoFontPadding),
                     modifier = Modifier.journalBaselineOnRule()
@@ -461,15 +462,21 @@ fun JournalDenominationsBoard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(JournalRuleSpacing),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text("🪙", fontSize = 13.sp)
+                HisabiSketchIcon(
+                    symbol = HisabiSymbol.Coin,
+                    contentDescription = null,
+                    tint = JournalWritingInk,
+                    size = 20.dp,
+                    modifier = Modifier.journalVisualOnRule(lineHeight = JournalRuleSpacing, gapAboveRule = 4.dp)
+                )
                 Text(
                     text = headingCoins,
                     fontFamily = resolveJournalFont(headingCoins, isRtl),
                     color = JournalWritingInk,
-                    fontSize = if (isRtl) 13.sp else 13.5.sp,
+                    fontSize = if (isRtl) 13.5.sp else 14.sp,
                     fontWeight = FontWeight.Bold,
                     style = TextStyle(platformStyle = NoFontPadding),
                     modifier = Modifier.journalBaselineOnRule()

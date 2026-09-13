@@ -126,5 +126,15 @@ class MoneyMathTest {
         assertEquals("ريال واحد", pieces[0].denomination.label)
         assertEquals(1L, pieces[0].count)
     }
+
+    @Test
+    fun expressionHandlesParenthesesAndImplicitMultiplication() {
+        assertEquals("100", MoneyMath.evaluate("(20 + 30) × 2")?.toPlainString())
+        assertEquals("60", MoneyMath.evaluate("100 − (15 + 25)")?.toPlainString())
+        assertEquals("16", MoneyMath.evaluate("2(5 + 3)")?.toPlainString())
+        assertEquals("70", MoneyMath.evaluate("(50 + 20")?.toPlainString()) // Auto-closes open parentheses for preview
+        assertEquals("140", MoneyMath.evaluate("(50 + 20) * 2")?.toPlainString())
+        assertEquals("6", MoneyMath.evaluate("(10 + 20) ÷ (2 + 3)")?.toPlainString())
+    }
 }
 

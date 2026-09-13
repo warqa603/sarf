@@ -78,14 +78,23 @@ object MoneyMath {
     }
 
     private class Parser(raw: String) {
-        private val text = raw
-            .replace('×', '*')
-            .replace('÷', '/')
-            .replace('−', '-') // Unicode minus U+2212
-            .replace('—', '-') // Em-dash
-            .replace('–', '-') // En-dash
-            .replace(',', '.')
-            .replace(" ", "")
+        private val text = run {
+            var s = raw
+                .replace('×', '*')
+                .replace('÷', '/')
+                .replace('−', '-') // Unicode minus U+2212
+                .replace('—', '-') // Em-dash
+                .replace('–', '-') // En-dash
+                .replace(',', '.')
+                .replace(" ", "")
+            // Automatically balance open parentheses for live preview evaluation
+            val openCount = s.count { it == '(' }
+            val closeCount = s.count { it == ')' }
+            if (openCount > closeCount) {
+                s += ")".repeat(openCount - closeCount)
+            }
+            s
+        }
         private var index = 0
 
         fun parse(): BigDecimal {
@@ -108,15 +117,19 @@ object MoneyMath {
         }
 
         private fun parseTerm(): BigDecimal {
-            var value = parseNumber()
+            var value = parseFactor()
             while (index < text.length) {
                 value = when (text[index]) {
-                    '*' -> { index++; value.multiply(parseNumber()) }
+                    '*' -> { index++; value.multiply(parseFactor()) }
                     '/' -> {
                         index++
-                        val divisor = parseNumber()
+                        val divisor = parseFactor()
                         require(divisor.signum() != 0)
                         value.divide(divisor, 8, RoundingMode.HALF_UP).stripTrailingZeros()
+                    }
+                    '(' -> {
+                        // Implicit multiplication: e.g. 2(3+4)
+                        value.multiply(parseFactor())
                     }
                     else -> return value
                 }
@@ -124,11 +137,19 @@ object MoneyMath {
             return value
         }
 
-        private fun parseNumber(): BigDecimal {
+        private fun parseFactor(): BigDecimal {
             var negative = false
-            if (index < text.length && text[index] == '-') {
-                negative = true
+            while (index < text.length && (text[index] == '+' || text[index] == '-')) {
+                if (text[index] == '-') negative = !negative
                 index++
+            }
+            if (index < text.length && text[index] == '(') {
+                index++ // skip '('
+                val value = parseExpression()
+                if (index < text.length && text[index] == ')') {
+                    index++ // skip ')'
+                }
+                return if (negative) value.negate() else value
             }
             val start = index
             var dotSeen = false

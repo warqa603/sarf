@@ -99,6 +99,32 @@ class CashRegisterViewModel : ViewModel() {
                         }
                     }
                 }
+                "(" -> {
+                    if (isEvaluated) {
+                        expr = "("
+                        isEvaluated = false
+                    } else if (expr.isEmpty()) {
+                        expr = "("
+                    } else {
+                        val lastChar = expr.last()
+                        if (lastChar.isDigit() || lastChar == ')') {
+                            expr += "×("
+                        } else {
+                            expr += "("
+                        }
+                    }
+                }
+                ")" -> {
+                    val openCount = expr.count { it == '(' }
+                    val closeCount = expr.count { it == ')' }
+                    if (openCount > closeCount && expr.isNotEmpty()) {
+                        val lastChar = expr.last()
+                        if (lastChar.isDigit() || lastChar == ')') {
+                            expr += ")"
+                            isEvaluated = false
+                        }
+                    }
+                }
                 else -> {
                     // Digits 0-9 and 00
                     if (isEvaluated) {
