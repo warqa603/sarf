@@ -69,6 +69,12 @@ class HomeViewModel(
         }
     }
 
+    fun updateUserName(name: String) {
+        viewModelScope.launch {
+            settingsRepository?.setUserName(name)
+        }
+    }
+
     fun loadRecent(context: Context) {
         lastContext = context
         viewModelScope.launch {

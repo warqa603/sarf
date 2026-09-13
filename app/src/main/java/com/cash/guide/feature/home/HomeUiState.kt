@@ -64,7 +64,7 @@ data class HomeUiState(
     val calculationToDelete: CalculationWithItems? = null,
     val activityToDelete: RecentActivityItem? = null,
     val isFabExpanded: Boolean = false,
-    val userName: String = "Youssef"
+    val userName: String = ""
 ) {
     val isFiltering: Boolean
         get() = searchQuery.isNotBlank() || selectedDateEpoch != null || selectedPaymentFilter != PaymentFilter.ALL

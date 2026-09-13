@@ -230,6 +230,13 @@
     <string name="backup_toast_error">Error during operation. Please verify the .calc file.</string>
     <string name="backup_toast_share_title">Share Hssabi backup</string>
     <string name="home_greeting_prefix">Hello </string>
+    <string name="home_greeting_morning">Good morning</string>
+    <string name="home_greeting_evening">Good evening</string>
+    <string name="edit_profile_dialog_title">Your name</string>
+    <string name="edit_profile_dialog_subtitle">This name will appear in the header of your journal.</string>
+    <string name="edit_profile_placeholder">Enter your name...</string>
+    <string name="edit_profile_save">Save</string>
+    <string name="edit_profile_cancel">Cancel</string>
     <string name="share_watermark">Made with Hssabi</string>
     <string name="share_brand">Hssabi • Notebook</string>
     <string name="history_month_empty">No calculations recorded in %1$s</string>

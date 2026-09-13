@@ -25,7 +25,13 @@ class SettingsRepository(private val context: Context) {
     }
 
     val userName: Flow<String> = context.dataStore.data.map { preferences ->
-        preferences[PreferencesKeys.USER_NAME] ?: "Youssef"
+        preferences[PreferencesKeys.USER_NAME]?.trim() ?: ""
+    }
+
+    suspend fun setUserName(name: String) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.USER_NAME] = name.trim()
+        }
     }
 
     val appLanguage: Flow<String> = context.dataStore.data.map { preferences ->

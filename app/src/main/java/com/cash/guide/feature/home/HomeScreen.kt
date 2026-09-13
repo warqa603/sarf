@@ -115,9 +115,13 @@ import com.cash.guide.domain.NoteShareHelper
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.cash.guide.ui.notebook.EditProfileDialog
 import com.cash.guide.ui.notebook.MonthPickerDialog
 import com.cash.guide.ui.notebook.NewCalculationSetupSheet
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import com.cash.guide.data.TemplateRepository
 import com.cash.guide.data.db.CalculationWithItems
@@ -162,6 +166,7 @@ fun HomeScreen(
     val coroutineScope = rememberCoroutineScope()
 
     var showMonthPicker by remember { mutableStateOf(false) }
+    var showEditProfileDialog by remember { mutableStateOf(false) }
     var showRemindersSheet by remember { mutableStateOf(false) }
     var showNewCalcSetupSheet by remember { mutableStateOf(false) }
     var calcToAssignToGroup by remember { mutableStateOf<com.cash.guide.data.db.CalculationWithItems?>(null) }
@@ -188,31 +193,62 @@ fun HomeScreen(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                val greetingPrefix = stringResource(R.string.home_greeting_prefix)
-                val greetingAnnotated = remember(greetingPrefix, state.userName) {
+                val currentHour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
+                val isEvening = currentHour >= 18 || currentHour < 5
+                val greetingPrefix = if (isEvening) {
+                    stringResource(R.string.home_greeting_evening)
+                } else {
+                    stringResource(R.string.home_greeting_morning)
+                }
+                val greetingEmoji = if (isEvening) "🌙" else "☀️"
+                val hasName = state.userName.isNotBlank()
+
+                val greetingAnnotated = remember(greetingPrefix, state.userName, hasName) {
                     buildAnnotatedString {
-                        withStyle(
-                            SpanStyle(
-                                fontWeight = FontWeight.Light,
-                                color = JournalInk.copy(alpha = 0.72f)
-                            )
-                        ) {
-                            append("$greetingPrefix ")
-                        }
-                        withStyle(
-                            SpanStyle(
-                                fontWeight = FontWeight.Bold,
-                                color = JournalInk
-                            )
-                        ) {
-                            append(state.userName)
+                        if (hasName) {
+                            withStyle(
+                                SpanStyle(
+                                    fontWeight = FontWeight.Light,
+                                    color = JournalInk.copy(alpha = 0.72f)
+                                )
+                            ) {
+                                append("$greetingPrefix ")
+                            }
+                            withStyle(
+                                SpanStyle(
+                                    fontWeight = FontWeight.Bold,
+                                    color = JournalInk
+                                )
+                            ) {
+                                append(state.userName.trim())
+                            }
+                        } else {
+                            withStyle(
+                                SpanStyle(
+                                    fontWeight = FontWeight.Bold,
+                                    color = JournalInk
+                                )
+                            ) {
+                                append("$greetingPrefix !")
+                            }
                         }
                     }
                 }
 
+                val haptic = LocalHapticFeedback.current
                 Row(
                     verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable(
+                            role = Role.Button,
+                            onClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                showEditProfileDialog = true
+                            }
+                        )
+                        .padding(horizontal = 2.dp)
                 ) {
                     Text(
                         text = greetingAnnotated,
@@ -222,7 +258,7 @@ fun HomeScreen(
                         modifier = Modifier.journalBaselineOnRule()
                     )
                     Text(
-                        text = "😊",
+                        text = greetingEmoji,
                         fontSize = 14.sp,
                         modifier = Modifier.offset(y = (-3).dp)
                     )
@@ -722,6 +758,17 @@ fun HomeScreen(
                     showMonthPicker = false
                     onOpenMonthCalculations(year, month)
                 }
+            )
+        }
+
+        // Edit Profile Name Dialog
+        if (showEditProfileDialog) {
+            EditProfileDialog(
+                currentName = state.userName,
+                onSave = { newName ->
+                    viewModel.updateUserName(newName)
+                },
+                onDismiss = { showEditProfileDialog = false }
             )
         }
 

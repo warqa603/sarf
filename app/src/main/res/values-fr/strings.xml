@@ -234,6 +234,13 @@
     <string name="backup_toast_error">Erreur lors de l’opération. Vérifiez le fichier .calc.</string>
     <string name="backup_toast_share_title">Partager la sauvegarde Sarf</string>
     <string name="home_greeting_prefix">Bonjour </string>
+    <string name="home_greeting_morning">Bonjour</string>
+    <string name="home_greeting_evening">Bonsoir</string>
+    <string name="edit_profile_dialog_title">Votre prénom</string>
+    <string name="edit_profile_dialog_subtitle">Ce prénom sera affiché dans l’en-tête de votre carnet.</string>
+    <string name="edit_profile_placeholder">Entrez votre prénom...</string>
+    <string name="edit_profile_save">Enregistrer</string>
+    <string name="edit_profile_cancel">Annuler</string>
     <string name="share_watermark">Créé avec Hssabi</string>
     <string name="share_brand">Hssabi • Carnet</string>
     <string name="history_month_empty">Aucun calcul enregistré en %1$s</string>

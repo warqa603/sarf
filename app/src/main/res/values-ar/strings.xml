@@ -234,6 +234,13 @@
     <string name="backup_toast_error">حدث خطأ أثناء العملية. يرجى التحقق من ملف .calc.</string>
     <string name="backup_toast_share_title">مشاركة نسخة حسابي الاحتياطية</string>
     <string name="home_greeting_prefix">مرحباً </string>
+    <string name="home_greeting_morning">صباح الخير</string>
+    <string name="home_greeting_evening">مساء الخير</string>
+    <string name="edit_profile_dialog_title">الاسم الشخصي</string>
+    <string name="edit_profile_dialog_subtitle">سيظهر هذا الاسم في رأس صفحة دفتر حساباتك.</string>
+    <string name="edit_profile_placeholder">اكتب اسمك الشخصي...</string>
+    <string name="edit_profile_save">حفظ</string>
+    <string name="edit_profile_cancel">إلغاء</string>
     <string name="share_watermark">صُنع بواسطة حسابي</string>
     <string name="share_brand">دفتر حسابي</string>
     <string name="history_month_empty">لا توجد حسابات مسجلة في %1$s</string>
