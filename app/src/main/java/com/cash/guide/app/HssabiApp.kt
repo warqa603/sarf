@@ -176,7 +176,7 @@ fun HssabiApp(
             reminderRepository = reminderRepository
         )
     }
-    val groupsViewModel = viewModel { GroupsViewModel(calculationRepository) }
+    val groupsViewModel = viewModel { GroupsViewModel(calculationRepository, noteRepository, checklistRepository) }
     val historyViewModel = viewModel { HistoryViewModel(calculationRepository) }
     val backupManager = remember { BackupManager(database) }
     val settingsViewModel = viewModel { SettingsViewModel(settingsRepository, backupManager, calculationRepository, securityRepository) }

@@ -75,4 +75,15 @@ interface ChecklistDao {
 
     @Query("DELETE FROM checklist_items WHERE checklistId = :checklistId AND isChecked = 1")
     suspend fun deleteCompletedItems(checklistId: String)
+
+    @Transaction
+    @Query("SELECT * FROM checklists WHERE groupId = :groupId ORDER BY updatedAtEpochMs DESC")
+    fun observeByGroup(groupId: String): Flow<List<ChecklistWithItems>>
+
+    @Transaction
+    @Query("SELECT * FROM checklists WHERE groupId = :groupId ORDER BY updatedAtEpochMs DESC")
+    suspend fun getChecklistsByGroup(groupId: String): List<ChecklistWithItems>
+
+    @Query("UPDATE checklists SET groupId = :groupId, updatedAtEpochMs = :now WHERE id = :checklistId")
+    suspend fun assignChecklistToGroup(checklistId: String, groupId: String?, now: Long)
 }

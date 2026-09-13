@@ -10,6 +10,10 @@ class NoteRepository(
 ) {
     fun observeAll(): Flow<List<NoteEntity>> = noteDao.observeAll()
 
+    fun observeByGroup(groupId: String): Flow<List<NoteEntity>> = noteDao.observeByGroup(groupId)
+
+    suspend fun getNotesByGroup(groupId: String): List<NoteEntity> = noteDao.getNotesByGroup(groupId)
+
     fun observeNote(id: String): Flow<NoteEntity?> = noteDao.observeNote(id)
 
     suspend fun getNote(id: String): NoteEntity? = noteDao.getNote(id)
@@ -17,7 +21,8 @@ class NoteRepository(
     suspend fun createNote(
         title: String = "",
         content: String = "",
-        colorTag: String = "DEFAULT"
+        colorTag: String = "DEFAULT",
+        groupId: String? = null
     ): String {
         val noteId = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
@@ -28,10 +33,15 @@ class NoteRepository(
             colorTag = colorTag,
             isPinned = false,
             createdAtEpochMs = now,
-            updatedAtEpochMs = now
+            updatedAtEpochMs = now,
+            groupId = groupId
         )
         noteDao.insertNote(note)
         return noteId
+    }
+
+    suspend fun assignNoteToGroup(noteId: String, groupId: String?) {
+        noteDao.assignNoteToGroup(noteId, groupId, System.currentTimeMillis())
     }
 
     suspend fun insertNote(note: NoteEntity) {

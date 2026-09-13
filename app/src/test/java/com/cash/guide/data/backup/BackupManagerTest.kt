@@ -129,6 +129,8 @@ class BackupManagerTest {
         override suspend fun updateGroup(group: CalculationGroupEntity) {}
         override suspend fun deleteGroup(groupId: String) {}
         override suspend fun clearGroupIdFromCalculations(groupId: String) {}
+        override suspend fun clearGroupIdFromNotes(groupId: String) {}
+        override suspend fun clearGroupIdFromChecklists(groupId: String) {}
         override suspend fun assignCalculationToGroup(calculationId: String, groupId: String?, now: Long) {}
         override suspend fun getAllGroups(): List<CalculationGroupEntity> = emptyList()
         override suspend fun deleteAllGroups() {}

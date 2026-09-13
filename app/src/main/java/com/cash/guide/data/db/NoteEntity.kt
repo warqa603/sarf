@@ -8,7 +8,8 @@ import androidx.room.PrimaryKey
     tableName = "notes",
     indices = [
         Index(value = ["updatedAtEpochMs"]),
-        Index(value = ["isPinned"])
+        Index(value = ["isPinned"]),
+        Index(value = ["groupId"])
     ]
 )
 data class NoteEntity(
@@ -18,5 +19,6 @@ data class NoteEntity(
     val colorTag: String = "DEFAULT", // "DEFAULT", "YELLOW", "PINK", "BLUE", "GREEN", "PURPLE"
     val isPinned: Boolean = false,
     val createdAtEpochMs: Long,
-    val updatedAtEpochMs: Long
+    val updatedAtEpochMs: Long,
+    val groupId: String? = null
 )

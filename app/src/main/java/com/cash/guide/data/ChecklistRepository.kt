@@ -12,20 +12,29 @@ class ChecklistRepository(
 ) {
     fun observeAll(): Flow<List<ChecklistWithItems>> = checklistDao.observeAll()
 
+    fun observeByGroup(groupId: String): Flow<List<ChecklistWithItems>> = checklistDao.observeByGroup(groupId)
+
+    suspend fun getChecklistsByGroup(groupId: String): List<ChecklistWithItems> = checklistDao.getChecklistsByGroup(groupId)
+
     fun observeChecklist(id: String): Flow<ChecklistWithItems?> = checklistDao.observeChecklist(id)
 
     suspend fun getChecklist(id: String): ChecklistWithItems? = checklistDao.getChecklist(id)
 
     suspend fun getLatestChecklist(): ChecklistWithItems? = checklistDao.getLatestChecklist()
 
-    suspend fun createChecklist(title: String, initialItems: List<String> = emptyList()): String {
+    suspend fun createChecklist(
+        title: String,
+        initialItems: List<String> = emptyList(),
+        groupId: String? = null
+    ): String {
         val checklistId = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
         val checklist = ChecklistEntity(
             id = checklistId,
             title = title.trim(),
             createdAtEpochMs = now,
-            updatedAtEpochMs = now
+            updatedAtEpochMs = now,
+            groupId = groupId
         )
         checklistDao.insertChecklist(checklist)
 
@@ -43,6 +52,10 @@ class ChecklistRepository(
             checklistDao.insertItems(items)
         }
         return checklistId
+    }
+
+    suspend fun assignChecklistToGroup(checklistId: String, groupId: String?) {
+        checklistDao.assignChecklistToGroup(checklistId, groupId, System.currentTimeMillis())
     }
 
     suspend fun updateTitle(checklistId: String, title: String) {

@@ -33,4 +33,13 @@ interface NoteDao {
 
     @Query("UPDATE notes SET colorTag = :colorTag, updatedAtEpochMs = :updatedAtEpochMs WHERE id = :id")
     suspend fun setColorTag(id: String, colorTag: String, updatedAtEpochMs: Long)
+
+    @Query("SELECT * FROM notes WHERE groupId = :groupId ORDER BY isPinned DESC, updatedAtEpochMs DESC")
+    fun observeByGroup(groupId: String): Flow<List<NoteEntity>>
+
+    @Query("SELECT * FROM notes WHERE groupId = :groupId ORDER BY isPinned DESC, updatedAtEpochMs DESC")
+    suspend fun getNotesByGroup(groupId: String): List<NoteEntity>
+
+    @Query("UPDATE notes SET groupId = :groupId, updatedAtEpochMs = :now WHERE id = :noteId")
+    suspend fun assignNoteToGroup(noteId: String, groupId: String?, now: Long)
 }

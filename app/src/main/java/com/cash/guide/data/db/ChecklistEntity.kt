@@ -7,12 +7,14 @@ import androidx.room.PrimaryKey
 @Entity(
     tableName = "checklists",
     indices = [
-        Index("updatedAtEpochMs")
+        Index("updatedAtEpochMs"),
+        Index("groupId")
     ]
 )
 data class ChecklistEntity(
     @PrimaryKey val id: String,
     val title: String,
     val createdAtEpochMs: Long,
-    val updatedAtEpochMs: Long
+    val updatedAtEpochMs: Long,
+    val groupId: String? = null
 )

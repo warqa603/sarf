@@ -132,7 +132,7 @@ fun HssabiNavHost(
                 viewModelStoreOwner = backStackEntry,
                 key = "group_detail_$groupId"
             ) {
-                GroupDetailViewModel(groupId, calculationRepository)
+                GroupDetailViewModel(groupId, calculationRepository, noteRepository, checklistRepository)
             }
             GroupDetailScreen(
                 viewModel = groupDetailViewModel,
@@ -144,6 +144,21 @@ fun HssabiNavHost(
                         calculationRepository.createDraftInGroup(gid)
                         navController.navigate(AppDestination.NewCalculation.routeForGroup(gid))
                     }
+                },
+                onOpenNote = { noteId ->
+                    navController.navigate(AppDestination.NoteDetail.createRoute(noteId))
+                },
+                onNewNoteInGroup = {
+                    coroutineScope.launch {
+                        val newNoteId = groupDetailViewModel.createNoteInGroup()
+                        navController.navigate(AppDestination.NoteDetail.createRoute(newNoteId))
+                    }
+                },
+                onOpenChecklist = { checklistId ->
+                    navController.navigate(AppDestination.ChecklistDetail.createRoute(checklistId))
+                },
+                onNewChecklistInGroup = { checklistId ->
+                    navController.navigate(AppDestination.ChecklistDetail.createRoute(checklistId))
                 }
             )
         }

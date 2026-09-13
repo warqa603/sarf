@@ -22,7 +22,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -57,9 +56,10 @@ import androidx.compose.ui.unit.sp
 import com.cash.guide.R
 import com.cash.guide.data.SettingsRepository
 import com.cash.guide.data.db.CalculationGroupEntity
-import com.cash.guide.data.db.CalculationGroupWithCalculations
+import com.cash.guide.domain.GroupCategory
 import com.cash.guide.domain.JournalLedgerManager
 import com.cash.guide.domain.MoneyUnit
+import com.cash.guide.domain.UnifiedGroupItem
 import com.cash.guide.ui.notebook.HisabiSketchIcon
 import com.cash.guide.ui.notebook.HisabiSymbol
 import com.cash.guide.ui.notebook.HighlighterYellow
@@ -74,7 +74,6 @@ import com.cash.guide.ui.notebook.NoFontPadding
 import com.cash.guide.ui.notebook.NotebookPrimaryActionButton
 import com.cash.guide.ui.notebook.PatrickHandFamily
 import com.cash.guide.ui.notebook.TajawalFamily
-import com.cash.guide.ui.notebook.NotebookMetrics
 import com.cash.guide.ui.notebook.journalBaselineOnRule
 import com.cash.guide.ui.notebook.journalVisualOnRule
 import com.cash.guide.ui.notebook.resolveJournalFont
@@ -172,8 +171,79 @@ fun GroupsScreen(
         // Line 4: 1-rule spacer
         Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-        // Line 5+: Groups list or empty state
-        if (state.groups.isEmpty() && !state.isLoading) {
+        // Line 5: Category Filter Chips (Tous, Calculs, Notes, Checklists)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val filters = listOf(
+                Pair<GroupCategory?, String>(null, stringResource(R.string.group_filter_all)),
+                Pair<GroupCategory?, String>(GroupCategory.CALCULATIONS, stringResource(R.string.group_category_calculations)),
+                Pair<GroupCategory?, String>(GroupCategory.NOTES, stringResource(R.string.group_category_notes)),
+                Pair<GroupCategory?, String>(GroupCategory.CHECKLISTS, stringResource(R.string.group_category_checklists))
+            )
+
+            filters.forEach { (cat, label) ->
+                val isSelected = state.filteredCategory == cat
+                val count = when (cat) {
+                    null -> state.groups.size
+                    GroupCategory.CALCULATIONS -> state.calculationsGroupCount
+                    GroupCategory.NOTES -> state.notesGroupCount
+                    GroupCategory.CHECKLISTS -> state.checklistsGroupCount
+                }
+                val symbol = when (cat) {
+                    null -> HisabiSymbol.Folder
+                    GroupCategory.CALCULATIONS -> HisabiSymbol.Calculator
+                    GroupCategory.NOTES -> HisabiSymbol.Pencil
+                    GroupCategory.CHECKLISTS -> HisabiSymbol.Check
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(
+                            if (isSelected) HighlighterYellow.copy(alpha = 0.45f)
+                            else JournalInk.copy(alpha = 0.04f)
+                        )
+                        .then(
+                            if (isSelected) Modifier.border(1.2.dp, JournalInk, RoundedCornerShape(8.dp))
+                            else Modifier.border(0.5.dp, JournalMutedInk.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                        )
+                        .clickable { viewModel.setFilterCategory(cat) }
+                        .padding(horizontal = 7.dp, vertical = 3.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)
+                    ) {
+                        HisabiSketchIcon(
+                            symbol = symbol,
+                            contentDescription = null,
+                            tint = if (isSelected) JournalInk else JournalMutedInk,
+                            size = 11.dp
+                        )
+                        Text(
+                            text = "$label ($count)",
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontSize = if (isRtl) 11.5.sp else 12.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isSelected) JournalInk else JournalMutedInk
+                        )
+                    }
+                }
+            }
+        }
+
+        // Line 6: 1-rule spacer
+        Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+        // Line 7+: Groups list or empty state
+        val displayedGroups = state.displayedGroups
+        if (displayedGroups.isEmpty() && !state.isLoading) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -183,7 +253,12 @@ fun GroupsScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 HisabiSketchIcon(
-                    symbol = HisabiSymbol.Folder,
+                    symbol = when (state.filteredCategory) {
+                        GroupCategory.CALCULATIONS -> HisabiSymbol.Calculator
+                        GroupCategory.NOTES -> HisabiSymbol.Pencil
+                        GroupCategory.CHECKLISTS -> HisabiSymbol.Check
+                        null -> HisabiSymbol.Folder
+                    },
                     contentDescription = null,
                     tint = JournalMutedInk.copy(alpha = 0.50f),
                     size = 32.dp
@@ -200,11 +275,12 @@ fun GroupsScreen(
                     text = stringResource(R.string.groups_empty_desc),
                     fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                     fontSize = if (isRtl) 12.5.sp else 13.sp,
-                    color = JournalMutedInk.copy(alpha = 0.75f)
+                    color = JournalMutedInk.copy(alpha = 0.75f),
+                    textAlign = TextAlign.Center
                 )
             }
         } else {
-            state.groups.forEachIndexed { index, groupItem ->
+            displayedGroups.forEachIndexed { index, groupItem ->
                 NotebookGroupRow(
                     groupItem = groupItem,
                     currencySuffix = currencySuffix,
@@ -228,6 +304,8 @@ fun GroupsScreen(
             onNameChange = { viewModel.updateGroupNameInput(it) },
             selectedColorHex = state.selectedColorHex,
             onColorSelect = { viewModel.selectColorHex(it) },
+            selectedCategory = state.selectedCategory,
+            onCategorySelect = { viewModel.selectCategory(it) },
             onConfirm = { viewModel.saveGroup() },
             onDismiss = { viewModel.dismissCreateOrEditDialog() }
         )
@@ -280,7 +358,7 @@ fun GroupsScreen(
 
 @Composable
 private fun NotebookGroupRow(
-    groupItem: CalculationGroupWithCalculations,
+    groupItem: UnifiedGroupItem,
     currencySuffix: String,
     defaultCurrency: MoneyUnit,
     onClick: () -> Unit,
@@ -295,25 +373,37 @@ private fun NotebookGroupRow(
     }
 
     val totalFormatted = JournalLedgerManager.formatTotal(groupItem.totalCentimes, defaultCurrency)
-    val calculationsCount = groupItem.calculationCount
-
     val context = LocalContext.current
     val subtitle = remember(groupItem, isRtl, context) {
-        val countStr = when (calculationsCount) {
-            0 -> context.getString(R.string.group_calculations_count_zero)
-            1 -> context.getString(R.string.group_calculations_count_single)
-            else -> context.getString(R.string.group_calculations_count, calculationsCount)
+        val countStr = when (groupItem.category) {
+            GroupCategory.CALCULATIONS -> when (groupItem.itemCount) {
+                0 -> context.getString(R.string.group_calculations_count_zero)
+                1 -> context.getString(R.string.group_calculations_count_single)
+                else -> context.getString(R.string.group_calculations_count, groupItem.itemCount)
+            }
+            GroupCategory.NOTES -> when (groupItem.itemCount) {
+                0 -> context.getString(R.string.group_notes_count_zero)
+                1 -> context.getString(R.string.group_notes_count_single)
+                else -> context.getString(R.string.group_notes_count, groupItem.itemCount)
+            }
+            GroupCategory.CHECKLISTS -> when (groupItem.itemCount) {
+                0 -> context.getString(R.string.group_checklists_count_zero)
+                1 -> context.getString(R.string.group_checklists_count_single)
+                else -> context.getString(R.string.group_checklists_count, groupItem.itemCount)
+            }
         }
-        val titles = groupItem.calculations
-            .map { it.calculation.title.trim() }
-            .filter { it.isNotBlank() }
-            .take(3)
-        if (titles.isNotEmpty()) {
-            val joined = titles.joinToString(if (isRtl) "، " else ", ")
+        if (groupItem.previewTitles.isNotEmpty()) {
+            val joined = groupItem.previewTitles.joinToString(if (isRtl) "، " else ", ")
             "$countStr · $joined"
         } else {
             countStr
         }
+    }
+
+    val categorySymbol = when (groupItem.category) {
+        GroupCategory.CALCULATIONS -> HisabiSymbol.Calculator
+        GroupCategory.NOTES -> HisabiSymbol.Pencil
+        GroupCategory.CHECKLISTS -> HisabiSymbol.Check
     }
 
     var menuExpanded by remember { mutableStateOf(false) }
@@ -324,7 +414,7 @@ private fun NotebookGroupRow(
             .height(JournalRuleSpacing * 2) // 58dp
             .clickable(role = Role.Button, onClick = onClick)
     ) {
-        // Line 1 (29dp): Folder badge + Group Name on Start, Total Amount + 3-dots on End
+        // Line 1 (29dp): Folder badge + Group Name on Start, (Total Amount for Calcs) + 3-dots on End
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -333,13 +423,13 @@ private fun NotebookGroupRow(
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Start: Folder Icon Badge + Group Name
+            // Start: Category Icon Badge + Group Name
             Row(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.weight(1f, fill = false)
             ) {
-                // Sketched folder badge with group highlight tint
+                // Sketched folder badge with group highlight tint & category icon
                 Box(
                     modifier = Modifier
                         .journalVisualOnRule(gapAboveRule = 2.dp)
@@ -349,10 +439,10 @@ private fun NotebookGroupRow(
                     contentAlignment = Alignment.Center
                 ) {
                     HisabiSketchIcon(
-                        symbol = HisabiSymbol.Folder,
+                        symbol = categorySymbol,
                         contentDescription = null,
                         tint = JournalInk,
-                        size = 15.dp
+                        size = 14.dp
                     )
                 }
 
@@ -368,7 +458,7 @@ private fun NotebookGroupRow(
                 )
             }
 
-            // Subtle connecting line directly on the blue notebook line between Title and Amount
+            // Subtle connecting line directly on the blue notebook line between Title and End
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -387,30 +477,32 @@ private fun NotebookGroupRow(
                     }
             )
 
-            // End: Total Amount + Currency + 3-dots
+            // End: (Total Amount for Calculations) + 3-dots
             Row(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(
-                    text = totalFormatted,
-                    fontFamily = PatrickHandFamily,
-                    fontSize = 15.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = JournalInk,
-                    style = TextStyle(platformStyle = NoFontPadding),
-                    modifier = Modifier.journalBaselineOnRule()
-                )
+                if (groupItem.category == GroupCategory.CALCULATIONS) {
+                    Text(
+                        text = totalFormatted,
+                        fontFamily = PatrickHandFamily,
+                        fontSize = 15.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = JournalInk,
+                        style = TextStyle(platformStyle = NoFontPadding),
+                        modifier = Modifier.journalBaselineOnRule()
+                    )
 
-                Text(
-                    text = currencySuffix,
-                    fontFamily = if (currencySuffix.contains(Regex("[a-zA-Z]"))) PatrickHandFamily else TajawalFamily,
-                    fontSize = if (currencySuffix.contains(Regex("[a-zA-Z]"))) 13.5.sp else 12.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = JournalMutedInk,
-                    style = TextStyle(platformStyle = NoFontPadding),
-                    modifier = Modifier.journalBaselineOnRule()
-                )
+                    Text(
+                        text = currencySuffix,
+                        fontFamily = if (currencySuffix.contains(Regex("[a-zA-Z]"))) PatrickHandFamily else TajawalFamily,
+                        fontSize = if (currencySuffix.contains(Regex("[a-zA-Z]"))) 13.5.sp else 12.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = JournalMutedInk,
+                        style = TextStyle(platformStyle = NoFontPadding),
+                        modifier = Modifier.journalBaselineOnRule()
+                    )
+                }
 
                 Box(
                     modifier = Modifier
@@ -465,7 +557,7 @@ private fun NotebookGroupRow(
             }
         }
 
-        // Line 2 (29dp): Subtitle (e.g. "3 calculs · Loyer, Électricité") sitting directly on the rule
+        // Line 2 (29dp): Subtitle (e.g. "3 calculs · Chantier", "2 notes · Idée", "1 checklist · Marché") sitting directly on the rule
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -503,6 +595,8 @@ private fun CreateOrEditGroupDialog(
     onNameChange: (String) -> Unit,
     selectedColorHex: String,
     onColorSelect: (String) -> Unit,
+    selectedCategory: GroupCategory,
+    onCategorySelect: (GroupCategory) -> Unit,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -528,6 +622,67 @@ private fun CreateOrEditGroupDialog(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                // Category Selector
+                Column {
+                    Text(
+                        text = stringResource(R.string.group_category_label),
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontSize = 13.sp,
+                        color = JournalMutedInk
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val categories = listOf(
+                            Triple(GroupCategory.CALCULATIONS, stringResource(R.string.group_category_calculations), HisabiSymbol.Calculator),
+                            Triple(GroupCategory.NOTES, stringResource(R.string.group_category_notes), HisabiSymbol.Pencil),
+                            Triple(GroupCategory.CHECKLISTS, stringResource(R.string.group_category_checklists), HisabiSymbol.Check)
+                        )
+                        categories.forEach { (cat, label, symbol) ->
+                            val isSelected = selectedCategory == cat
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(38.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(
+                                        if (isSelected) HighlighterYellow.copy(alpha = 0.40f)
+                                        else JournalInk.copy(alpha = 0.04f)
+                                    )
+                                    .then(
+                                        if (isSelected) Modifier.border(1.5.dp, JournalInk, RoundedCornerShape(8.dp))
+                                        else Modifier.border(0.5.dp, JournalMutedInk.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                                    )
+                                    .clickable { onCategorySelect(cat) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                ) {
+                                    HisabiSketchIcon(
+                                        symbol = symbol,
+                                        contentDescription = null,
+                                        tint = if (isSelected) JournalInk else JournalMutedInk,
+                                        size = 14.dp
+                                    )
+                                    Text(
+                                        text = label,
+                                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                        fontSize = if (isRtl) 12.5.sp else 13.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                        color = if (isSelected) JournalInk else JournalMutedInk,
+                                        maxLines = 1
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // Name Input with notebook baseline
                 Column {
                     Text(

@@ -32,9 +32,17 @@ interface CalculationGroupDao {
     @Query("UPDATE calculations SET groupId = NULL WHERE groupId = :groupId")
     suspend fun clearGroupIdFromCalculations(groupId: String)
 
+    @Query("UPDATE notes SET groupId = NULL WHERE groupId = :groupId")
+    suspend fun clearGroupIdFromNotes(groupId: String)
+
+    @Query("UPDATE checklists SET groupId = NULL WHERE groupId = :groupId")
+    suspend fun clearGroupIdFromChecklists(groupId: String)
+
     @Transaction
     suspend fun deleteGroupAndUngroupCalculations(groupId: String) {
         clearGroupIdFromCalculations(groupId)
+        clearGroupIdFromNotes(groupId)
+        clearGroupIdFromChecklists(groupId)
         deleteGroup(groupId)
     }
 

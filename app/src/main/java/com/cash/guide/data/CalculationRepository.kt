@@ -149,8 +149,11 @@ class CalculationRepository(
         }
     }
 
+    fun observeGroup(groupId: String): Flow<CalculationGroupEntity?> =
+        groupDao?.observeGroup(groupId) ?: flowOf(null)
+
     fun observeGroupWithCalculations(groupId: String): Flow<CalculationGroupWithCalculations?> {
-        val groupFlow = groupDao?.observeGroup(groupId) ?: flowOf(null)
+        val groupFlow = observeGroup(groupId)
         val calculationsFlow = dao.observeAllSaved()
         return combine(groupFlow, calculationsFlow) { group, allSaved ->
             if (group == null) null
@@ -167,7 +170,7 @@ class CalculationRepository(
     suspend fun getAllGroups(): List<CalculationGroupEntity> =
         groupDao?.getAllGroups() ?: emptyList()
 
-    suspend fun createGroup(name: String, colorHex: String): String {
+    suspend fun createGroup(name: String, colorHex: String, category: String = "CALCULATIONS"): String {
         val id = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
         val group = CalculationGroupEntity(
@@ -175,7 +178,8 @@ class CalculationRepository(
             name = name.trim(),
             colorHex = colorHex,
             createdAtEpochMs = now,
-            updatedAtEpochMs = now
+            updatedAtEpochMs = now,
+            category = category
         )
         groupDao?.insertGroup(group)
         return id

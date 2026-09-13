@@ -17,7 +17,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         NoteEntity::class,
         ReminderEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 abstract class HssabiDatabase : RoomDatabase() {
@@ -161,6 +161,17 @@ abstract class HssabiDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `calculation_groups` ADD COLUMN `category` TEXT NOT NULL DEFAULT 'CALCULATIONS'")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_calculation_groups_category` ON `calculation_groups` (`category`)")
+                db.execSQL("ALTER TABLE `notes` ADD COLUMN `groupId` TEXT DEFAULT NULL")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_notes_groupId` ON `notes` (`groupId`)")
+                db.execSQL("ALTER TABLE `checklists` ADD COLUMN `groupId` TEXT DEFAULT NULL")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_checklists_groupId` ON `checklists` (`groupId`)")
+            }
+        }
+
         fun getInstance(context: Context): HssabiDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -168,7 +179,7 @@ abstract class HssabiDatabase : RoomDatabase() {
                     HssabiDatabase::class.java,
                     "hssabi.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                     .build()
                     .also { INSTANCE = it }
             }

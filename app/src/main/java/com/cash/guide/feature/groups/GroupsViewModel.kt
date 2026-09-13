@@ -3,26 +3,45 @@ package com.cash.guide.feature.groups
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cash.guide.data.CalculationRepository
+import com.cash.guide.data.ChecklistRepository
+import com.cash.guide.data.NoteRepository
 import com.cash.guide.data.db.CalculationGroupEntity
-import com.cash.guide.data.db.CalculationGroupWithCalculations
+import com.cash.guide.domain.GroupCategory
+import com.cash.guide.domain.UnifiedGroupItem
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
 data class GroupsUiState(
-    val groups: List<CalculationGroupWithCalculations> = emptyList(),
+    val groups: List<UnifiedGroupItem> = emptyList(),
+    val filteredCategory: GroupCategory? = null,
     val isLoading: Boolean = true,
     val isCreateOrEditDialogOpen: Boolean = false,
     val editingGroup: CalculationGroupEntity? = null,
     val groupNameInput: String = "",
     val selectedColorHex: String = "#F4D66D",
+    val selectedCategory: GroupCategory = GroupCategory.CALCULATIONS,
     val groupToDelete: CalculationGroupEntity? = null
-)
+) {
+    val displayedGroups: List<UnifiedGroupItem>
+        get() = if (filteredCategory == null) groups else groups.filter { it.category == filteredCategory }
+
+    val calculationsGroupCount: Int
+        get() = groups.count { it.category == GroupCategory.CALCULATIONS }
+
+    val notesGroupCount: Int
+        get() = groups.count { it.category == GroupCategory.NOTES }
+
+    val checklistsGroupCount: Int
+        get() = groups.count { it.category == GroupCategory.CHECKLISTS }
+}
 
 class GroupsViewModel(
-    private val calculationRepository: CalculationRepository
+    private val calculationRepository: CalculationRepository,
+    private val noteRepository: NoteRepository,
+    private val checklistRepository: ChecklistRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GroupsUiState())
@@ -30,13 +49,40 @@ class GroupsViewModel(
 
     init {
         viewModelScope.launch {
-            calculationRepository.observeAllGroupsWithCalculations().collectLatest { list ->
+            combine(
+                calculationRepository.observeAllGroups(),
+                calculationRepository.observeAllSaved(),
+                noteRepository.observeAll(),
+                checklistRepository.observeAll()
+            ) { groups, calculations, notes, checklists ->
+                groups.map { group ->
+                    val cat = GroupCategory.fromStorage(group.category)
+                    when (cat) {
+                        GroupCategory.CALCULATIONS -> UnifiedGroupItem(
+                            group = group,
+                            calculations = calculations.filter { it.calculation.groupId == group.id }
+                        )
+                        GroupCategory.NOTES -> UnifiedGroupItem(
+                            group = group,
+                            notes = notes.filter { it.groupId == group.id }
+                        )
+                        GroupCategory.CHECKLISTS -> UnifiedGroupItem(
+                            group = group,
+                            checklists = checklists.filter { it.checklist.groupId == group.id }
+                        )
+                    }
+                }
+            }.collect { unifiedList ->
                 _uiState.value = _uiState.value.copy(
-                    groups = list,
+                    groups = unifiedList,
                     isLoading = false
                 )
             }
         }
+    }
+
+    fun setFilterCategory(category: GroupCategory?) {
+        _uiState.value = _uiState.value.copy(filteredCategory = category)
     }
 
     fun openCreateDialog() {
@@ -44,7 +90,8 @@ class GroupsViewModel(
             isCreateOrEditDialogOpen = true,
             editingGroup = null,
             groupNameInput = "",
-            selectedColorHex = "#F4D66D"
+            selectedColorHex = "#F4D66D",
+            selectedCategory = _uiState.value.filteredCategory ?: GroupCategory.CALCULATIONS
         )
     }
 
@@ -53,7 +100,8 @@ class GroupsViewModel(
             isCreateOrEditDialogOpen = true,
             editingGroup = group,
             groupNameInput = group.name,
-            selectedColorHex = group.colorHex
+            selectedColorHex = group.colorHex,
+            selectedCategory = GroupCategory.fromStorage(group.category)
         )
     }
 
@@ -63,6 +111,10 @@ class GroupsViewModel(
 
     fun selectColorHex(hex: String) {
         _uiState.value = _uiState.value.copy(selectedColorHex = hex)
+    }
+
+    fun selectCategory(category: GroupCategory) {
+        _uiState.value = _uiState.value.copy(selectedCategory = category)
     }
 
     fun dismissCreateOrEditDialog() {
@@ -79,12 +131,19 @@ class GroupsViewModel(
 
         val editing = _uiState.value.editingGroup
         val colorHex = _uiState.value.selectedColorHex
+        val category = _uiState.value.selectedCategory.storageKey
 
         viewModelScope.launch {
             if (editing != null) {
-                calculationRepository.updateGroup(editing.copy(name = name, colorHex = colorHex))
+                calculationRepository.updateGroup(
+                    editing.copy(
+                        name = name,
+                        colorHex = colorHex,
+                        category = category
+                    )
+                )
             } else {
-                calculationRepository.createGroup(name, colorHex)
+                calculationRepository.createGroup(name, colorHex, category)
             }
             dismissCreateOrEditDialog()
         }
