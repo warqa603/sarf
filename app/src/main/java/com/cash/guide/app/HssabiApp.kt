@@ -172,7 +172,8 @@ fun HssabiApp(
             repository = calculationRepository,
             settingsRepository = settingsRepository,
             checklistRepository = checklistRepository,
-            noteRepository = noteRepository
+            noteRepository = noteRepository,
+            reminderRepository = reminderRepository
         )
     }
     val groupsViewModel = viewModel { GroupsViewModel(calculationRepository) }

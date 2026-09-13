@@ -7,14 +7,18 @@ import com.cash.guide.R
 import com.cash.guide.data.CalculationRepository
 import com.cash.guide.data.ChecklistRepository
 import com.cash.guide.data.NoteRepository
+import com.cash.guide.data.ReminderRepository
 import com.cash.guide.data.SettingsRepository
 import com.cash.guide.data.db.CalculationWithItems
 import com.cash.guide.data.db.ChecklistWithItems
 import com.cash.guide.data.db.NoteEntity
+import com.cash.guide.data.db.ReminderEntity
+import com.cash.guide.data.db.ReminderRecurrence
 import com.cash.guide.domain.ActivityDateGroupHelper
 import com.cash.guide.domain.DateGroupHelper
 import com.cash.guide.domain.RecentActivityItem
 import com.cash.guide.domain.reminder.CreditReminderScheduler
+import com.cash.guide.domain.reminder.GeneralReminderScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,7 +34,8 @@ class HomeViewModel(
     val repository: CalculationRepository,
     private val settingsRepository: SettingsRepository? = null,
     private val checklistRepository: ChecklistRepository? = null,
-    private val noteRepository: NoteRepository? = null
+    private val noteRepository: NoteRepository? = null,
+    private val reminderRepository: ReminderRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -39,6 +44,7 @@ class HomeViewModel(
     private var allCalculations: List<CalculationWithItems> = emptyList()
     private var allChecklists: List<ChecklistWithItems> = emptyList()
     private var allNotes: List<NoteEntity> = emptyList()
+    private var allReminders: List<ReminderEntity> = emptyList()
     private var lastContext: Context? = null
 
     init {
@@ -71,15 +77,17 @@ class HomeViewModel(
             val calcsFlow = repository.observeAllSaved()
             val checklistsFlow = checklistRepository?.observeAll() ?: flowOf(emptyList())
             val notesFlow = noteRepository?.observeAll() ?: flowOf(emptyList())
+            val remindersFlow = reminderRepository?.allReminders ?: flowOf(emptyList())
             val groupsFlow = repository.observeAllGroupsWithCalculations()
 
-            combine(calcsFlow, checklistsFlow, notesFlow, groupsFlow) { calcs, checklists, notes, groups ->
-                HomeSourceData(calcs, checklists, notes, groups)
+            combine(calcsFlow, checklistsFlow, notesFlow, remindersFlow, groupsFlow) { calcs, checklists, notes, reminders, groups ->
+                HomeSourceData(calcs, checklists, notes, reminders, groups)
             }.collect { source ->
-                val (calcs, checklists, notes, groups) = source
+                val (calcs, checklists, notes, reminders, groups) = source
                 allCalculations = calcs
                 allChecklists = checklists
                 allNotes = notes
+                allReminders = reminders
                 _uiState.update {
                     it.copy(
                         favoriteGroups = groups
@@ -349,23 +357,60 @@ class HomeViewModel(
         val currentWeek = nowCal.get(java.util.Calendar.WEEK_OF_YEAR)
         val currentYear = nowCal.get(java.util.Calendar.YEAR)
 
-        val weekItems = allCalculations.filter { calc ->
+        // 1. Calculation reminders for the week
+        val weekCalcItems = allCalculations.filter { calc ->
             val due = calc.calculation.dueDateEpochMs
             val isUnpaid = (calc.calculation.calcType == "CREDIT" || calc.calculation.paymentStatus == "UNPAID") && calc.calculation.paymentStatus != "PAID"
             val hasReminder = calc.calculation.reminderEnabled
             if (due != null) {
                 val dueCal = java.util.Calendar.getInstance().apply { timeInMillis = due }
                 (dueCal.get(java.util.Calendar.YEAR) == currentYear && dueCal.get(java.util.Calendar.WEEK_OF_YEAR) == currentWeek) ||
-                (due <= System.currentTimeMillis() && isUnpaid)
+                (due <= nowMs && isUnpaid)
             } else {
                 hasReminder || isUnpaid
             }
-        }.sortedWith(
-            compareBy<CalculationWithItems> { it.calculation.dueDateEpochMs ?: Long.MAX_VALUE }
-                .thenByDescending { it.calculation.updatedAtEpochMs }
+        }.map { HomeWeekReminderItem.Calculation(it) }
+
+        // 2. General reminders (from Reminders activity) for the week
+        val weekGeneralItems = allReminders.filter { reminder ->
+            if (!reminder.isEnabled || reminder.isCompleted) return@filter false
+
+            val targetCal = java.util.Calendar.getInstance().apply { timeInMillis = reminder.targetEpochMs }
+            val inCurrentWeek = targetCal.get(java.util.Calendar.YEAR) == currentYear &&
+                targetCal.get(java.util.Calendar.WEEK_OF_YEAR) == currentWeek
+            val isOverdue = reminder.targetEpochMs <= nowMs
+
+            when (reminder.recurrenceType) {
+                ReminderRecurrence.ONCE.name -> inCurrentWeek || isOverdue
+                ReminderRecurrence.DAILY.name -> true
+                ReminderRecurrence.WEEKLY.name -> true
+                else -> {
+                    val nextEpoch = GeneralReminderScheduler.calculateNextOccurrence(
+                        currentTime = nowMs,
+                        targetEpochMs = reminder.targetEpochMs,
+                        recurrenceType = reminder.recurrenceType,
+                        repeatDays = reminder.repeatDays,
+                        timeHour = reminder.timeHour,
+                        timeMinute = reminder.timeMinute
+                    )
+                    val nextCal = java.util.Calendar.getInstance().apply { timeInMillis = nextEpoch }
+                    (nextCal.get(java.util.Calendar.YEAR) == currentYear && nextCal.get(java.util.Calendar.WEEK_OF_YEAR) == currentWeek) ||
+                        inCurrentWeek || isOverdue
+                }
+            }
+        }.map { HomeWeekReminderItem.General(it) }
+
+        val weekItems: List<HomeWeekReminderItem> = (weekGeneralItems + weekCalcItems).sortedWith(
+            compareBy<HomeWeekReminderItem> { it.targetEpochMs }
         )
 
-        val activeWeekReminders = if (weekItems.isNotEmpty()) weekItems else reminders
+        // Fallback if no items strictly this week: all active reminders
+        val allActiveGeneral = allReminders.filter { it.isEnabled && !it.isCompleted }
+            .map { HomeWeekReminderItem.General(it) }
+        val allActiveCalcs = reminders.map { HomeWeekReminderItem.Calculation(it) }
+        val allActiveReminders = (allActiveGeneral + allActiveCalcs).sortedBy { it.targetEpochMs }
+
+        val activeWeekReminders = if (weekItems.isNotEmpty()) weekItems else allActiveReminders
 
         // Top 5 items for the home sections (Notes, Checklists, Calculations)
         val top5Notes: List<RecentActivityItem> = filteredNotes
@@ -502,5 +547,6 @@ private data class HomeSourceData(
     val calculations: List<CalculationWithItems>,
     val checklists: List<ChecklistWithItems>,
     val notes: List<NoteEntity>,
+    val reminders: List<ReminderEntity>,
     val groups: List<com.cash.guide.data.db.CalculationGroupWithCalculations>
 )

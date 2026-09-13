@@ -121,6 +121,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import com.cash.guide.data.TemplateRepository
 import com.cash.guide.data.db.CalculationWithItems
+import com.cash.guide.data.db.ReminderRecurrence
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this
@@ -284,7 +285,8 @@ fun HomeScreen(
             HomeWeekRemindersCarousel(
                 reminders = state.weekReminders,
                 isRtl = isRtl,
-                onOpenCalculation = onOpenCalculation
+                onOpenCalculation = onOpenCalculation,
+                onOpenReminders = onOpenReminders
             )
 
             // 1 rule spacer before content
@@ -866,11 +868,13 @@ private fun CategoryQuickCard(
  * Height: 58.dp (2 ruled lines), black ink outline (0.95dp), clean paper background.
  * Cycles every 3.5s when there are multiple reminders.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 private fun HomeWeekRemindersCarousel(
-    reminders: List<CalculationWithItems>,
+    reminders: List<HomeWeekReminderItem>,
     isRtl: Boolean,
     onOpenCalculation: (String) -> Unit,
+    onOpenReminders: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val currentReminders by rememberUpdatedState(reminders)
@@ -910,30 +914,47 @@ private fun HomeWeekRemindersCarousel(
             )
     ) {
         if (reminders.isEmpty()) {
-            // Empty state slide
+            // Empty state slide: clickable to open Reminders activity
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .clickable(
+                        role = Role.Button,
+                        onClick = onOpenReminders
+                    )
                     .padding(horizontal = 14.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.Start
             ) {
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(7.dp)
-                            .background(Color(0xFF3B82F6), CircleShape)
-                    )
-                    Text(
-                        text = stringResource(R.string.home_week_reminders_title),
-                        fontFamily = resolveJournalFont(stringResource(R.string.home_week_reminders_title), isRtl),
-                        fontSize = 12.5.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = JournalWritingInk,
-                        style = TextStyle(platformStyle = NoFontPadding)
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(7.dp)
+                                .background(Color(0xFF3B82F6), CircleShape)
+                        )
+                        Text(
+                            text = stringResource(R.string.home_week_reminders_title),
+                            fontFamily = resolveJournalFont(stringResource(R.string.home_week_reminders_title), isRtl),
+                            fontSize = 12.5.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = JournalWritingInk,
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                    }
+
+                    HisabiSketchIcon(
+                        symbol = HisabiSymbol.Plus,
+                        contentDescription = null,
+                        tint = Color(0xFF3B82F6),
+                        size = 14.dp
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
@@ -952,29 +973,18 @@ private fun HomeWeekRemindersCarousel(
                 modifier = Modifier.fillMaxSize()
             ) { page ->
                 val item = reminders[page]
-                val calcTitle = item.calculation.title.ifBlank {
-                    stringResource(R.string.home_quick_calculation)
-                }
-                val reminderEpoch = item.calculation.dueDateEpochMs
-                    ?: item.calculation.reminderTimeEpochMs
-                    ?: item.calculation.updatedAtEpochMs
-                val reminderDateStr = dateFormat.format(Date(reminderEpoch))
-
-                val currencyUnit = runCatching { MoneyUnit.valueOf(item.calculation.currency) }.getOrDefault(MoneyUnit.DIRHAM)
-                val totalNumber = JournalLedgerManager.formatTotal(item.totalCentimes, currencyUnit)
-                val currencySuffix = when {
-                    isRtl -> if (currencyUnit == MoneyUnit.DIRHAM) stringResource(R.string.currency_dirham) else stringResource(R.string.currency_rial)
-                    currencyUnit == MoneyUnit.DIRHAM -> "DH"
-                    else -> "Rial"
-                }
-                val totalFormatted = "$totalNumber $currencySuffix"
 
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .clickable(
                             role = Role.Button,
-                            onClick = { onOpenCalculation(item.calculation.id) }
+                            onClick = {
+                                when (item) {
+                                    is HomeWeekReminderItem.General -> onOpenReminders()
+                                    is HomeWeekReminderItem.Calculation -> onOpenCalculation(item.calculationWithItems.calculation.id)
+                                }
+                            }
                         )
                         .padding(horizontal = 14.dp, vertical = 9.dp),
                     verticalArrangement = Arrangement.SpaceBetween
@@ -1024,15 +1034,23 @@ private fun HomeWeekRemindersCarousel(
                         }
                     }
 
-                    // Row 2 (Middle): Calculation Title
+                    // Row 2 (Middle): Title
+                    val itemTitle = when (item) {
+                        is HomeWeekReminderItem.General -> item.reminder.title.ifBlank {
+                            if (isRtl) "تذكير" else "Rappel"
+                        }
+                        is HomeWeekReminderItem.Calculation -> item.calculationWithItems.calculation.title.ifBlank {
+                            stringResource(R.string.home_quick_calculation)
+                        }
+                    }
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            text = calcTitle,
-                            fontFamily = resolveJournalFont(calcTitle, isRtl),
+                            text = itemTitle,
+                            fontFamily = resolveJournalFont(itemTitle, isRtl),
                             fontSize = 15.5.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = JournalWritingInk,
@@ -1043,44 +1061,130 @@ private fun HomeWeekRemindersCarousel(
                         )
                     }
 
-                    // Row 3 (Bottom): Reminder date with blue bell icon on start, Amount on end
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            HisabiSketchIcon(
-                                symbol = HisabiSymbol.Bell,
-                                contentDescription = null,
-                                tint = Color(0xFF3B82F6),
-                                size = 13.dp
-                            )
-                            Text(
-                                text = reminderDateStr,
-                                fontFamily = PatrickHandFamily,
-                                fontSize = 13.5.sp,
-                                fontWeight = FontWeight.Normal,
-                                color = if (item.calculation.dueDateEpochMs != null && item.calculation.dueDateEpochMs <= System.currentTimeMillis() && item.calculation.paymentStatus == "UNPAID") {
-                                    Color(0xFFDC2626)
-                                } else {
-                                    Color(0xFFC2410C)
-                                },
-                                style = TextStyle(platformStyle = NoFontPadding)
-                            )
-                        }
+                    // Row 3 (Bottom): Date/Time + (Recurrence pill OR Amount)
+                    when (item) {
+                        is HomeWeekReminderItem.General -> {
+                            val reminderDateStr = dateFormat.format(Date(item.reminder.targetEpochMs))
+                            val timeStr = String.format(Locale.US, "%02d:%02d", item.reminder.timeHour, item.reminder.timeMinute)
+                            val dateTimeStr = "$reminderDateStr • $timeStr"
+                            val isOverdue = item.reminder.targetEpochMs <= System.currentTimeMillis()
 
-                        Text(
-                            text = totalFormatted,
-                            fontFamily = PatrickHandFamily,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Normal,
-                            color = if (item.calculation.paymentStatus == "UNPAID") Color(0xFFDC2626) else JournalWritingInk,
-                            style = TextStyle(platformStyle = NoFontPadding)
-                        )
+                            val recurrenceLabel = when (item.reminder.recurrenceType) {
+                                ReminderRecurrence.DAILY.name -> if (isRtl) "يومياً" else "Quotidien"
+                                ReminderRecurrence.WEEKLY.name -> if (isRtl) "أسبوعياً" else "Hebdo"
+                                ReminderRecurrence.MONTHLY.name -> if (isRtl) "شهرياً" else "Mensuel"
+                                ReminderRecurrence.EVERY_3_MONTHS.name -> if (isRtl) "كل 3 أشهر" else "3 mois"
+                                ReminderRecurrence.EVERY_6_MONTHS.name -> if (isRtl) "كل 6 أشهر" else "6 mois"
+                                ReminderRecurrence.YEARLY.name -> if (isRtl) "سنوياً" else "Annuel"
+                                else -> if (isRtl) "تذكير" else "Rappel"
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    HisabiSketchIcon(
+                                        symbol = HisabiSymbol.Bell,
+                                        contentDescription = null,
+                                        tint = Color(0xFF3B82F6),
+                                        size = 13.dp
+                                    )
+                                    Text(
+                                        text = dateTimeStr,
+                                        fontFamily = PatrickHandFamily,
+                                        fontSize = 13.5.sp,
+                                        fontWeight = FontWeight.Normal,
+                                        color = if (isOverdue) Color(0xFFDC2626) else Color(0xFF2563EB),
+                                        style = TextStyle(platformStyle = NoFontPadding)
+                                    )
+                                }
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(HighlighterBlue.copy(alpha = 0.35f))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = recurrenceLabel,
+                                        fontFamily = resolveJournalFont(recurrenceLabel, isRtl),
+                                        fontSize = 11.5.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color(0xFF1E40AF),
+                                        style = TextStyle(platformStyle = NoFontPadding)
+                                    )
+                                    Text(
+                                        text = if (isRtl) "←" else "→",
+                                        fontFamily = PatrickHandFamily,
+                                        fontSize = 11.sp,
+                                        color = Color(0xFF1E40AF),
+                                        style = TextStyle(platformStyle = NoFontPadding)
+                                    )
+                                }
+                            }
+                        }
+                        is HomeWeekReminderItem.Calculation -> {
+                            val calc = item.calculationWithItems
+                            val reminderEpoch = calc.calculation.dueDateEpochMs
+                                ?: calc.calculation.reminderTimeEpochMs
+                                ?: calc.calculation.updatedAtEpochMs
+                            val reminderDateStr = dateFormat.format(Date(reminderEpoch))
+
+                            val currencyUnit = runCatching { MoneyUnit.valueOf(calc.calculation.currency) }.getOrDefault(MoneyUnit.DIRHAM)
+                            val totalNumber = JournalLedgerManager.formatTotal(calc.totalCentimes, currencyUnit)
+                            val currencySuffix = when {
+                                isRtl -> if (currencyUnit == MoneyUnit.DIRHAM) stringResource(R.string.currency_dirham) else stringResource(R.string.currency_rial)
+                                currencyUnit == MoneyUnit.DIRHAM -> "DH"
+                                else -> "Rial"
+                            }
+                            val totalFormatted = "$totalNumber $currencySuffix"
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    HisabiSketchIcon(
+                                        symbol = HisabiSymbol.Bell,
+                                        contentDescription = null,
+                                        tint = Color(0xFF3B82F6),
+                                        size = 13.dp
+                                    )
+                                    Text(
+                                        text = reminderDateStr,
+                                        fontFamily = PatrickHandFamily,
+                                        fontSize = 13.5.sp,
+                                        fontWeight = FontWeight.Normal,
+                                        color = if (calc.calculation.dueDateEpochMs != null && calc.calculation.dueDateEpochMs <= System.currentTimeMillis() && calc.calculation.paymentStatus == "UNPAID") {
+                                            Color(0xFFDC2626)
+                                        } else {
+                                            Color(0xFFC2410C)
+                                        },
+                                        style = TextStyle(platformStyle = NoFontPadding)
+                                    )
+                                }
+
+                                Text(
+                                    text = totalFormatted,
+                                    fontFamily = PatrickHandFamily,
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Normal,
+                                    color = if (calc.calculation.paymentStatus == "UNPAID") Color(0xFFDC2626) else JournalWritingInk,
+                                    style = TextStyle(platformStyle = NoFontPadding)
+                                )
+                            }
+                        }
                     }
                 }
             }

@@ -72,14 +72,16 @@ import com.cash.guide.ui.notebook.JournalRuleSpacing
 import com.cash.guide.ui.notebook.JournalRuledDocument
 import com.cash.guide.ui.notebook.JournalSectionBadge
 import com.cash.guide.ui.notebook.JournalWritingInk
+import com.cash.guide.ui.notebook.MonthPickerDialog
+import com.cash.guide.ui.notebook.NotebookSearchField
 import com.cash.guide.ui.notebook.NoFontPadding
-import com.cash.guide.ui.notebook.JournalInlineSearchRow
 import com.cash.guide.ui.notebook.PatrickHandFamily
 import com.cash.guide.ui.notebook.TajawalFamily
 import com.cash.guide.ui.notebook.isArabicScript
 import com.cash.guide.ui.notebook.journalBaselineOnRule
 import com.cash.guide.ui.notebook.resolveJournalFont
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -103,7 +105,16 @@ fun ChecklistsOverviewScreen(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    var searchQuery by remember { mutableStateOf("") }
+    var showMonthPicker by remember { mutableStateOf(false) }
+
+    val currentMonthHeaderFormatter = remember {
+        SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+    }
+    val currentMonthDisplay = remember {
+        val raw = currentMonthHeaderFormatter.format(Date())
+        raw.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+    }
+
     var isSearchFocused by remember { mutableStateOf(false) }
     val isImeVisible = WindowInsets.isImeVisible
     LaunchedEffect(isImeVisible) {
@@ -123,17 +134,7 @@ fun ChecklistsOverviewScreen(
         focusManager.clearFocus(force = true)
     }
 
-    val filteredChecklists = remember(checklists, searchQuery) {
-        if (searchQuery.isBlank()) {
-            checklists
-        } else {
-            val q = searchQuery.trim()
-            checklists.filter { item ->
-                item.checklist.title.contains(q, ignoreCase = true) ||
-                    item.items.any { it.text.contains(q, ignoreCase = true) }
-            }
-        }
-    }
+    val filteredChecklists = uiState.filteredChecklists
 
     val rowDotColors = remember {
         listOf(
@@ -222,12 +223,18 @@ fun ChecklistsOverviewScreen(
                         }
                     }
 
-                    // End: count badge
+                    // End: Current / Selected Month (e.g. "Septembre 2026")
+                    val headerMonthText = if (uiState.selectedMonthKey != null) {
+                        uiState.availableMonths.firstOrNull { it.first == uiState.selectedMonthKey }?.second
+                            ?: uiState.selectedMonthKey!!
+                    } else {
+                        currentMonthDisplay
+                    }
+
                     Text(
-                        text = if (isRtl) "${checklists.size} قوائم" else "${checklists.size} listes",
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                        fontSize = if (isRtl) 14.sp else 14.5.sp,
-                        fontWeight = FontWeight.Medium,
+                        text = headerMonthText,
+                        fontFamily = PatrickHandFamily,
+                        fontSize = 15.sp,
                         color = JournalWritingInk.copy(alpha = 0.80f),
                         style = TextStyle(platformStyle = NoFontPadding),
                         modifier = Modifier.padding(end = 8.dp)
@@ -245,11 +252,13 @@ fun ChecklistsOverviewScreen(
                 // Line 1: 1 exact notebook rule spacer (29dp)
                 Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-                // Line 2: Search Bar directly resting on the ruled blue line (29dp)
-                JournalInlineSearchRow(
-                    query = searchQuery,
-                    onQueryChange = { query -> searchQuery = query },
-                    placeholder = if (isRtl) "بحث في قوائم المهام..." else "Rechercher une checklist..."
+                // Line 2: Search Bar + Calendar Icon directly resting on the ruled blue line (29dp)
+                NotebookSearchField(
+                    query = uiState.searchQuery,
+                    onQueryChange = { query -> viewModel.updateSearchQuery(query) },
+                    placeholder = if (isRtl) "بحث في قوائم المهام..." else "Rechercher une checklist...",
+                    onOpenCalendar = { showMonthPicker = true },
+                    isDateFiltered = uiState.selectedMonthKey != null
                 )
 
                 // Line 3: 1 rule spacer (tna9ez star)
@@ -306,7 +315,32 @@ fun ChecklistsOverviewScreen(
                 val sectionText = if (isRtl) "جميع القوائم" else "Toutes les checklists"
                 JournalSectionBadge(
                     title = sectionText,
-                    badgeColor = HighlighterGreen.copy(alpha = 0.30f)
+                    badgeColor = HighlighterGreen.copy(alpha = 0.30f),
+                    trailingContent = if (uiState.selectedMonthKey != null) {
+                        {
+                            val activeMonthDisplay = uiState.availableMonths
+                                .firstOrNull { it.first == uiState.selectedMonthKey }?.second ?: uiState.selectedMonthKey!!
+                            Row(
+                                modifier = Modifier
+                                    .height(JournalRuleSpacing)
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(HighlighterGreen.copy(alpha = 0.50f))
+                                    .clickable { viewModel.selectMonth(null) }
+                                    .padding(horizontal = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "$activeMonthDisplay ✕",
+                                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF166534),
+                                    style = TextStyle(platformStyle = NoFontPadding)
+                                )
+                            }
+                        }
+                    } else null
                 )
 
                 // Line 5+: Content dial checklists
@@ -327,7 +361,7 @@ fun ChecklistsOverviewScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = if (searchQuery.isNotBlank()) {
+                            text = if (uiState.searchQuery.isNotBlank() || uiState.selectedMonthKey != null) {
                                 if (isRtl) "لا توجد نتائج للبحث" else "Aucune checklist trouvée"
                             } else {
                                 if (isRtl) "لا توجد أي قائمة حالياً" else "Aucune checklist pour l'instant"
@@ -517,6 +551,27 @@ fun ChecklistsOverviewScreen(
                         color = JournalMutedInk
                     )
                 }
+            }
+        )
+    }
+
+    // Month Picker Dialog
+    if (showMonthPicker) {
+        val cal = remember { Calendar.getInstance() }
+        val initialYear = remember(uiState.selectedMonthKey) {
+            uiState.selectedMonthKey?.split("-")?.firstOrNull()?.toIntOrNull() ?: cal.get(Calendar.YEAR)
+        }
+        val initialMonth = remember(uiState.selectedMonthKey) {
+            uiState.selectedMonthKey?.split("-")?.getOrNull(1)?.toIntOrNull() ?: (cal.get(Calendar.MONTH) + 1)
+        }
+        MonthPickerDialog(
+            initialYear = initialYear,
+            initialMonth = initialMonth,
+            onDismiss = { showMonthPicker = false },
+            onSelectMonth = { year, month ->
+                showMonthPicker = false
+                val key = String.format(Locale.US, "%04d-%02d", year, month)
+                viewModel.selectMonth(key)
             }
         )
     }
