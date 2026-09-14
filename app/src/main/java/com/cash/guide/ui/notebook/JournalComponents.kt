@@ -35,7 +35,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentHeight
+import com.cash.guide.domain.MoneyMath
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -4043,13 +4046,13 @@ private fun JournalBackspaceKeyCell(
 }
 
 /**
- * Large Full Calculator Popup Modal:
- * - Centered on dimmed notebook paper background (~90-94% width, ~68-74% usable height)
- * - Top-right hand-drawn '×' close icon (48dp x 48dp target)
- * - Expression & evaluated result displays
- * - Full arithmetic keypad (4x4 grid with pastel operator dabs + full-width '=' row)
+ * Contextual calculator popup modal for calculation editor and ledger screens.
+ * Redesigned for compact notebook carnet elegance:
+ * - Wrap-content height eliminating unnecessary empty space
+ * - Title row with hand-drawn mini calculator sketch + close button
+ * - Display area: Expression on top ("l2ar9am dial lcalcul lfo9"), blue notebook ruled divider line, Total on bottom ("totoal lta7t") with live preview
+ * - Keypad: 5x4 grid with (, ), C, digits, backspace, and pastel operator dabs
  * - Full-width 'Confirmer' action with pink marker stroke
- * - Back button closes popup without applying
  */
 @Composable
 fun JournalCalculatorPopup(
@@ -4062,6 +4065,13 @@ fun JournalCalculatorPopup(
     onDismiss: () -> Unit
 ) {
     BackHandler(onBack = onDismiss)
+
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
+    LaunchedEffect(Unit) {
+        keyboardController?.hide()
+        focusManager.clearFocus()
+    }
 
     Box(
         modifier = Modifier
@@ -4077,8 +4087,9 @@ fun JournalCalculatorPopup(
         // Inner card modal
         Surface(
             modifier = Modifier
+                .widthIn(max = 380.dp)
                 .fillMaxWidth(0.92f)
-                .fillMaxHeight(0.74f)
+                .wrapContentHeight()
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
@@ -4086,13 +4097,17 @@ fun JournalCalculatorPopup(
                 )
                 .semantics { testTag = "tag_popup_container" },
             color = JournalPaper,
-            shape = RoundedCornerShape(14.dp),
-            border = BorderStroke(0.85.dp, JournalInk.copy(alpha = 0.82f)),
-            shadowElevation = 4.dp
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, JournalInk.copy(alpha = 0.75f)),
+            shadowElevation = 6.dp
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+            ) {
                 // Subtle tactile paper grain
-                Canvas(modifier = Modifier.fillMaxSize()) {
+                Canvas(modifier = Modifier.matchParentSize()) {
                     val dotColor = JournalInk.copy(alpha = 0.022f)
                     var px = 16f
                     while (px < size.width) {
@@ -4107,18 +4122,47 @@ fun JournalCalculatorPopup(
 
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.SpaceBetween
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Top Bar: Close "×" button on upper-right
+                    // Header Bar: Title with mini calculator sketch on left, Close "×" button on right
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Canvas(modifier = Modifier.size(16.dp)) {
+                                val strokeW = 1.2.dp.toPx()
+                                val ink = JournalInk.copy(alpha = 0.7f)
+                                drawRoundRect(
+                                    color = ink,
+                                    topLeft = Offset(1.dp.toPx(), 1.dp.toPx()),
+                                    size = androidx.compose.ui.geometry.Size(size.width - 2.dp.toPx(), size.height - 2.dp.toPx()),
+                                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(2.dp.toPx(), 2.dp.toPx()),
+                                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeW)
+                                )
+                                drawLine(ink, Offset(3.dp.toPx(), 5.dp.toPx()), Offset(size.width - 3.dp.toPx(), 5.dp.toPx()), strokeW)
+                            }
+                            Text(
+                                text = "Calculatrice",
+                                style = TextStyle(
+                                    fontFamily = JournalHandFamily,
+                                    fontSize = 17.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = JournalInk.copy(alpha = 0.85f),
+                                    platformStyle = NoFontPadding
+                                )
+                            )
+                        }
+
                         Box(
                             modifier = Modifier
-                                .size(48.dp)
+                                .size(44.dp)
                                 .clickable(
                                     role = Role.Button,
                                     onClickLabel = "Fermer la calculatrice",
@@ -4127,9 +4171,9 @@ fun JournalCalculatorPopup(
                                 .semantics { testTag = "tag_popup_close_button" },
                             contentAlignment = Alignment.Center
                         ) {
-                            Canvas(modifier = Modifier.size(18.dp)) {
-                                val strokeW = 1.45.dp.toPx()
-                                val ink = JournalInk.copy(alpha = 0.9f)
+                            Canvas(modifier = Modifier.size(16.dp)) {
+                                val strokeW = 1.5.dp.toPx()
+                                val ink = JournalInk.copy(alpha = 0.85f)
                                 val pad = 2.dp.toPx()
                                 drawLine(ink, Offset(pad, pad), Offset(size.width - pad, size.height - pad), strokeW, StrokeCap.Round)
                                 drawLine(ink, Offset(size.width - pad, pad), Offset(pad, size.height - pad), strokeW, StrokeCap.Round)
@@ -4137,91 +4181,133 @@ fun JournalCalculatorPopup(
                         }
                     }
 
-                    // Display Area: Expression & Result
-                    Column(
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Display Area: Expression on top ("l2ar9am dial lcalcul lfo9"), Total on bottom ("totoal lta7t")
+                    Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f)
-                            .padding(horizontal = 12.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Bottom
+                            .padding(vertical = 4.dp),
+                        color = JournalDockBg.copy(alpha = 0.45f),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(0.8.dp, JournalInk.copy(alpha = 0.22f))
                     ) {
-                        if (expression.isNotBlank()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 10.dp)
+                        ) {
+                            // Top Row: Numbers of calculation (formatted expression)
                             val formattedExpr = remember(expression) {
-                                JournalLedgerManager.formatDisplayExpression(expression)
+                                if (expression.isNotBlank()) {
+                                    JournalLedgerManager.formatDisplayExpression(expression)
+                                } else ""
                             }
                             Text(
-                                text = formattedExpr,
+                                text = formattedExpr.ifEmpty { " " },
                                 style = TextStyle(
                                     fontFamily = JournalHandFamily,
-                                    fontSize = 18.sp,
-                                    color = JournalInk
+                                    fontSize = 19.sp,
+                                    color = JournalInk.copy(alpha = 0.85f),
+                                    platformStyle = NoFontPadding
                                 ),
-                                textAlign = TextAlign.Center,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.End,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .semantics { testTag = "tag_popup_expression_display" }
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                        }
 
-                        if (hasError) {
-                            val errorText = stringResource(R.string.calculator_error)
-                            Text(
-                                text = errorText,
-                                style = TextStyle(
-                                    fontFamily = resolveJournalFont(errorText),
-                                    fontSize = 15.sp,
-                                    color = ColorCoral
-                                ),
-                                textAlign = TextAlign.Center,
+                            // Blue notebook ruled divider line
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .semantics { testTag = "tag_popup_result_display" }
+                                    .padding(vertical = 4.dp)
+                                    .height(0.8.dp)
+                                    .background(JournalRule.copy(alpha = 0.85f))
                             )
-                        } else if (result.isNotBlank()) {
-                            Text(
-                                text = result,
-                                style = TextStyle(
-                                    fontFamily = JournalHandFamily,
-                                    fontSize = 22.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = JournalInk
-                                ),
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .semantics { testTag = "tag_popup_result_display" }
-                            )
-                        } else if (expression.isBlank()) {
-                            Text(
-                                text = "0",
-                                style = TextStyle(
-                                    fontFamily = JournalHandFamily,
-                                    fontSize = 22.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = JournalMutedInk.copy(alpha = 0.5f)
-                                ),
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .semantics { testTag = "tag_popup_result_display" }
-                            )
+
+                            // Bottom Row: Total / Result
+                            if (hasError) {
+                                val errorText = stringResource(R.string.calculator_error)
+                                Text(
+                                    text = errorText,
+                                    style = TextStyle(
+                                        fontFamily = resolveJournalFont(errorText),
+                                        fontSize = 18.sp,
+                                        color = JournalErrorRed,
+                                        platformStyle = NoFontPadding
+                                    ),
+                                    textAlign = TextAlign.End,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .semantics { testTag = "tag_popup_result_display" }
+                                )
+                            } else {
+                                val livePreview = remember(expression, result) {
+                                    if (result.isNotBlank()) {
+                                        result
+                                    } else if (expression.isNotBlank()) {
+                                        MoneyMath.evaluate(expression)?.stripTrailingZeros()?.toPlainString()
+                                    } else null
+                                }
+
+                                val (totalText, totalColor) = when {
+                                    result.isNotBlank() -> Pair(result, JournalInk)
+                                    livePreview != null -> Pair(livePreview, JournalMutedInk.copy(alpha = 0.55f))
+                                    expression.isBlank() -> Pair("0", JournalMutedInk.copy(alpha = 0.4f))
+                                    else -> Pair(" ", JournalInk)
+                                }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.End,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    if (totalText != " " && totalText != "0") {
+                                        Text(
+                                            text = "= ",
+                                            style = TextStyle(
+                                                fontFamily = JournalHandFamily,
+                                                fontSize = 22.sp,
+                                                fontWeight = FontWeight.Normal,
+                                                color = totalColor,
+                                                platformStyle = NoFontPadding
+                                            )
+                                        )
+                                    }
+                                    Text(
+                                        text = totalText,
+                                        style = TextStyle(
+                                            fontFamily = JournalHandFamily,
+                                            fontSize = 28.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = totalColor,
+                                            platformStyle = NoFontPadding
+                                        ),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.semantics { testTag = "tag_popup_result_display" }
+                                    )
+                                }
+                            }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    // Full Arithmetic Keypad: 4x4 Grid + '=' Row + 'Confirmer' Row
+                    // Full Arithmetic Keypad: 5x4 Grid + 'Confirmer' Button
                     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(165.dp)
+                                .height(215.dp)
                                 .drawBehind {
-                                    val strokeW = 0.8.dp.toPx()
-                                    val gridLineColor = JournalInk.copy(alpha = 0.75f)
+                                    val strokeW = 0.85.dp.toPx()
+                                    val gridLineColor = JournalInk.copy(alpha = 0.65f)
 
+                                    // Outer border
                                     drawRect(
                                         color = gridLineColor,
                                         topLeft = Offset(0f, 0f),
@@ -4229,8 +4315,9 @@ fun JournalCalculatorPopup(
                                         style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeW)
                                     )
 
-                                    val rowH = size.height / 4f
-                                    for (i in 1..3) {
+                                    // 4 horizontal lines for 5 rows
+                                    val rowH = size.height / 5f
+                                    for (i in 1..4) {
                                         val y = rowH * i
                                         drawLine(
                                             color = gridLineColor,
@@ -4240,6 +4327,7 @@ fun JournalCalculatorPopup(
                                         )
                                     }
 
+                                    // 3 vertical lines for 4 columns
                                     val colW = size.width / 4f
                                     for (i in 1..3) {
                                         val x = colW * i
@@ -4252,15 +4340,23 @@ fun JournalCalculatorPopup(
                                     }
                                 }
                         ) {
-                            // Row 1: 1 | 2 | 3 | +
+                            // Row 1: C | ( | ) | ÷
+                            Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
+                                JournalKeyCell("C", Modifier.weight(1f)) { onKey("C") }
+                                JournalKeyCell("(", Modifier.weight(1f)) { onKey("(") }
+                                JournalKeyCell(")", Modifier.weight(1f)) { onKey(")") }
+                                JournalKeyCell("÷", Modifier.weight(1f), operatorDabColor = HighlighterBlue) { onKey("÷") }
+                            }
+
+                            // Row 2: 1 | 2 | 3 | ×
                             Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                                 JournalKeyCell("1", Modifier.weight(1f)) { onKey("1") }
                                 JournalKeyCell("2", Modifier.weight(1f)) { onKey("2") }
                                 JournalKeyCell("3", Modifier.weight(1f)) { onKey("3") }
-                                JournalKeyCell("+", Modifier.weight(1f), operatorDabColor = HighlighterPink) { onKey("+") }
+                                JournalKeyCell("×", Modifier.weight(1f), operatorDabColor = HighlighterGreen) { onKey("×") }
                             }
 
-                            // Row 2: 4 | 5 | 6 | −
+                            // Row 3: 4 | 5 | 6 | −
                             Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                                 JournalKeyCell("4", Modifier.weight(1f)) { onKey("4") }
                                 JournalKeyCell("5", Modifier.weight(1f)) { onKey("5") }
@@ -4268,51 +4364,28 @@ fun JournalCalculatorPopup(
                                 JournalKeyCell("−", Modifier.weight(1f), operatorDabColor = HighlighterYellow) { onKey("−") }
                             }
 
-                            // Row 3: 7 | 8 | 9 | ×
+                            // Row 4: 7 | 8 | 9 | +
                             Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                                 JournalKeyCell("7", Modifier.weight(1f)) { onKey("7") }
                                 JournalKeyCell("8", Modifier.weight(1f)) { onKey("8") }
                                 JournalKeyCell("9", Modifier.weight(1f)) { onKey("9") }
-                                JournalKeyCell("×", Modifier.weight(1f), operatorDabColor = HighlighterGreen) { onKey("×") }
+                                JournalKeyCell("+", Modifier.weight(1f), operatorDabColor = HighlighterPink) { onKey("+") }
                             }
 
-                            // Row 4: . | 0 | ⌫ | ÷
+                            // Row 5: . | 0 | ⌫ | =
                             Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
                                 JournalKeyCell(".", Modifier.weight(1f)) { onKey(".") }
                                 JournalKeyCell("0", Modifier.weight(1f)) { onKey("0") }
                                 JournalKeyCell("⌫", Modifier.weight(1f), isBackspace = true) { onKey("⌫") }
-                                JournalKeyCell("÷", Modifier.weight(1f), operatorDabColor = HighlighterBlue) { onKey("÷") }
+                                JournalKeyCell(
+                                    "=",
+                                    Modifier.weight(1f).semantics { testTag = "tag_popup_equals_key" },
+                                    operatorDabColor = HighlighterPink
+                                ) { onKey("=") }
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                        // '=' Button (Full Width, Centered Pink Dab)
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(36.dp)
-                                .clickable(
-                                    role = Role.Button,
-                                    onClickLabel = "Calculer le résultat",
-                                    onClick = { onKey("=") }
-                                )
-                                .journalOperatorDab(
-                                    color = HighlighterPink,
-                                    alpha = 0.78f,
-                                    widthDp = 54.dp,
-                                    heightDp = 20.dp
-                                )
-                                .semantics { testTag = "tag_popup_equals_key" },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "=",
-                                style = JournalKeyDigitStyle.copy(fontSize = 24.sp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(6.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
                         // 'Confirmer' Action Button (Organic Pink Marker Stroke centered around text)
                         val confirmAlpha = if (canConfirm) 0.85f else 0.28f
@@ -4334,8 +4407,8 @@ fun JournalCalculatorPopup(
                                 modifier = Modifier.journalHighlighter(
                                     color = HighlighterPink,
                                     alpha = confirmAlpha,
-                                    horizontalPadding = 22.dp,
-                                    verticalPadding = 1.0.dp,
+                                    horizontalPadding = 26.dp,
+                                    verticalPadding = 2.dp,
                                     seedVariant = 3
                                 )
                             ) {
@@ -4406,9 +4479,15 @@ private fun JournalKeyCell(
                 drawLine(ink, Offset(cx + d, cy - d), Offset(cx - d, cy + d), strokeW, StrokeCap.Round)
             }
         } else {
+            val style = when (text) {
+                "=" -> JournalKeyDigitStyle.copy(fontSize = 24.sp)
+                "(", ")" -> JournalKeyDigitStyle.copy(fontSize = 20.sp)
+                "C" -> JournalKeyDigitStyle.copy(fontWeight = FontWeight.Bold)
+                else -> JournalKeyDigitStyle
+            }
             Text(
                 text = text,
-                style = JournalKeyDigitStyle
+                style = style
             )
         }
     }

@@ -453,7 +453,11 @@ fun CalculationEditorScreen(
                 expression = state.calculator.expression,
                 result = state.calculator.result,
                 hasError = state.calculator.hasError,
-                canConfirm = state.calculator.isEvaluated && state.calculator.result.isNotBlank() && !state.calculator.hasError,
+                canConfirm = !state.calculator.hasError && (
+                    (state.calculator.isEvaluated && state.calculator.result.isNotBlank()) ||
+                    (state.calculator.result.isNotBlank()) ||
+                    (state.calculator.expression.isNotBlank() && MoneyMath.isValidExpression(state.calculator.expression))
+                ),
                 onKey = { viewModel.applyPopupKey(it) },
                 onConfirm = { viewModel.confirmPopupResult() },
                 onDismiss = { viewModel.closeCalculatorPopup() }

@@ -519,6 +519,12 @@ fun MoneyListApp() {
         fun applyPopupKey(key: String) {
             val operators = setOf('+', '−', '×', '÷')
             when (key) {
+                "C" -> {
+                    popupHasError = false
+                    popupIsEvaluated = false
+                    popupResult = ""
+                    popupExpression = ""
+                }
                 "⌫" -> {
                     popupHasError = false
                     popupIsEvaluated = false
@@ -551,9 +557,36 @@ fun MoneyListApp() {
                         popupResult = ""
                         popupExpression = when {
                             popupExpression.isBlank() -> popupExpression
+                            popupExpression.last() == '(' -> popupExpression
                             popupExpression.last() in operators -> popupExpression.dropLast(1) + key
                             else -> popupExpression + key
                         }
+                    }
+                }
+                "(" -> {
+                    popupHasError = false
+                    if (popupIsEvaluated) {
+                        popupExpression = "("
+                        popupResult = ""
+                        popupIsEvaluated = false
+                    } else {
+                        popupExpression = if (popupExpression.isNotEmpty() && (popupExpression.last().isDigit() || popupExpression.last() == ')')) {
+                            popupExpression + "×("
+                        } else {
+                            popupExpression + "("
+                        }
+                        popupResult = ""
+                        popupIsEvaluated = false
+                    }
+                }
+                ")" -> {
+                    popupHasError = false
+                    val openCount = popupExpression.count { it == '(' }
+                    val closeCount = popupExpression.count { it == ')' }
+                    if (!popupIsEvaluated && openCount > closeCount && popupExpression.isNotEmpty() && (popupExpression.last().isDigit() || popupExpression.last() == ')')) {
+                        popupExpression += ")"
+                        popupResult = ""
+                        popupIsEvaluated = false
                     }
                 }
                 "." -> {
@@ -565,7 +598,7 @@ fun MoneyListApp() {
                     } else {
                         popupResult = ""
                         popupIsEvaluated = false
-                        val lastPart = popupExpression.split('+', '−', '×', '÷').lastOrNull().orEmpty()
+                        val lastPart = popupExpression.split('+', '−', '×', '÷', '(', ')').lastOrNull().orEmpty()
                         popupExpression = when {
                             lastPart.contains('.') -> popupExpression
                             lastPart.isEmpty() -> popupExpression + "0."
@@ -582,13 +615,17 @@ fun MoneyListApp() {
                     } else {
                         popupResult = ""
                         popupIsEvaluated = false
-                        val lastPart = popupExpression.split('+', '−', '×', '÷').lastOrNull().orEmpty()
-                        if (lastPart == "0") {
-                            if (key != "0") {
-                                popupExpression = popupExpression.dropLast(1) + key
+                        if (popupExpression.isNotEmpty() && popupExpression.last() == ')') {
+                            popupExpression += "×" + key
+                        } else {
+                            val lastPart = popupExpression.split('+', '−', '×', '÷', '(', ')').lastOrNull().orEmpty()
+                            if (lastPart == "0") {
+                                if (key != "0") {
+                                    popupExpression = popupExpression.dropLast(1) + key
+                                }
+                            } else if (popupExpression.length < 32) {
+                                popupExpression += key
                             }
-                        } else if (popupExpression.length < 32) {
-                            popupExpression += key
                         }
                     }
                 }
@@ -596,9 +633,17 @@ fun MoneyListApp() {
         }
 
         fun confirmPopupResult() {
-            if (!popupIsEvaluated || popupResult.isBlank() || popupHasError) return
+            val targetResult = if (popupIsEvaluated && popupResult.isNotBlank() && !popupHasError) {
+                popupResult
+            } else if (!popupHasError && popupResult.isNotBlank()) {
+                popupResult
+            } else if (!popupHasError && popupExpression.isNotBlank()) {
+                MoneyMath.evaluate(popupExpression)?.stripTrailingZeros()?.toPlainString()
+            } else null
+
+            if (targetResult.isNullOrBlank() || targetResult.contains("NaN") || targetResult.contains("Infinity")) return
             val targetId = activeRowId.takeIf { id -> rows.any { it.id == id } } ?: return
-            updateAmount(targetId, TextFieldValue(text = popupResult, selection = TextRange(popupResult.length)))
+            updateAmount(targetId, TextFieldValue(text = targetResult, selection = TextRange(targetResult.length)))
             activeField = ActiveField.AMOUNT
             showCalculatorPopup = false
             popupExpression = ""
@@ -778,7 +823,11 @@ private fun HisabiCalculatorScreen(
     val currencySuffix = if (selectedUnit == MoneyUnit.DIRHAM) "DH" else "rial"
     val primaryFormatted = JournalLedgerManager.formatTotal(totalCentimes, selectedUnit)
 
-    val canConfirm = popupIsEvaluated && popupResult.isNotBlank() && !popupHasError && rows.any { it.id == activeRowId }
+    val canConfirm = !popupHasError && rows.any { it.id == activeRowId } && (
+        (popupIsEvaluated && popupResult.isNotBlank()) ||
+        (popupResult.isNotBlank()) ||
+        (popupExpression.isNotBlank() && MoneyMath.isValidExpression(popupExpression))
+    )
 
     var dockHeightPx by remember { mutableStateOf(0) }
     val density = LocalDensity.current

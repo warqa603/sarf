@@ -90,9 +90,18 @@ object JournalLedgerManager {
                 numBuffer.append(c)
             } else if (c in operators) {
                 flushNumber()
-                if (sb.isNotEmpty() && sb.last() != ' ') sb.append(' ')
+                if (sb.isNotEmpty() && sb.last() != ' ' && sb.last() != '(') sb.append(' ')
                 sb.append(c)
                 sb.append(' ')
+            } else if (c == '(') {
+                flushNumber()
+                if (sb.isNotEmpty() && (sb.last().isDigit() || sb.last() == ')')) {
+                    sb.append(" × ")
+                }
+                sb.append('(')
+            } else if (c == ')') {
+                flushNumber()
+                sb.append(')')
             } else {
                 numBuffer.append(c)
             }

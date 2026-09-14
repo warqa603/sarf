@@ -812,9 +812,17 @@ class CalculationEditorViewModel(
             var evaluated = false
 
             when (key) {
+                "C" -> {
+                    expr = ""
+                    res = ""
+                    err = false
+                    evaluated = false
+                }
                 "⌫" -> {
                     if (expr.isNotEmpty()) expr = expr.dropLast(1)
                     res = ""
+                    err = false
+                    evaluated = false
                 }
                 "=" -> {
                     if (expr.isNotBlank()) {
@@ -831,22 +839,51 @@ class CalculationEditorViewModel(
                     if (calc.isEvaluated && calc.result.isNotBlank()) {
                         expr = calc.result + key
                         res = ""
+                        evaluated = false
                     } else {
                         expr = when {
                             expr.isBlank() -> expr
+                            expr.last() == '(' -> expr
                             expr.last() in operators -> expr.dropLast(1) + key
                             else -> expr + key
                         }
                         res = ""
+                        evaluated = false
+                    }
+                }
+                "(" -> {
+                    if (calc.isEvaluated) {
+                        expr = "("
+                        res = ""
+                        evaluated = false
+                    } else {
+                        expr = if (expr.isNotEmpty() && (expr.last().isDigit() || expr.last() == ')')) {
+                            expr + "×("
+                        } else {
+                            expr + "("
+                        }
+                        res = ""
+                        evaluated = false
+                    }
+                }
+                ")" -> {
+                    val openCount = expr.count { it == '(' }
+                    val closeCount = expr.count { it == ')' }
+                    if (!calc.isEvaluated && openCount > closeCount && expr.isNotEmpty() && (expr.last().isDigit() || expr.last() == ')')) {
+                        expr += ")"
+                        res = ""
+                        evaluated = false
                     }
                 }
                 "." -> {
                     if (calc.isEvaluated) {
                         expr = "0."
                         res = ""
+                        evaluated = false
                     } else {
                         res = ""
-                        val lastPart = expr.split('+', '−', '×', '÷').lastOrNull().orEmpty()
+                        evaluated = false
+                        val lastPart = expr.split('+', '−', '×', '÷', '(', ')').lastOrNull().orEmpty()
                         expr = when {
                             lastPart.contains('.') -> expr
                             lastPart.isEmpty() -> expr + "0."
@@ -858,13 +895,19 @@ class CalculationEditorViewModel(
                     if (calc.isEvaluated) {
                         expr = key
                         res = ""
+                        evaluated = false
                     } else {
                         res = ""
-                        val lastPart = expr.split('+', '−', '×', '÷').lastOrNull().orEmpty()
-                        if (lastPart == "0") {
-                            if (key != "0") expr = expr.dropLast(1) + key
-                        } else if (expr.length < 32) {
-                            expr += key
+                        evaluated = false
+                        if (expr.isNotEmpty() && expr.last() == ')') {
+                            expr += "×" + key
+                        } else {
+                            val lastPart = expr.split('+', '−', '×', '÷', '(', ')').lastOrNull().orEmpty()
+                            if (lastPart == "0") {
+                                if (key != "0") expr = expr.dropLast(1) + key
+                            } else if (expr.length < 32) {
+                                expr += key
+                            }
                         }
                     }
                 }
@@ -884,9 +927,17 @@ class CalculationEditorViewModel(
     fun confirmPopupResult() {
         val state = _uiState.value
         val calc = state.calculator
-        if (!calc.isEvaluated || calc.result.isBlank() || calc.hasError) return
+        val targetResult = if (calc.isEvaluated && calc.result.isNotBlank() && !calc.hasError) {
+            calc.result
+        } else if (!calc.hasError && calc.result.isNotBlank()) {
+            calc.result
+        } else if (!calc.hasError && calc.expression.isNotBlank()) {
+            MoneyMath.evaluate(calc.expression)?.stripTrailingZeros()?.toPlainString()
+        } else null
+
+        if (targetResult.isNullOrBlank() || targetResult.contains("NaN") || targetResult.contains("Infinity")) return
         val targetId = calc.targetRowId ?: return
-        updateRowAmount(targetId, TextFieldValue(text = calc.result, selection = TextRange(calc.result.length)))
+        updateRowAmount(targetId, TextFieldValue(text = targetResult, selection = TextRange(targetResult.length)))
         _uiState.update { s ->
             s.copy(
                 activeRowId = targetId,

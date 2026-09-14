@@ -105,6 +105,8 @@ class JournalLedgerManagerTest {
         assertEquals("440", JournalLedgerManager.formatDisplayExpression("440"))
         assertEquals("1\u00A0200 + 500", JournalLedgerManager.formatDisplayExpression("1200+500"))
         assertEquals("1\u00A0200.50", JournalLedgerManager.formatDisplayExpression("1200.50"))
+        assertEquals("2 × (10 + 5)", JournalLedgerManager.formatDisplayExpression("2×(10+5)"))
+        assertEquals("2 × (1\u00A0200 + 500)", JournalLedgerManager.formatDisplayExpression("2×(1200+500)"))
     }
 
     @Test

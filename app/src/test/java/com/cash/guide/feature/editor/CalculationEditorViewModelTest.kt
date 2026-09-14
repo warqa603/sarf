@@ -436,4 +436,37 @@ class CalculationEditorViewModelTest {
         assertEquals("PAID", viewModel.uiState.value.paymentStatus)
         assertTrue(viewModel.uiState.value.isDirty)
     }
+
+    @Test
+    fun calculatorPopup_evaluatesParenthesesExpressionAndClearKey() = runTest {
+        viewModel.loadCalculation(null)
+        advanceUntilIdle()
+
+        viewModel.selectRowField(1L, ActiveField.AMOUNT)
+        viewModel.openCalculatorPopup(1L)
+        assertTrue(viewModel.uiState.value.calculator.isVisible)
+
+        // Type 2 × ( 1 0 + 5 )
+        viewModel.applyPopupKey("2")
+        viewModel.applyPopupKey("×")
+        viewModel.applyPopupKey("(")
+        viewModel.applyPopupKey("1")
+        viewModel.applyPopupKey("0")
+        viewModel.applyPopupKey("+")
+        viewModel.applyPopupKey("5")
+        viewModel.applyPopupKey(")")
+        viewModel.applyPopupKey("=")
+
+        var state = viewModel.uiState.value
+        assertEquals("30", state.calculator.result)
+        assertTrue(state.calculator.isEvaluated)
+
+        // Test C key
+        viewModel.applyPopupKey("C")
+        state = viewModel.uiState.value
+        assertEquals("", state.calculator.expression)
+        assertEquals("", state.calculator.result)
+        assertFalse(state.calculator.isEvaluated)
+        assertFalse(state.calculator.hasError)
+    }
 }
