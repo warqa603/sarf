@@ -26,7 +26,9 @@ class SavingsRepository(private val savingsDao: SavingsDao) {
         monthlySalaryCentimes: Long = 0L,
         essentialBracket: String = "MEDIUM",
         leisureCategory: String = "CAFE",
-        savingsStyle: String = "BALANCED"
+        savingsStyle: String = "BALANCED",
+        leakDailyCostCentimes: Long = 2500L,
+        leakDaysPerWeek: Int = 6
     ): String {
         val now = System.currentTimeMillis()
         val id = UUID.randomUUID().toString()
@@ -48,6 +50,8 @@ class SavingsRepository(private val savingsDao: SavingsDao) {
             leisureCategory = leisureCategory,
             savingsStyle = savingsStyle,
             initialAmountCentimes = initialAmountCentimes,
+            leakDailyCostCentimes = leakDailyCostCentimes,
+            leakDaysPerWeek = leakDaysPerWeek,
             createdAtEpochMs = now,
             updatedAtEpochMs = now
         )

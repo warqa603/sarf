@@ -520,4 +520,77 @@ object GeminiDarijaService {
         }
         return clean
     }
+
+    /**
+     * Generates on-demand Moroccan AI Financial Coach advice based on the user's specific
+     * declared spending leak, goal, and monthly budget.
+     */
+    suspend fun generateSavingsCoachAdvice(
+        goalTitle: String,
+        targetAmountDh: Double,
+        targetMonths: Int,
+        monthlySalaryDh: Double,
+        leakCategory: String,
+        leakDailyCostDh: Double,
+        leakDaysPerWeek: Int,
+        savingsStyle: String,
+        isRtl: Boolean
+    ): String? = withContext(Dispatchers.IO) {
+        val apiKey = getApiKey()
+        if (apiKey.isBlank()) return@withContext null
+
+        val langInstruction = if (isRtl) {
+            "Respond in authentic Moroccan Arabic / Darija (الدارجة المغربية المفهومة بكلمات تشجيعية وعملية)."
+        } else {
+            "Respond in clean, friendly French with Moroccan financial context."
+        }
+
+        val prompt = """
+            You are an expert Moroccan Financial Coach ("كوتش مالي مغربي محترف") for the notebook app "Sarf".
+            The user wants advice on their savings plan:
+            - Goal: $goalTitle ($targetAmountDh DH over $targetMonths months)
+            - Monthly Salary: $monthlySalaryDh DH
+            - Spending Drain Category: $leakCategory
+            - Daily Habit Spend: $leakDailyCostDh DH/day, $leakDaysPerWeek days/week
+            - Savings Style: $savingsStyle
+
+            $langInstruction
+
+            Return a valid JSON object with an array "bullets" containing exactly 3 or 4 short, impactful strings:
+            - Bullet 1: Shock number acknowledgment (calculate daily * days/week * 52 and state the yearly drain).
+            - Bullet 2: Concrete Moroccan reduction tip (e.g. coffee once a day outside + home meal, 72h rule for shopping, cash envelope for outings).
+            - Bullet 3: Goal pitfall warning (car: carte grise & vignette & insurance; house: notaire 8%; emergency: account without debit card).
+            - Bullet 4: Short, powerful motivation.
+
+            Format:
+            {
+               "bullets": [
+                  "bullet 1",
+                  "bullet 2",
+                  "bullet 3",
+                  "bullet 4"
+               ]
+            }
+        """.trimIndent()
+
+        try {
+            val responseJson = callGeminiApi(prompt, apiKey) ?: return@withContext null
+            val rawText = extractContentText(responseJson) ?: return@withContext null
+            val cleanJson = sanitizeJsonString(rawText)
+            val jsonObject = JSONObject(cleanJson)
+            val bulletsArray = jsonObject.optJSONArray("bullets") ?: return@withContext null
+            val points = mutableListOf<String>()
+            for (i in 0 until bulletsArray.length()) {
+                val b = bulletsArray.optString(i).trim()
+                if (b.isNotEmpty()) {
+                    val formatted = if (b.startsWith("•") || b.startsWith("-")) b else "• $b"
+                    points.add(formatted)
+                }
+            }
+            if (points.isNotEmpty()) points.joinToString("\n") else null
+        } catch (e: Exception) {
+            Log.e(TAG, "Error generating savings coach advice", e)
+            null
+        }
+    }
 }

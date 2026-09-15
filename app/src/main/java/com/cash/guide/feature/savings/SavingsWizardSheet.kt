@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -81,6 +82,8 @@ fun SavingsWizardSheet(
     onCustomSalaryChanged: (Double) -> Unit,
     onEssentialsSelected: (String) -> Unit,
     onLeisureSelected: (String) -> Unit,
+    onLeakDailyCostChanged: (Double) -> Unit,
+    onLeakDaysPerWeekChanged: (Int) -> Unit,
     onSavingsStyleSelected: (String) -> Unit,
     onInitialAmountChanged: (Double) -> Unit,
     onNextStep: () -> Unit,
@@ -165,7 +168,12 @@ fun SavingsWizardSheet(
                 )
                 5 -> Step5Leisure(
                     currentCategory = formState.leisureCategory,
-                    onSelect = onLeisureSelected
+                    dailyCost = formState.leakDailyCost,
+                    daysPerWeek = formState.leakDaysPerWeek,
+                    isRtl = isRtl,
+                    onSelect = onLeisureSelected,
+                    onDailyCostChanged = onLeakDailyCostChanged,
+                    onDaysPerWeekChanged = onLeakDaysPerWeekChanged
                 )
                 6 -> Step6SavingsStyle(
                     currentStyle = formState.savingsStyle,
@@ -521,23 +529,31 @@ private fun Step4Essentials(
 }
 
 // -------------------------------------------------------------
-// Step 5: Leisure
+// Step 5: Leisure & Spending Leak Audit
 // -------------------------------------------------------------
 @Composable
 private fun Step5Leisure(
     currentCategory: String,
-    onSelect: (String) -> Unit
+    dailyCost: Double,
+    daysPerWeek: Int,
+    isRtl: Boolean,
+    onSelect: (String) -> Unit,
+    onDailyCostChanged: (Double) -> Unit,
+    onDaysPerWeekChanged: (Int) -> Unit
 ) {
+    val leakInfo = SavingsKnowledgeBase.getLeak(currentCategory)
+    val shock = SavingsKnowledgeBase.computeShockNumbers(dailyCost, daysPerWeek)
+
     val options = listOf(
-        Triple("CAFE", "☕ القهاوي، المطاعم، والماكلة من برا", "استنزاف يومي متكرر بالدرهم الصغير كيتجمع فآخر الشهر."),
-        Triple("SHOPPING", "🛍️ الشوبينغ، الملابس، والإلكترونيات", "شراء رغبات لحظية وكماليات ممكن تأجيلها."),
-        Triple("OUTINGS", "🚗 الخرجات، الكازوال، وسفريات الويكاند", "مصاريف نهاية الأسبوع والأنشطة الترفيهية."),
-        Triple("SUBSCRIPTIONS", "📱 اشتراكات وكماليات صغيرة متفرقة", "أنترنت زائد، تطبيقات، ومصاريف صغيرة غير محسوبة.")
+        Triple("CAFE", if (isRtl) "☕ القهاوي، المطاعم والماكلة برا (سناك، طاكوس، بيتزا)" else "☕ Cafés, snacks, restos (Tacos, Pizza)", if (isRtl) "استنزاف متكرر بالدرهم الصغير كيتجمع فآخر الشهر بدون ما تشعر." else "Petites dépenses quotidiennes qui s'accumulent."),
+        Triple("SHOPPING", if (isRtl) "🛍️ الشوبينغ العشوائي، الملابس، والإلكترونيات" else "🛍️ Shopping impulsif, vêtements & gadgets", if (isRtl) "شراء رغبات لحظية وكماليات استهلاكية ممكن تأجيلها." else "Achats coup de cœur et extras non planifiés."),
+        Triple("OUTINGS", if (isRtl) "🚗 الخرجات، الكازوال، وسفريات الويكاند" else "🚗 Sorties, carburant & week-ends", if (isRtl) "مصاريف نهاية الأسبوع والتنقل والأنشطة الترفيهية." else "Frais de loisirs du week-end et trajets imprévus."),
+        Triple("SUBSCRIPTIONS", if (isRtl) "📱 اشتراكات وفورفيات زائدة ومصاريف متفرقة" else "📱 Abonnements dormants & petits extras", if (isRtl) "أنترنت زائد، تطبيقات، واشتراكات مهجورة كتقطع شهرياً." else "Forfaits surdimensionnés et abonnements oubliés.")
     )
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
-            text = "فين كتمشي أغلب فلوس الرفاهية والنشاط؟",
+            text = if (isRtl) "فين كتمشي أغلب فلوس الرفاهية والنشاط؟" else "Où passe la majeure partie de vos extras ?",
             fontFamily = TajawalFamily,
             fontWeight = FontWeight.Bold,
             fontSize = 18.sp,
@@ -545,7 +561,7 @@ private fun Step5Leisure(
             style = TextStyle(platformStyle = NoFontPadding)
         )
         Text(
-            text = "اختار الباب اللي باغي نركزو عليه فالتحليل وننقصو منو:",
+            text = if (isRtl) "اختار الباب اللي باغي نركزو عليه فالتحليل وننقصو منو:" else "Sélectionnez le poste de dépense à auditer :",
             fontFamily = TajawalFamily,
             fontSize = 13.sp,
             color = JournalMutedInk,
@@ -563,6 +579,150 @@ private fun Step5Leisure(
                 onClick = { onSelect(key) }
             )
             Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // --- SUB-QUESTION 1: Daily cost ---
+        Text(
+            text = if (isRtl) "شحال تقريباً كتقام عليك فاليوم؟ (قهوة، سناك، أو مشتريات)" else "Combien dépensez-vous environ par jour ?",
+            fontFamily = TajawalFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.5.sp,
+            color = JournalWritingInk,
+            style = TextStyle(platformStyle = NoFontPadding)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            leakInfo.quickCostOptionsDh.forEachIndexed { index, cost ->
+                val label = if (isRtl) leakInfo.quickCostLabelsAr.getOrElse(index) { "${cost.toInt()} DH" }
+                            else leakInfo.quickCostLabelsFr.getOrElse(index) { "${cost.toInt()} DH" }
+                val isCostSelected = dailyCost == cost
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(38.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isCostSelected) HighlighterYellow.copy(alpha = 0.50f) else JournalPaper)
+                        .border(1.dp, if (isCostSelected) JournalWritingInk.copy(alpha = 0.6f) else JournalMutedInk.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                        .clickable { onDailyCostChanged(cost) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = label,
+                        fontFamily = TajawalFamily,
+                        fontWeight = if (isCostSelected) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 11.sp,
+                        color = JournalWritingInk,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = TextStyle(platformStyle = NoFontPadding),
+                        modifier = Modifier.padding(horizontal = 2.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // --- SUB-QUESTION 2: Frequency days per week ---
+        Text(
+            text = if (isRtl) "شحال من يوم فالسيمانة كيتكرر هاد الصرف؟" else "Combien de jours par semaine ?",
+            fontFamily = TajawalFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.5.sp,
+            color = JournalWritingInk,
+            style = TextStyle(platformStyle = NoFontPadding)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        val daysOptions = listOf(
+            3 to (if (isRtl) "3 أيام (ويكاند)" else "3j (Week-end)"),
+            5 to (if (isRtl) "5 أيام (الخدمة)" else "5j (Boulot)"),
+            6 to (if (isRtl) "6 أيام (ديما)" else "6j (Presque tout)"),
+            7 to (if (isRtl) "7 أيام (كل نهار)" else "7j (Tous les jours)")
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            daysOptions.forEach { (days, label) ->
+                val isDaysSelected = daysPerWeek == days
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(36.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isDaysSelected) HighlighterGreen.copy(alpha = 0.45f) else JournalPaper)
+                        .border(1.dp, if (isDaysSelected) JournalWritingInk.copy(alpha = 0.6f) else JournalMutedInk.copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+                        .clickable { onDaysPerWeekChanged(days) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = label,
+                        fontFamily = TajawalFamily,
+                        fontWeight = if (isDaysSelected) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 11.sp,
+                        color = JournalWritingInk,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = TextStyle(platformStyle = NoFontPadding),
+                        modifier = Modifier.padding(horizontal = 2.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // --- LIVE SHOCK CALCULATION CARD (Stamped Paper Box) ---
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(HighlighterPink.copy(alpha = 0.18f))
+                .border(1.dp, HighlighterPink.copy(alpha = 0.40f), RoundedCornerShape(12.dp))
+                .padding(12.dp)
+        ) {
+            Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "💥",
+                        fontSize = 16.sp
+                    )
+                    Text(
+                        text = if (isRtl) "صدمة الحساب الحقيقي (Le Choc des Montants):" else "Le calcul choc de cette habitude :",
+                        fontFamily = TajawalFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.5.sp,
+                        color = JournalWritingInk,
+                        style = TextStyle(platformStyle = NoFontPadding)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = if (isRtl) {
+                        "هاد العادة بوحدها كتكلفك تقريباً \u200E${shock.formatYearlyDrain()}\u200E درهم فالعام (\u200E${shock.formatMonthlyDrain()}\u200E DH شهرياً)!\nإلى خفضتيها غير للنصف، غادي توفر \u200E+${shock.formatHalfCutYearly()}\u200E درهم كل عام فجيبك."
+                    } else {
+                        "Cette habitude vous coûte environ \u200E${shock.formatYearlyDrain()}\u200E DH/an (\u200E${shock.formatMonthlyDrain()}\u200E DH/mois) !\nEn la réduisant de moitié, vous économisez \u200E+${shock.formatHalfCutYearly()}\u200E DH/an."
+                    },
+                    fontFamily = TajawalFamily,
+                    fontSize = 12.5.sp,
+                    color = JournalWritingInk,
+                    lineHeight = 18.sp,
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+            }
         }
     }
 }

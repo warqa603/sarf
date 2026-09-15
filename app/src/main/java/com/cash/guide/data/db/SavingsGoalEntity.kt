@@ -29,6 +29,8 @@ data class SavingsGoalEntity(
     val leisureCategory: String = "CAFE",
     val savingsStyle: String = "BALANCED",
     val initialAmountCentimes: Long = 0L,
+    val leakDailyCostCentimes: Long = 2500L,
+    val leakDaysPerWeek: Int = 6,
     val createdAtEpochMs: Long,
     val updatedAtEpochMs: Long
 )

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.cash.guide.data.SavingsRepository
 import com.cash.guide.data.db.SavingsDepositEntity
 import com.cash.guide.data.db.SavingsGoalEntity
+import com.cash.guide.domain.ai.GeminiDarijaService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +35,8 @@ data class WizardFormState(
     val salaryAmount: Double = 6000.0,
     val essentialBracket: String = "MEDIUM",
     val leisureCategory: String = "CAFE",
+    val leakDailyCost: Double = 25.0,
+    val leakDaysPerWeek: Int = 6,
     val savingsStyle: String = "BALANCED",
     val initialAmount: Double = 0.0
 ) {
@@ -59,7 +62,14 @@ data class PlanDiagnosis(
     val whatToKeep: String,
     val whatToCut: String,
     val alternativeSuggestion: String?,
-    val suggestedMonths: Int = 0
+    val suggestedMonths: Int = 0,
+    val leakInfo: SpendingLeakInfo,
+    val shockNumbers: SavingsKnowledgeBase.ShockCalculationResult,
+    val goalTrap: GoalTrapInfo,
+    val vitalPillars: List<VitalPillarInfo>,
+    val austerityStepsAr: List<String>,
+    val austerityStepsFr: List<String>,
+    val austeritySteps: List<String> = austerityStepsAr
 )
 
 data class SavingsUiState(
@@ -71,7 +81,9 @@ data class SavingsUiState(
     val isWizardOpen: Boolean = false,
     val wizardForm: WizardFormState = WizardFormState(),
     val diagnosis: PlanDiagnosis? = null,
-    val depositTargetGoal: SavingsGoalEntity? = null
+    val depositTargetGoal: SavingsGoalEntity? = null,
+    val aiCoachAdvice: String? = null,
+    val isAiCoachLoading: Boolean = false
 )
 
 class SavingsViewModel(
@@ -92,6 +104,12 @@ class SavingsViewModel(
 
     private val _selectedGoalId = MutableStateFlow<String?>(null)
     val selectedGoalId: StateFlow<String?> = _selectedGoalId.asStateFlow()
+
+    private val _aiCoachAdvice = MutableStateFlow<String?>(null)
+    val aiCoachAdvice: StateFlow<String?> = _aiCoachAdvice.asStateFlow()
+
+    private val _isAiCoachLoading = MutableStateFlow(false)
+    val isAiCoachLoading: StateFlow<Boolean> = _isAiCoachLoading.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val activeGoalDepositsFlow: Flow<List<SavingsDepositEntity>> = combine(
@@ -116,7 +134,9 @@ class SavingsViewModel(
         _wizardForm,
         _depositTargetGoal,
         _selectedGoalId,
-        activeGoalDepositsFlow
+        activeGoalDepositsFlow,
+        _aiCoachAdvice,
+        _isAiCoachLoading
     ) { args: Array<Any?> ->
         @Suppress("UNCHECKED_CAST")
         val goals = args[0] as List<SavingsGoalEntity>
@@ -128,6 +148,8 @@ class SavingsViewModel(
         val selId = args[6] as String?
         @Suppress("UNCHECKED_CAST")
         val deposits = args[7] as List<SavingsDepositEntity>
+        val coachAdvice = args[8] as String?
+        val isCoachLoading = args[9] as Boolean
 
         val activeGoal = goals.firstOrNull { it.id == selId }
             ?: goals.firstOrNull { !it.isCompleted }
@@ -143,7 +165,9 @@ class SavingsViewModel(
             isWizardOpen = isWizard,
             wizardForm = wizard,
             diagnosis = diagnosis,
-            depositTargetGoal = depGoal
+            depositTargetGoal = depGoal,
+            aiCoachAdvice = coachAdvice,
+            isAiCoachLoading = isCoachLoading
         )
     }.stateIn(
         scope = viewModelScope,
@@ -222,7 +246,21 @@ class SavingsViewModel(
     }
 
     fun setWizardLeisure(category: String) {
-        _wizardForm.value = _wizardForm.value.copy(leisureCategory = category)
+        val defaultCost = SavingsKnowledgeBase.getLeak(category).defaultDailyCostDh
+        val defaultDays = SavingsKnowledgeBase.getLeak(category).defaultDaysPerWeek
+        _wizardForm.value = _wizardForm.value.copy(
+            leisureCategory = category,
+            leakDailyCost = defaultCost,
+            leakDaysPerWeek = defaultDays
+        )
+    }
+
+    fun setWizardLeakDailyCost(amount: Double) {
+        _wizardForm.value = _wizardForm.value.copy(leakDailyCost = amount.coerceAtLeast(1.0))
+    }
+
+    fun setWizardLeakDaysPerWeek(days: Int) {
+        _wizardForm.value = _wizardForm.value.copy(leakDaysPerWeek = days.coerceIn(1, 7))
     }
 
     fun setWizardSavingsStyle(style: String) {
@@ -239,6 +277,7 @@ class SavingsViewModel(
         val targetCentimes = (form.targetAmount * 100).toLong()
         val initialCentimes = (form.initialAmount * 100).toLong()
         val salaryCentimes = (form.salaryAmount * 100).toLong()
+        val leakDailyCentimes = (form.leakDailyCost * 100).toLong()
         val targetEpochMs = Calendar.getInstance().apply {
             add(Calendar.MONTH, form.durationMonths)
         }.timeInMillis
@@ -261,7 +300,9 @@ class SavingsViewModel(
                 monthlySalaryCentimes = salaryCentimes,
                 essentialBracket = form.essentialBracket,
                 leisureCategory = form.leisureCategory,
-                savingsStyle = form.savingsStyle
+                savingsStyle = form.savingsStyle,
+                leakDailyCostCentimes = leakDailyCentimes,
+                leakDaysPerWeek = form.leakDaysPerWeek
             )
             _selectedGoalId.value = newId
             _isWizardOpen.value = false
@@ -305,6 +346,50 @@ class SavingsViewModel(
         }
     }
 
+    fun requestAiCoachAdvice(goal: SavingsGoalEntity, isRtl: Boolean) {
+        if (_isAiCoachLoading.value) return
+        _isAiCoachLoading.value = true
+        viewModelScope.launch {
+            val targetDh = goal.targetAmountCentimes / 100.0
+            val salaryDh = if (goal.monthlySalaryCentimes > 0) goal.monthlySalaryCentimes / 100.0 else 6000.0
+            val leakDailyDh = if (goal.leakDailyCostCentimes > 0) goal.leakDailyCostCentimes / 100.0 else 25.0
+            val leakDays = if (goal.leakDaysPerWeek > 0) goal.leakDaysPerWeek else 6
+
+            val aiResult = try {
+                GeminiDarijaService.generateSavingsCoachAdvice(
+                    goalTitle = goal.title,
+                    targetAmountDh = targetDh,
+                    targetMonths = goal.targetMonths,
+                    monthlySalaryDh = salaryDh,
+                    leakCategory = goal.leisureCategory,
+                    leakDailyCostDh = leakDailyDh,
+                    leakDaysPerWeek = leakDays,
+                    savingsStyle = goal.savingsStyle,
+                    isRtl = isRtl
+                )
+            } catch (e: Exception) {
+                null
+            }
+
+            _aiCoachAdvice.value = aiResult ?: SavingsKnowledgeBase.generateDeterministicCoachVerdict(
+                goalTitle = goal.title,
+                targetAmountDh = targetDh,
+                targetMonths = goal.targetMonths,
+                monthlySalaryDh = salaryDh,
+                leakCategory = goal.leisureCategory,
+                dailyCostDh = leakDailyDh,
+                daysPerWeek = leakDays,
+                savingsStyle = goal.savingsStyle,
+                isRtl = isRtl
+            )
+            _isAiCoachLoading.value = false
+        }
+    }
+
+    fun clearAiCoachAdvice() {
+        _aiCoachAdvice.value = null
+    }
+
     private fun computeDiagnosis(goal: SavingsGoalEntity): PlanDiagnosis {
         val target = goal.targetAmountCentimes / 100.0
         val current = goal.currentAmountCentimes / 100.0
@@ -313,6 +398,20 @@ class SavingsViewModel(
         val monthlyReq = if (months > 0) remaining / months else remaining
         val dailyReq = monthlyReq / 30.0
         val salary = if (goal.monthlySalaryCentimes > 0) goal.monthlySalaryCentimes / 100.0 else 6000.0
+
+        val leakDailyDh = if (goal.leakDailyCostCentimes > 0) goal.leakDailyCostCentimes / 100.0 else 25.0
+        val leakDays = if (goal.leakDaysPerWeek > 0) goal.leakDaysPerWeek else 6
+        val leakInfo = SavingsKnowledgeBase.getLeak(goal.leisureCategory)
+        val shockNumbers = SavingsKnowledgeBase.computeShockNumbers(leakDailyDh, leakDays)
+        val goalTrap = SavingsKnowledgeBase.getGoalTrap(
+            when {
+                goal.title.contains("سيارة", true) || goal.title.contains("voiture", true) -> "CAR"
+                goal.title.contains("دار", true) || goal.title.contains("سكن", true) || goal.title.contains("maison", true) -> "HOUSE"
+                goal.title.contains("طوارئ", true) || goal.title.contains("urgence", true) -> "EMERGENCY"
+                goal.title.contains("مشروع", true) || goal.title.contains("projet", true) -> "PROJECT"
+                else -> "EVENT"
+            }
+        )
 
         val essentialsRatio = when (goal.essentialBracket) {
             "LOW" -> 0.35
@@ -333,14 +432,9 @@ class SavingsViewModel(
             else -> "TIGHT"
         }
 
-        val whatToKeep = "الالتزامات الأساسية (الكراء، الفواتير، ومصروف البيت) ضروري تحافظ عليها بلا نقصان باش ما يتأثرش استقرارك."
+        val whatToKeep = "الالتزامات الأساسية (الكراء، الفواتير، التقضية الصحية، والصحة) خط أحمر لا يجب المساس به لضمان استقرارك."
 
-        val whatToCut = when (goal.leisureCategory) {
-            "CAFE" -> "نقص القهاوي والمطاعم للنصف (مثلاً قهوة واحدة فالنهار عوض 2 أو 3 والماكلة من الدار) -> غادي توفر تقريباً بين \u200E+500\u200E و \u200E+800\u200E درهم شهرياً."
-            "SHOPPING" -> "طبق 'قاعدة 24 ساعة' قبل شراء أي لبسة أو كماليات، وتفادى الشوبينغ غير المبرمج -> غادي تحمي ما بين \u200E+800\u200E و \u200E+1\u00A0500\u200E درهم شهرياً."
-            "OUTINGS" -> "حدد ميزانية كاش مضبوطة للويكاند والخرجات وماتزيدش عليها -> توفير تقريباً ما بين \u200E+600\u200E و \u200E+1\u00A0000\u200E درهم شهرياً."
-            else -> "راجع اشتراكات الأنترنت والهاتف والخدمات اللي ما كتستعملهاش بزاف -> توفير ما بين \u200E+200\u200E و \u200E+400\u200E درهم شهرياً."
-        }
+        val whatToCut = "عادة \"${leakInfo.titleAr}\" كتكلفك بوحدها ${shockNumbers.formatMonthlyDrain()} DH شهرياً (${shockNumbers.formatYearlyDrain()} DH/عام). نقصها للنصف كيوفر ليك +${shockNumbers.formatHalfCutYearly()} DH سنوياً!"
 
         val suggestedMonths = if (pressureLevel == "TIGHT") {
             (target / (salary * 0.30).coerceAtLeast(500.0)).toInt().coerceIn(months + 6, 60)
@@ -353,6 +447,30 @@ class SavingsViewModel(
             "إلى جاك الاقتطاع الشهري (\u200E$currentReqStr\u200E درهم) ضاغط عليك، الاقتراح الذكي: مدد المدة لـ \u200E$suggestedMonths\u200E شهر وغادي يولي القسط فقط \u200E$newMonthlyStr\u200E درهم شهرياً بكل أريحية!"
         } else null
 
+        val austerityStepsAr = listOf(
+            if (goal.savingsStyle == "TURBO") {
+                "🛑 تجميد الكماليات: توقيف مؤقت لشراء الملابس والإلكترونيات الإضافية"
+            } else {
+                "⏳ قاعدة 24 ساعة: التمهل يوماً كاملاً قبل أي شراء غير مبرمج فايت 150 DH"
+            },
+            leakInfo.austerityStepAr,
+            "💵 الأظرفة الكاش: سحب ميزانية الأسبوع نقداً وتفادي الكارط للكماليات",
+            "🚀 الاقتطاع الفوري: عزل مبلغ التوفير (${com.cash.guide.domain.JournalLedgerManager.formatFrenchNumber(monthlyReq.toLong().toString())} DH) أول ما يدخل الصالير",
+            "💰 النتيجة المباشرة: توفير إضافي بـ +${shockNumbers.formatHalfCutYearly()} DH سنوياً وتسريع الهدف!"
+        )
+
+        val austerityStepsFr = listOf(
+            if (goal.savingsStyle == "TURBO") {
+                "🛑 Gel des extras : Pause sur vêtements et gadgets superflus"
+            } else {
+                "⏳ Règle des 24h : Attendre un jour complet avant tout achat > 150 DH"
+            },
+            leakInfo.austerityStepFr,
+            "💵 Enveloppe cash : Retrait de poche en liquide pour bloquer la carte",
+            "🚀 Payez-vous d'abord : Isoler l'épargne (${com.cash.guide.domain.JournalLedgerManager.formatFrenchNumber(monthlyReq.toLong().toString())} DH) dès la paie",
+            "💰 Gain direct : Récupérer +${shockNumbers.formatHalfCutYearly()} DH/an pour booster votre objectif !"
+        )
+
         return PlanDiagnosis(
             monthlyRequired = monthlyReq,
             dailyRequired = dailyReq,
@@ -364,7 +482,13 @@ class SavingsViewModel(
             whatToKeep = whatToKeep,
             whatToCut = whatToCut,
             alternativeSuggestion = alternative,
-            suggestedMonths = suggestedMonths
+            suggestedMonths = suggestedMonths,
+            leakInfo = leakInfo,
+            shockNumbers = shockNumbers,
+            goalTrap = goalTrap,
+            vitalPillars = SavingsKnowledgeBase.VITAL_PILLARS,
+            austerityStepsAr = austerityStepsAr,
+            austerityStepsFr = austerityStepsFr
         )
     }
 }

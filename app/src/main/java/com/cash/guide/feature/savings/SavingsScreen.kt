@@ -276,7 +276,11 @@ fun SavingsScreen(
                             SavingsDiagnosticFullSection(
                                 goal = activeGoal,
                                 diagnosis = uiState.diagnosis,
+                                aiCoachAdvice = uiState.aiCoachAdvice,
+                                isAiCoachLoading = uiState.isAiCoachLoading,
                                 isRtl = isRtl,
+                                onRequestAiCoachAdvice = { viewModel.requestAiCoachAdvice(activeGoal, isRtl) },
+                                onClearAiCoachAdvice = { viewModel.clearAiCoachAdvice() },
                                 onApplySuggestedDuration = { newMonths ->
                                     viewModel.applySuggestedDuration(activeGoal.id, newMonths)
                                 }
@@ -284,7 +288,11 @@ fun SavingsScreen(
                         }
                     }
                     SavingsTab.TIPS -> {
-                        SavingsArticlesLibrarySection(isRtl = isRtl)
+                        val activeGoal = uiState.activeGoal ?: uiState.goals.firstOrNull()
+                        SavingsArticlesLibrarySection(
+                            activeGoal = activeGoal,
+                            isRtl = isRtl
+                        )
                     }
                 }
 
@@ -305,6 +313,8 @@ fun SavingsScreen(
             onCustomSalaryChanged = { viewModel.setWizardCustomSalary(it) },
             onEssentialsSelected = { viewModel.setWizardEssentials(it) },
             onLeisureSelected = { viewModel.setWizardLeisure(it) },
+            onLeakDailyCostChanged = { viewModel.setWizardLeakDailyCost(it) },
+            onLeakDaysPerWeekChanged = { viewModel.setWizardLeakDaysPerWeek(it) },
             onSavingsStyleSelected = { viewModel.setWizardSavingsStyle(it) },
             onInitialAmountChanged = { viewModel.setWizardInitialAmount(it) },
             onNextStep = { viewModel.nextWizardStep() },
@@ -1230,10 +1240,17 @@ private fun SavingsDiagnosticEmptyState(
 private fun SavingsDiagnosticFullSection(
     goal: SavingsGoalEntity,
     diagnosis: PlanDiagnosis?,
+    aiCoachAdvice: String?,
+    isAiCoachLoading: Boolean,
     isRtl: Boolean,
+    onRequestAiCoachAdvice: () -> Unit,
+    onClearAiCoachAdvice: () -> Unit,
     onApplySuggestedDuration: (Int) -> Unit
 ) {
     val diag = diagnosis ?: return
+    val leak = diag.leakInfo
+    val shock = diag.shockNumbers
+    val trap = diag.goalTrap
 
     Column(modifier = Modifier.fillMaxWidth()) {
         // --- 1. HEADER ROW sitting on Rule 1 ---
@@ -1286,7 +1303,7 @@ private fun SavingsDiagnosticFullSection(
         // na9ez star (Skip 1 blue line)
         Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-        // --- 2. SECTION: CHOIX DÉCLARÉS DU PROFIL (5 connected notebook lines) ---
+        // --- 2. SECTION 1: CHOIX DÉCLARÉS DU PROFIL (4 connected notebook lines) ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1310,29 +1327,6 @@ private fun SavingsDiagnosticFullSection(
             else -> if (isRtl) "متوسطة 40-60%" else "Moyennes 40-60%"
         }
 
-        val (leisureTitle, leisureImpact) = when (goal.leisureCategory) {
-            "CAFE" -> if (isRtl) {
-                "☕ القهاوي، المطاعم والماكلة برا" to "~600 إلى 800 DH/شهر (~8 000 DH/عام)"
-            } else {
-                "☕ Cafés, restaurants et repas dehors" to "~600 à 800 DH/mois (~8 000 DH/an)"
-            }
-            "SHOPPING" -> if (isRtl) {
-                "🛍️ الشوبينغ، الملابس والكماليات" to "~800 إلى 1 500 DH/شهر (~12 000 DH/عام)"
-            } else {
-                "🛍️ Shopping, vêtements et gadgets" to "~800 à 1 500 DH/mois (~12 000 DH/an)"
-            }
-            "OUTINGS" -> if (isRtl) {
-                "🚗 الخرجات، الكازوال والويكاند" to "~600 إلى 1 000 DH/شهر (~9 000 DH/عام)"
-            } else {
-                "🚗 Sorties, carburant et week-ends" to "~600 à 1 000 DH/mois (~9 000 DH/an)"
-            }
-            else -> if (isRtl) {
-                "📱 اشتراكات ومصاريف متفرقة" to "~200 إلى 500 DH/شهر (~3 500 DH/عام)"
-            } else {
-                "📱 Abonnements et petits extras" to "~200 à 500 DH/mois (~3 500 DH/an)"
-            }
-        }
-
         val styleTitle = if (goal.savingsStyle == "TURBO") {
             if (isRtl) "🔥 نمط التقشف السريع (تزيار قوي)" else "🔥 Mode Turbo (austérité rapide)"
         } else {
@@ -1348,7 +1342,7 @@ private fun SavingsDiagnosticFullSection(
                     val guideX = if (isRtl) size.width - dotRadiusPx else dotRadiusPx
                     val rowHeightPx = JournalRuleSpacing.toPx()
                     val startY = rowHeightPx - dotRadiusPx
-                    val endY = 4 * rowHeightPx + (rowHeightPx - dotRadiusPx)
+                    val endY = 3 * rowHeightPx + (rowHeightPx - dotRadiusPx)
 
                     drawLine(
                         color = JournalRule.copy(alpha = 0.60f),
@@ -1383,19 +1377,16 @@ private fun SavingsDiagnosticFullSection(
 
             // Line 3: Principale fuite
             NotebookRuledRow(
-                text = if (isRtl) "أكبر باب استنزاف: $leisureTitle" else "Principale fuite : $leisureTitle",
+                text = if (isRtl) {
+                    "الباب المستنزف: ${leak.titleAr} (${shock.dailyCostDh.toInt()} DH/يوم، ${shock.daysPerWeek}j/س)"
+                } else {
+                    "Fuite ciblée : ${leak.titleFr} (${shock.dailyCostDh.toInt()} DH/j, ${shock.daysPerWeek}j/sem)"
+                },
                 dotColor = Color(0xFFE65100),
                 isRtl = isRtl
             )
 
-            // Line 4: Impact estimé
-            NotebookRuledRow(
-                text = if (isRtl) "الاستنزاف التقديري: $leisureImpact" else "Impact estimé : $leisureImpact",
-                dotColor = Color(0xFFD32F2F),
-                isRtl = isRtl
-            )
-
-            // Line 5: Style choisi
+            // Line 4: Style choisi
             NotebookRuledRow(
                 text = if (isRtl) "النمط المعتمد: $styleTitle" else "Style choisi : $styleTitle",
                 dotColor = Color(0xFF00796B),
@@ -1406,7 +1397,7 @@ private fun SavingsDiagnosticFullSection(
         // na9ez star (Skip 1 blue line)
         Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-        // --- 3. SECTION: RECOMMANDATIONS SUR-MESURE (4 connected notebook lines) ---
+        // --- 3. SECTION 2: LE CHOC DES PETITS MONTANTS (4 connected notebook lines) ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1414,37 +1405,14 @@ private fun SavingsDiagnosticFullSection(
             verticalAlignment = Alignment.Bottom
         ) {
             Text(
-                text = if (isRtl) "🎯 توصيات مخصصة لبروفايلك:" else "🎯 Recommandations sur-mesure :",
+                text = if (isRtl) "💥 صدمة الدرهم الصغير (حساب الاستنزاف):" else "💥 Le Choc des Petits Montants :",
                 fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp,
-                color = JournalWritingInk,
+                color = Color(0xFFD32F2F),
                 modifier = Modifier.journalBaselineOnRule(),
                 style = TextStyle(platformStyle = NoFontPadding)
             )
-        }
-
-        val (cutAction, cutGain) = when (goal.leisureCategory) {
-            "CAFE" -> if (isRtl) {
-                "قهوة واحدة برا فالنهار وتحضير وجبات العمل فالدار" to "ربح محتمل بين +500 و +800 DH شهرياً"
-            } else {
-                "1 café extérieur/jour max et repas maison au travail" to "Gain potentiel de +500 à +800 DH/mois"
-            }
-            "SHOPPING" -> if (isRtl) {
-                "مهلة 24 ساعة قبل شراء أي لبسة أو كماليات" to "ربح محتمل بين +800 و +1 500 DH شهرياً"
-            } else {
-                "Règle des 24h avant tout achat de vêtement ou gadget" to "Gain potentiel de +800 à +1 500 DH/mois"
-            }
-            "OUTINGS" -> if (isRtl) {
-                "سحب ميزانية الويكاند نقداً بالظرف بدون استعمال الكارط" to "ربح محتمل بين +600 و +1 000 DH شهرياً"
-            } else {
-                "Budget liquide fixe pour le week-end (zéro carte bancaire)" to "Gain potentiel de +600 à +1 000 DH/mois"
-            }
-            else -> if (isRtl) {
-                "إلغاء الاشتراكات غير المستعملة وتدبير باقات الأنترنت" to "ربح محتمل بين +200 و +500 DH شهرياً"
-            } else {
-                "Résilier forfaits inutiles et abonnements sous-utilisés" to "Gain potentiel de +200 à +500 DH/mois"
-            }
         }
 
         Column(
@@ -1467,31 +1435,47 @@ private fun SavingsDiagnosticFullSection(
                     )
                 }
         ) {
-            // Line 1: À préserver
+            // Line 1: Fuite quotidienne
             NotebookRuledRow(
-                text = if (isRtl) "🛡️ شنو تحافظ عليه: المصاريف الحيوية والأساسية" else "🛡️ À préserver : Charges indispensables & vitales",
-                dotColor = HighlighterGreen,
+                text = if (isRtl) {
+                    "• الصرف اليومي المعتاد: ${shock.dailyCostDh.toInt()} درهم (${shock.daysPerWeek} أيام فالسيمانة)"
+                } else {
+                    "• Dépense quotidienne : ${shock.dailyCostDh.toInt()} DH (${shock.daysPerWeek} jours/semaine)"
+                },
+                dotColor = Color(0xFFE65100),
                 isRtl = isRtl
             )
 
-            // Line 2: Détail charges fixes
+            // Line 2: Drain mensuel
             NotebookRuledRow(
-                text = if (isRtl) "• كراء، فواتير، صحة وتغذية سليمة للدار" else "• Loyer, factures, santé et alimentation de base",
-                dotColor = Color(0xFF00796B),
-                isRtl = isRtl
-            )
-
-            // Line 3: À réduire
-            NotebookRuledRow(
-                text = if (isRtl) "✂️ شنو تنقص: $cutAction" else "✂️ À réduire : $cutAction",
+                text = if (isRtl) {
+                    "الاستنزاف الشهري: ~${shock.formatMonthlyDrain()} DH كتمشي غير فـ ${leak.subtitleAr}"
+                } else {
+                    "Drain mensuel : ~${shock.formatMonthlyDrain()} DH/mois absorbés en petits extras"
+                },
                 dotColor = Color(0xFFD32F2F),
                 isRtl = isRtl
             )
 
-            // Line 4: Économie visée
+            // Line 3: Choc annuel
             NotebookRuledRow(
-                text = if (isRtl) "💰 التوفير المستهدف: $cutGain" else "💰 Économie visée : $cutGain",
-                dotColor = Color(0xFFE65100),
+                text = if (isRtl) {
+                    "الصدمة السنوية: ${shock.formatYearlyDrain()} درهم فالعام كتسلت بالدرهم الصغير!"
+                } else {
+                    "Choc annuel : ${shock.formatYearlyDrain()} DH/an volatilisés en micro-dépenses !"
+                },
+                dotColor = Color(0xFFC2185B),
+                isRtl = isRtl
+            )
+
+            // Line 4: Opportunité de gain
+            NotebookRuledRow(
+                text = if (isRtl) {
+                    "إلى نقصتي للنصف: غاتوفر +${shock.formatHalfCutYearly()} DH سنوياً لصالح الهدف!"
+                } else {
+                    "Réduire de 50% = récupérer +${shock.formatHalfCutYearly()} DH/an pour l'objectif !"
+                },
+                dotColor = HighlighterGreen,
                 isRtl = isRtl
             )
         }
@@ -1499,7 +1483,133 @@ private fun SavingsDiagnosticFullSection(
         // na9ez star (Skip 1 blue line)
         Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-        // --- 4. SECTION: PLAN D'AUSTÉRITÉ (5 connected notebook lines) ---
+        // --- 4. SECTION 3: THAWABIT / VITAL PILLARS (4 connected notebook lines) ---
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(JournalRuleSpacing),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Text(
+                text = if (isRtl) "🛡️ الثوابت الحيوية (خط أحمر لا يمس):" else "🛡️ Les Piliers vitaux à préserver :",
+                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = Color(0xFF00796B),
+                modifier = Modifier.journalBaselineOnRule(),
+                style = TextStyle(platformStyle = NoFontPadding)
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawBehind {
+                    val strokeW = 1.4.dp.toPx()
+                    val dotRadiusPx = 3.5.dp.toPx()
+                    val guideX = if (isRtl) size.width - dotRadiusPx else dotRadiusPx
+                    val rowHeightPx = JournalRuleSpacing.toPx()
+                    val startY = rowHeightPx - dotRadiusPx
+                    val endY = 3 * rowHeightPx + (rowHeightPx - dotRadiusPx)
+
+                    drawLine(
+                        color = JournalRule.copy(alpha = 0.60f),
+                        start = Offset(guideX, startY),
+                        end = Offset(guideX, endY),
+                        strokeWidth = strokeW,
+                        cap = StrokeCap.Round
+                    )
+                }
+        ) {
+            // Line 1: Logement
+            NotebookRuledRow(
+                text = if (isRtl) "🏠 الكراء وطريطمون السكن: أساس الاستقرار النفسي والعائلي" else "🏠 Logement : Pilier vital, aucune impasse possible",
+                dotColor = Color(0xFF00796B),
+                isRtl = isRtl
+            )
+
+            // Line 2: Factures
+            NotebookRuledRow(
+                text = if (isRtl) "⚡ فواتير الماء والضوء والأنترنت: واجبات ترشد بلا تضييق مفرط" else "⚡ Factures d'énergie : Optimiser avec bon sens",
+                dotColor = HighlighterYellow,
+                isRtl = isRtl
+            )
+
+            // Line 3: Repas maison
+            NotebookRuledRow(
+                text = if (isRtl) "🥗 التقضية الصحية للدار: كتوفر 60% مقارنة بماكلة الزنقة" else "🥗 Repas maison : Économie de 60% vs alimentation dehors",
+                dotColor = HighlighterGreen,
+                isRtl = isRtl
+            )
+
+            // Line 4: Santé
+            NotebookRuledRow(
+                text = if (isRtl) "🏥 صحة وتطبيب العائلة: أولوية قصوى غير قابلة لأي تقشف" else "🏥 Santé de la famille : Priorité absolue sans compromis",
+                dotColor = Color(0xFF00897B),
+                isRtl = isRtl
+            )
+        }
+
+        // na9ez star (Skip 1 blue line)
+        Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+        // --- 5. SECTION 4: GOAL-SPECIFIC HIDDEN TRAP (2 connected notebook lines) ---
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(JournalRuleSpacing),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Text(
+                text = if (isRtl) "⚠️ فخ الهدف: ${trap.titleAr}" else "⚠️ Piège de l'objectif : ${trap.titleFr}",
+                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = Color(0xFFE65100),
+                modifier = Modifier.journalBaselineOnRule(),
+                style = TextStyle(platformStyle = NoFontPadding)
+            )
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawBehind {
+                    val strokeW = 1.4.dp.toPx()
+                    val dotRadiusPx = 3.5.dp.toPx()
+                    val guideX = if (isRtl) size.width - dotRadiusPx else dotRadiusPx
+                    val rowHeightPx = JournalRuleSpacing.toPx()
+                    val startY = rowHeightPx - dotRadiusPx
+                    val endY = 1 * rowHeightPx + (rowHeightPx - dotRadiusPx)
+
+                    drawLine(
+                        color = JournalRule.copy(alpha = 0.60f),
+                        start = Offset(guideX, startY),
+                        end = Offset(guideX, endY),
+                        strokeWidth = strokeW,
+                        cap = StrokeCap.Round
+                    )
+                }
+        ) {
+            // Line 1: Warning
+            NotebookRuledRow(
+                text = if (isRtl) "التحذير: ${trap.warningAr}" else "Attention : ${trap.warningFr}",
+                dotColor = Color(0xFFD32F2F),
+                isRtl = isRtl
+            )
+
+            // Line 2: Golden rule
+            NotebookRuledRow(
+                text = if (isRtl) "وصية الكوتش: ${trap.goldenRuleAr}" else "Règle d'or : ${trap.goldenRuleFr}",
+                dotColor = HighlighterGreen,
+                isRtl = isRtl
+            )
+        }
+
+        // na9ez star (Skip 1 blue line)
+        Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+        // --- 6. SECTION 5: PLAN D'AUSTÉRITÉ CIBLÉ (5 connected notebook lines) ---
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1508,7 +1618,7 @@ private fun SavingsDiagnosticFullSection(
             verticalAlignment = Alignment.Bottom
         ) {
             Text(
-                text = if (isRtl) "⚡ خطة التقشف (لتسريع الهدف):" else "⚡ Plan d'austérité (Mode accélération) :",
+                text = if (isRtl) "⚡ خطة التقشف الذكية (لتسريع الهدف):" else "⚡ Plan d'austérité ciblé (Mode Turbo) :",
                 fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp,
@@ -1536,6 +1646,7 @@ private fun SavingsDiagnosticFullSection(
             }
         }
 
+        val austerityList = if (isRtl) diag.austerityStepsAr else diag.austerityStepsFr
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1545,7 +1656,7 @@ private fun SavingsDiagnosticFullSection(
                     val guideX = if (isRtl) size.width - dotRadiusPx else dotRadiusPx
                     val rowHeightPx = JournalRuleSpacing.toPx()
                     val startY = rowHeightPx - dotRadiusPx
-                    val endY = 4 * rowHeightPx + (rowHeightPx - dotRadiusPx)
+                    val endY = (austerityList.size - 1) * rowHeightPx + (rowHeightPx - dotRadiusPx)
 
                     drawLine(
                         color = JournalRule.copy(alpha = 0.60f),
@@ -1556,63 +1667,123 @@ private fun SavingsDiagnosticFullSection(
                     )
                 }
         ) {
-            // Step 1
-            NotebookRuledRow(
-                text = if (isRtl) {
-                    "1. 🛑 زيرو كماليات: توقيف شراء الملابس والإلكترونيات الإضافية"
-                } else {
-                    "1. 🛑 Zéro achat plaisir : Gel complet des extras et gadgets"
-                },
-                dotColor = Color(0xFFD32F2F),
-                isRtl = isRtl
-            )
-
-            // Step 2
-            NotebookRuledRow(
-                text = if (isRtl) {
-                    "2. 🍱 الماكلة من الدار: تحضير وجبة العمل واكتفاء بقهوة واحدة برا"
-                } else {
-                    "2. 🍱 Repas maison : Déjeuners préparés et 1 café dehors max"
-                },
-                dotColor = Color(0xFFE65100),
-                isRtl = isRtl
-            )
-
-            // Step 3
-            NotebookRuledRow(
-                text = if (isRtl) {
-                    "3. 💵 الأظرفة الكاش: سحب مصروف الويكاند نقداً وتفادي الكارط"
-                } else {
-                    "3. 💵 Enveloppe cash : Sorties payées en liquide (sans carte)"
-                },
-                dotColor = HighlighterYellow,
-                isRtl = isRtl
-            )
-
-            // Step 4
-            NotebookRuledRow(
-                text = if (isRtl) {
-                    "4. 🚀 الاقتطاع الفوري: عزل مبلغ التوفير نهار كيدخل الصالير"
-                } else {
-                    "4. 🚀 Épargne prioritaire : Isoler la mensualité dès la paie"
-                },
-                dotColor = Color(0xFF00796B),
-                isRtl = isRtl
-            )
-
-            // Step 5 (Result)
-            NotebookRuledRow(
-                text = if (isRtl) {
-                    "💰 النتيجة التقديرية: توفير إضافي بين +800 و +1 400 DH كل شهر!"
-                } else {
-                    "💰 Résultat estimé : +800 à +1 400 DH/mois d'épargne en plus !"
-                },
-                dotColor = HighlighterGreen,
-                isRtl = isRtl
-            )
+            austerityList.forEachIndexed { idx, stepText ->
+                val dotCol = when (idx) {
+                    0 -> Color(0xFFD32F2F)
+                    1 -> Color(0xFFE65100)
+                    2 -> HighlighterYellow
+                    3 -> Color(0xFF00796B)
+                    else -> HighlighterGreen
+                }
+                NotebookRuledRow(
+                    text = "${idx + 1}. $stepText",
+                    dotColor = dotCol,
+                    isRtl = isRtl
+                )
+            }
         }
 
-        // --- 5. ALTERNATIVE SUGGESTION (if objective is tight) ---
+        // na9ez star (Skip 1 blue line)
+        Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+        // --- 7. SECTION 6: ON-DEMAND AI COACH SECTION ---
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(JournalRuleSpacing),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Text(
+                text = if (isRtl) "✨ استشارة كوتش الذكاء الاصطناعي:" else "✨ Conseil du Coach Financier IA :",
+                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = JournalWritingInk,
+                modifier = Modifier.journalBaselineOnRule(),
+                style = TextStyle(platformStyle = NoFontPadding)
+            )
+
+            if (aiCoachAdvice != null) {
+                Text(
+                    text = if (isRtl) "إعادة التحليل ↻" else "Actualiser ↻",
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 12.sp,
+                    color = JournalMutedInk,
+                    modifier = Modifier
+                        .clickable { onRequestAiCoachAdvice() }
+                        .padding(horizontal = 4.dp)
+                )
+            }
+        }
+
+        if (aiCoachAdvice == null) {
+            // Trigger Button sitting on a 29dp blue rule
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(JournalRuleSpacing),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(26.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(if (isAiCoachLoading) HighlighterBlue.copy(alpha = 0.35f) else HighlighterYellow.copy(alpha = 0.50f))
+                        .border(1.dp, JournalWritingInk.copy(alpha = 0.25f), RoundedCornerShape(6.dp))
+                        .clickable(enabled = !isAiCoachLoading) { onRequestAiCoachAdvice() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = if (isAiCoachLoading) {
+                            if (isRtl) "⏳ جاري إعداد التشخيص من الكوتش..." else "⏳ Analyse par le Coach IA en cours..."
+                        } else {
+                            if (isRtl) "✨ طلب تشخيص مخصص من كوتش AI 🚀" else "✨ Demander diagnostic au Coach IA 🚀"
+                        },
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.5.sp,
+                        color = JournalWritingInk,
+                        style = TextStyle(platformStyle = NoFontPadding)
+                    )
+                }
+            }
+        } else {
+            // Display AI Coach lines directly on blue notebook lines!
+            val coachLines = aiCoachAdvice.lines().filter { it.isNotBlank() }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .drawBehind {
+                        val strokeW = 1.4.dp.toPx()
+                        val dotRadiusPx = 3.5.dp.toPx()
+                        val guideX = if (isRtl) size.width - dotRadiusPx else dotRadiusPx
+                        val rowHeightPx = JournalRuleSpacing.toPx()
+                        val startY = rowHeightPx - dotRadiusPx
+                        val endY = (coachLines.size - 1) * rowHeightPx + (rowHeightPx - dotRadiusPx)
+
+                        drawLine(
+                            color = HighlighterYellow.copy(alpha = 0.85f),
+                            start = Offset(guideX, startY),
+                            end = Offset(guideX, endY),
+                            strokeWidth = strokeW,
+                            cap = StrokeCap.Round
+                        )
+                    }
+            ) {
+                coachLines.forEach { lineText ->
+                    NotebookRuledRow(
+                        text = lineText,
+                        dotColor = HighlighterYellow,
+                        isRtl = isRtl
+                    )
+                }
+            }
+        }
+
+        // --- 8. ALTERNATIVE SUGGESTION (if objective is tight) ---
         if (diag.suggestedMonths > 0) {
             Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
@@ -1679,6 +1850,7 @@ private fun NotebookRuledRow(
     isRtl: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val cleanText = text.trimStart().removePrefix("•").removePrefix("-").removePrefix("*").trimStart()
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -1694,7 +1866,7 @@ private fun NotebookRuledRow(
             drawCircle(color = dotColor)
         }
         Text(
-            text = text,
+            text = cleanText,
             fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
             fontSize = 13.sp,
             color = JournalWritingInk,
@@ -1724,11 +1896,20 @@ private data class SavingsArticleItem(
  */
 @Composable
 private fun SavingsArticlesLibrarySection(
+    activeGoal: SavingsGoalEntity? = null,
     isRtl: Boolean
 ) {
-    var expandedArticleId by remember { mutableStateOf<String?>("art_budget") }
+    val recommendedId = when (activeGoal?.leisureCategory) {
+        "CAFE" -> "art_cafe"
+        "SHOPPING" -> "art_24h"
+        else -> when {
+            activeGoal?.title?.contains("طوارئ", true) == true || activeGoal?.title?.contains("urgence", true) == true -> "art_emergency"
+            else -> "art_budget"
+        }
+    }
+    var expandedArticleId by remember(recommendedId) { mutableStateOf<String?>(recommendedId) }
 
-    val articles = remember(isRtl) {
+    val rawArticles = remember(isRtl) {
         listOf(
             SavingsArticleItem(
                 id = "art_budget",
@@ -1887,6 +2068,18 @@ private fun SavingsArticlesLibrarySection(
                 }
             )
         )
+    }
+
+    val articles = remember(rawArticles, recommendedId, activeGoal) {
+        if (activeGoal != null) {
+            rawArticles.sortedByDescending { it.id == recommendedId }.map { item ->
+                if (item.id == recommendedId) {
+                    item.copy(category = if (isRtl) "⭐ موصى به" else "⭐ Recommandé")
+                } else item
+            }
+        } else {
+            rawArticles
+        }
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
