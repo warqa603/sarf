@@ -125,6 +125,16 @@ class ChecklistViewModel(
         }
     }
 
+    fun updateTitleInput(value: TextFieldValue) {
+        if (value.text.length > 40) return
+        _uiState.update { it.copy(titleInput = value) }
+    }
+
+    fun updateInputText(value: TextFieldValue) {
+        if (value.text.length > 80) return
+        _uiState.update { it.copy(inputText = value) }
+    }
+
     fun hideKeyboard() {
         if (_uiState.value.activeInputTarget == ChecklistInputTarget.TITLE) {
             saveTitle()

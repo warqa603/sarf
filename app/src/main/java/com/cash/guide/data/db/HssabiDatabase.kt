@@ -15,9 +15,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ChecklistEntity::class,
         ChecklistItemEntity::class,
         NoteEntity::class,
-        ReminderEntity::class
+        ReminderEntity::class,
+        SavingsGoalEntity::class,
+        SavingsDepositEntity::class
     ],
-    version = 9,
+    version = 11,
     exportSchema = true
 )
 abstract class HssabiDatabase : RoomDatabase() {
@@ -27,6 +29,7 @@ abstract class HssabiDatabase : RoomDatabase() {
     abstract fun checklistDao(): ChecklistDao
     abstract fun noteDao(): NoteDao
     abstract fun reminderDao(): ReminderDao
+    abstract fun savingsDao(): SavingsDao
 
 
     companion object {
@@ -172,6 +175,59 @@ abstract class HssabiDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `savings_goals` (
+                        `id` TEXT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `targetAmountCentimes` INTEGER NOT NULL,
+                        `currentAmountCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `monthlyContributionCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `targetDateEpochMs` INTEGER DEFAULT NULL,
+                        `currency` TEXT NOT NULL DEFAULT 'DIRHAM',
+                        `colorTag` TEXT NOT NULL DEFAULT 'BLUE',
+                        `icon` TEXT NOT NULL DEFAULT 'STAR',
+                        `isCompleted` INTEGER NOT NULL DEFAULT 0,
+                        `createdAtEpochMs` INTEGER NOT NULL,
+                        `updatedAtEpochMs` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_savings_goals_isCompleted` ON `savings_goals` (`isCompleted`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_savings_goals_createdAtEpochMs` ON `savings_goals` (`createdAtEpochMs`)")
+
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `savings_deposits` (
+                        `id` TEXT NOT NULL,
+                        `goalId` TEXT NOT NULL,
+                        `amountCentimes` INTEGER NOT NULL,
+                        `note` TEXT NOT NULL DEFAULT '',
+                        `dateEpochMs` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`),
+                        FOREIGN KEY(`goalId`) REFERENCES `savings_goals`(`id`) ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_savings_deposits_goalId` ON `savings_deposits` (`goalId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_savings_deposits_dateEpochMs` ON `savings_deposits` (`dateEpochMs`)")
+            }
+        }
+
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `savings_goals` ADD COLUMN `targetMonths` INTEGER NOT NULL DEFAULT 24")
+                db.execSQL("ALTER TABLE `savings_goals` ADD COLUMN `monthlySalaryCentimes` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `savings_goals` ADD COLUMN `essentialBracket` TEXT NOT NULL DEFAULT 'MEDIUM'")
+                db.execSQL("ALTER TABLE `savings_goals` ADD COLUMN `leisureCategory` TEXT NOT NULL DEFAULT 'CAFE'")
+                db.execSQL("ALTER TABLE `savings_goals` ADD COLUMN `savingsStyle` TEXT NOT NULL DEFAULT 'BALANCED'")
+                db.execSQL("ALTER TABLE `savings_goals` ADD COLUMN `initialAmountCentimes` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         fun getInstance(context: Context): HssabiDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -179,7 +235,7 @@ abstract class HssabiDatabase : RoomDatabase() {
                     HssabiDatabase::class.java,
                     "hssabi.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                     .build()
                     .also { INSTANCE = it }
             }

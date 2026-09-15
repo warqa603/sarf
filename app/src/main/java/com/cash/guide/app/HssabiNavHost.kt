@@ -42,6 +42,8 @@ import com.cash.guide.feature.note.NoteEditorScreen
 import com.cash.guide.feature.note.NoteViewModel
 import com.cash.guide.feature.reminders.RemindersOverviewScreen
 import com.cash.guide.feature.reminders.RemindersViewModel
+import com.cash.guide.feature.savings.SavingsScreen
+import com.cash.guide.feature.savings.SavingsViewModel
 import com.cash.guide.feature.history.MonthCalculationsScreen
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -52,6 +54,7 @@ fun HssabiNavHost(
     homeViewModel: HomeViewModel,
     groupsViewModel: GroupsViewModel,
     historyViewModel: HistoryViewModel,
+    savingsViewModel: SavingsViewModel,
     settingsViewModel: SettingsViewModel,
     calculationRepository: CalculationRepository,
     checklistRepository: ChecklistRepository,
@@ -177,6 +180,12 @@ fun HssabiNavHost(
                 onOpenMonthCalculations = { year, month ->
                     navController.navigate("month_calculations/$year/$month")
                 }
+            )
+        }
+
+        composable(AppDestination.Savings.route) {
+            SavingsScreen(
+                viewModel = savingsViewModel
             )
         }
 

@@ -221,6 +221,7 @@ class NoteViewModel(
         }
     }
 
+
     fun applyTextBackspace() {
         val state = _uiState.value
         when (state.activeInputTarget) {

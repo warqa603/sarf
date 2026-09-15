@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -31,6 +32,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.AlertDialog
@@ -56,15 +60,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -72,6 +81,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -105,6 +117,7 @@ import com.cash.guide.ui.notebook.resolveJournalFont
 private val ColorEmerald = Color(0xFF1B7A4B)
 private val ColorCoral = Color(0xFFD9534F)
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ChecklistScreen(
     viewModel: ChecklistViewModel,
@@ -126,12 +139,19 @@ fun ChecklistScreen(
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var showAiVoiceDialog by remember { mutableStateOf(false) }
 
-    BackHandler {
+    val focusManager = LocalFocusManager.current
+    val isImeVisible = WindowInsets.isImeVisible
+
+    BackHandler(enabled = isImeVisible || state.activeInputTarget != ChecklistInputTarget.NONE) {
+        focusManager.clearFocus()
+        keyboardController?.hide()
         if (state.activeInputTarget != ChecklistInputTarget.NONE) {
             viewModel.hideKeyboard()
-        } else {
-            onNavigateBack()
         }
+    }
+
+    BackHandler(enabled = !isImeVisible && state.activeInputTarget == ChecklistInputTarget.NONE) {
+        onNavigateBack()
     }
 
     val infiniteTransition = rememberInfiniteTransition(label = "checklist_cursor")
@@ -172,6 +192,7 @@ fun ChecklistScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(JournalPaper)
+            .imePadding()
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -221,49 +242,63 @@ fun ChecklistScreen(
                                     if (state.activeInputTarget == ChecklistInputTarget.TITLE) HighlighterPink.copy(alpha = 0.55f)
                                     else HighlighterPink.copy(alpha = 0.35f)
                                 )
-                                .clickable(
-                                    interactionSource = remember { MutableInteractionSource() },
-                                    indication = null
-                                ) {
-                                    keyboardController?.hide()
-                                    viewModel.focusTitle()
-                                }
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                val defaultTitle = if (isRtl) "قائمة" else "Checklist"
-                                val currentTitle = if (state.activeInputTarget == ChecklistInputTarget.TITLE) {
-                                    state.titleInput.text
-                                } else {
-                                    current?.checklist?.title ?: defaultTitle
-                                }
-                                val displayTitle = currentTitle.ifBlank { defaultTitle }
-                                Text(
-                                    text = displayTitle,
-                                    fontFamily = resolveJournalFont(displayTitle, isRtl),
+                            val defaultTitle = if (isRtl) "قائمة" else "Checklist"
+                            BasicTextField(
+                                value = state.titleInput,
+                                onValueChange = { viewModel.updateTitleInput(it) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onFocusChanged { focusState ->
+                                        if (focusState.isFocused) {
+                                            viewModel.focusTitle()
+                                        }
+                                    },
+                                singleLine = true,
+                                textStyle = TextStyle(
+                                    fontFamily = resolveJournalFont(state.titleInput.text.ifBlank { defaultTitle }, isRtl),
                                     fontSize = 17.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = JournalWritingInk,
                                     textAlign = TextAlign.Center,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    style = TextStyle(platformStyle = NoFontPadding)
-                                )
-
-                                if (state.activeInputTarget == ChecklistInputTarget.TITLE && cursorAlpha > 0f) {
-                                    Spacer(modifier = Modifier.width(2.dp))
+                                    platformStyle = NoFontPadding
+                                ),
+                                cursorBrush = SolidColor(JournalWritingInk),
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Text,
+                                    imeAction = ImeAction.Done,
+                                    capitalization = KeyboardCapitalization.Sentences
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onDone = {
+                                        keyboardController?.hide()
+                                        viewModel.hideKeyboard()
+                                    }
+                                ),
+                                decorationBox = { innerTextField ->
                                     Box(
-                                        modifier = Modifier
-                                            .width(2.dp)
-                                            .height(16.dp)
-                                            .background(JournalWritingInk.copy(alpha = cursorAlpha))
-                                    )
+                                        modifier = Modifier.fillMaxWidth(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (state.titleInput.text.isEmpty()) {
+                                            Text(
+                                                text = defaultTitle,
+                                                fontFamily = resolveJournalFont(defaultTitle, isRtl),
+                                                fontSize = 17.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                color = JournalWritingInk.copy(alpha = 0.5f),
+                                                textAlign = TextAlign.Center,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                style = TextStyle(platformStyle = NoFontPadding)
+                                            )
+                                        }
+                                        innerTextField()
+                                    }
                                 }
-                            }
+                            )
                         }
 
                         // Folder / Group button
@@ -660,13 +695,6 @@ fun ChecklistScreen(
                             ),
                             RoundedCornerShape(12.dp)
                         )
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            keyboardController?.hide()
-                            viewModel.focusItemInput()
-                        }
                         .padding(horizontal = 12.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
@@ -684,46 +712,59 @@ fun ChecklistScreen(
                             color = JournalInk
                         )
 
-                        if (state.inputText.text.isEmpty()) {
-                            val placeholderText = if (isRtl) "زيد شي حاجة (مثلاً: خبز، حليب...)" else "Ajouter un élément (ex: Pain, Lait...)"
-                            Text(
-                                text = placeholderText,
-                                fontFamily = resolveJournalFont(placeholderText, isRtl),
-                                fontSize = if (isRtl) 14.sp else 15.sp,
-                                color = JournalMutedInk.copy(alpha = 0.45f),
-                                style = TextStyle(platformStyle = NoFontPadding)
-                            )
-                            if (state.activeInputTarget == ChecklistInputTarget.ITEM_INPUT && cursorAlpha > 0f) {
+                        val placeholderText = if (isRtl) "زيد شي حاجة (مثلاً: خبز، حليب...)" else "Ajouter un élément (ex: Pain, Lait...)"
+                        BasicTextField(
+                            value = state.inputText,
+                            onValueChange = { viewModel.updateInputText(it) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .onFocusChanged { focusState ->
+                                    if (focusState.isFocused) {
+                                        viewModel.focusItemInput()
+                                    }
+                                },
+                            singleLine = true,
+                            textStyle = TextStyle(
+                                fontFamily = resolveJournalFont(state.inputText.text, isRtl),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = JournalInk,
+                                platformStyle = NoFontPadding
+                            ),
+                            cursorBrush = SolidColor(JournalInk),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Done,
+                                capitalization = KeyboardCapitalization.Sentences
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    if (state.inputText.text.isNotBlank()) {
+                                        viewModel.addItem()
+                                    } else {
+                                        keyboardController?.hide()
+                                        viewModel.hideKeyboard()
+                                    }
+                                }
+                            ),
+                            decorationBox = { innerTextField ->
                                 Box(
-                                    modifier = Modifier
-                                        .width(2.dp)
-                                        .height(16.dp)
-                                        .background(JournalInk.copy(alpha = cursorAlpha))
-                                )
-                            }
-                        } else {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = state.inputText.text,
-                                    fontFamily = resolveJournalFont(state.inputText.text, isRtl),
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    color = JournalInk,
-                                    style = TextStyle(platformStyle = NoFontPadding)
-                                )
-                                if (state.activeInputTarget == ChecklistInputTarget.ITEM_INPUT && cursorAlpha > 0f) {
-                                    Spacer(modifier = Modifier.width(2.dp))
-                                    Box(
-                                        modifier = Modifier
-                                            .width(2.dp)
-                                            .height(16.dp)
-                                            .background(JournalInk.copy(alpha = cursorAlpha))
-                                    )
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentAlignment = Alignment.CenterStart
+                                ) {
+                                    if (state.inputText.text.isEmpty()) {
+                                        Text(
+                                            text = placeholderText,
+                                            fontFamily = resolveJournalFont(placeholderText, isRtl),
+                                            fontSize = if (isRtl) 14.sp else 15.sp,
+                                            color = JournalMutedInk.copy(alpha = 0.45f),
+                                            style = TextStyle(platformStyle = NoFontPadding)
+                                        )
+                                    }
+                                    innerTextField()
                                 }
                             }
-                        }
+                        )
                     }
 
                     if (state.inputText.text.isNotBlank()) {
@@ -749,23 +790,7 @@ fun ChecklistScreen(
                 }
             }
 
-            if (state.activeInputTarget != ChecklistInputTarget.NONE) {
-                JournalTextKeyboardDock(
-                    language = state.keyboardLanguage,
-                    shiftMode = state.shiftMode,
-                    expanded = state.keyboardExpanded,
-                    onToggleExpand = { viewModel.toggleKeyboardExpanded() },
-                    onCycleLanguage = { viewModel.cycleLanguage() },
-                    onSelectLanguage = { viewModel.selectLanguage(it) },
-                    onToggleShift = { viewModel.toggleShift() },
-                    onInsertText = { viewModel.applyTextKey(it) },
-                    onBackspace = { viewModel.applyTextBackspace() },
-                    onSwitchToNumericMode = { },
-                    onConfirm = { viewModel.confirmInput() }
-                )
-            } else {
-                Spacer(modifier = Modifier.navigationBarsPadding())
-            }
+            Spacer(modifier = Modifier.navigationBarsPadding())
         }
     }
 

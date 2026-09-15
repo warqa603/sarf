@@ -5,7 +5,21 @@
     <string name="app_tagline">دفتر الحسابات</string>
     <string name="nav_home">الرئيسية</string>
     <string name="nav_history">السجل</string>
+    <string name="nav_savings">التوفير</string>
     <string name="nav_settings">الإعدادات</string>
+
+    <!-- Savings & Goals -->
+    <string name="savings_title">التوفير والأهداف</string>
+    <string name="savings_total_saved">المجموع الموفّر</string>
+    <string name="savings_new_goal">هدف توفير جديد</string>
+    <string name="savings_my_goals">أهدافي المالية</string>
+    <string name="savings_no_goals">لا توجد أهداف حالياً</string>
+    <string name="savings_add_deposit">إضافة مبلغ</string>
+    <string name="savings_plan_calculator">حاسبة خطة التوفير</string>
+    <string name="savings_rules_title">قواعد وحلول التوفير</string>
+    <string name="savings_rule_50_30_20">قاعدة 50/30/20</string>
+    <string name="savings_rule_envelope">طريقة الأظرفة</string>
+    <string name="savings_challenge_20dh">تحدي 20 درهم يومياً</string>
 
     <!-- Home -->
     <string name="home_greeting">أهلاً %1$s 😊</string>

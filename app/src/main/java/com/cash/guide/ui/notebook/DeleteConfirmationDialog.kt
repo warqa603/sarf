@@ -31,6 +31,8 @@ import com.cash.guide.R
 
 @Composable
 fun DeleteConfirmationDialog(
+    title: String? = null,
+    body: String? = null,
     onConfirmDelete: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -39,8 +41,8 @@ fun DeleteConfirmationDialog(
     val layoutDirection = LocalLayoutDirection.current
 
     val isRtl = layoutDirection == androidx.compose.ui.unit.LayoutDirection.Rtl
-    val titleText = stringResource(R.string.delete_title)
-    val bodyText = stringResource(R.string.delete_body)
+    val titleText = title ?: stringResource(R.string.delete_title)
+    val bodyText = body ?: stringResource(R.string.delete_body)
     val cancelText = stringResource(R.string.delete_cancel)
     val confirmText = stringResource(R.string.delete_confirm)
 

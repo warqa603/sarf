@@ -310,7 +310,6 @@ fun RemindersOverviewScreen(
                             reminder = reminder,
                             isRtl = isRtl,
                             onEdit = { viewModel.openEditDialog(reminder) },
-                            onToggleCompleted = { viewModel.toggleCompleted(reminder.id, !reminder.isCompleted) },
                             onToggleEnabled = { viewModel.toggleEnabled(reminder.id, !reminder.isEnabled) },
                             onDelete = { viewModel.deleteReminder(reminder.id) }
                         )
@@ -376,7 +375,6 @@ private fun ReminderRowItem(
     reminder: ReminderEntity,
     isRtl: Boolean,
     onEdit: () -> Unit,
-    onToggleCompleted: () -> Unit,
     onToggleEnabled: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -412,12 +410,12 @@ private fun ReminderRowItem(
         modifier = Modifier
             .fillMaxWidth()
             .height(JournalRuleSpacing)
-            .clickable { onToggleCompleted() }
+            .clickable { onEdit() }
             .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.Bottom,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // Left: Dot + Checkbox + Title
+        // Left: Dot + Title
         Row(
             modifier = Modifier.weight(1f),
             verticalAlignment = Alignment.Bottom,
@@ -429,35 +427,7 @@ private fun ReminderRowItem(
                     .journalVisualOnRule(gapAboveRule = 2.dp)
                     .size(7.5.dp)
             ) {
-                drawCircle(color = if (reminder.isCompleted) JournalMutedInk.copy(alpha = 0.4f) else dotColor)
-            }
-
-            // Checkbox icon
-            Box(
-                modifier = Modifier
-                    .journalVisualOnRule(gapAboveRule = 1.dp)
-                    .size(16.dp)
-                    .clip(CircleShape)
-                    .background(
-                        if (reminder.isCompleted) HighlighterGreen.copy(alpha = 0.50f)
-                        else Color.White.copy(alpha = 0.50f)
-                    )
-                    .border(
-                        1.dp,
-                        if (reminder.isCompleted) Color(0xFF10B981) else JournalInk.copy(alpha = 0.30f),
-                        CircleShape
-                    )
-                    .clickable { onToggleCompleted() },
-                contentAlignment = Alignment.Center
-            ) {
-                if (reminder.isCompleted) {
-                    HisabiSketchIcon(
-                        symbol = HisabiSymbol.Check,
-                        contentDescription = null,
-                        tint = Color(0xFF065F46),
-                        size = 10.dp
-                    )
-                }
+                drawCircle(color = if (reminder.isEnabled) dotColor else JournalMutedInk.copy(alpha = 0.4f))
             }
 
             // Title
@@ -465,9 +435,8 @@ private fun ReminderRowItem(
                 text = reminder.title,
                 fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                 fontSize = if (isRtl) 15.sp else 16.sp,
-                fontWeight = if (reminder.isCompleted) FontWeight.Normal else FontWeight.Bold,
-                color = if (reminder.isCompleted) JournalMutedInk.copy(alpha = 0.6f) else JournalWritingInk,
-                textDecoration = if (reminder.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                fontWeight = FontWeight.Bold,
+                color = if (reminder.isEnabled) JournalWritingInk else JournalMutedInk.copy(alpha = 0.6f),
                 style = TextStyle(platformStyle = NoFontPadding),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

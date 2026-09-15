@@ -1,5 +1,6 @@
 package com.cash.guide.feature.reminders
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -12,9 +13,11 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -33,6 +36,7 @@ import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetDefaults
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -54,8 +58,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.Role
@@ -133,9 +139,10 @@ fun NewReminderSheet(
     val layoutDirection = LocalLayoutDirection.current
     val isRtl = layoutDirection == LayoutDirection.Rtl
     val keyboardController = LocalSoftwareKeyboardController.current
-
+    val focusManager = LocalFocusManager.current
     val isEditing = initialReminder != null
 
+    var isTitleFocused by remember { mutableStateOf(false) }
     var title by remember(initialReminder) { mutableStateOf(initialReminder?.title ?: "") }
     var description by remember(initialReminder) { mutableStateOf(initialReminder?.description ?: "") }
     var selectedRecurrence by remember(initialReminder) {
@@ -194,6 +201,7 @@ fun NewReminderSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
+        properties = ModalBottomSheetDefaults.properties(shouldDismissOnBackPress = false),
         containerColor = JournalPaper,
         tonalElevation = 2.dp,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
@@ -206,6 +214,17 @@ fun NewReminderSheet(
             )
         }
     ) {
+        val isImeVisible = WindowInsets.isImeVisible
+
+        BackHandler {
+            if (isImeVisible) {
+                keyboardController?.hide()
+                focusManager.clearFocus(force = true)
+            } else {
+                onDismiss()
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -292,7 +311,8 @@ fun NewReminderSheet(
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .focusRequester(titleFocusRequester),
+                        .focusRequester(titleFocusRequester)
+                        .onFocusChanged { isTitleFocused = it.isFocused },
                     textStyle = TextStyle(
                         fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                         fontSize = 15.5.sp,

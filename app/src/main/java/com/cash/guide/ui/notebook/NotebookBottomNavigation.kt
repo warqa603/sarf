@@ -86,15 +86,15 @@ fun NotebookBottomNavigation(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Tab 3: History
+                // Tab 3: Savings
                 BottomNavItem(
-                    label = stringResource(R.string.nav_history),
-                    symbol = HisabiSymbol.Clock,
-                    isSelected = currentDestination == AppDestination.History,
+                    label = stringResource(R.string.nav_savings),
+                    symbol = HisabiSymbol.Coin,
+                    isSelected = currentDestination == AppDestination.Savings,
                     onClick = {
                         focusManager.clearFocus()
                         keyboardController?.hide()
-                        onNavigateTo(AppDestination.History)
+                        onNavigateTo(AppDestination.Savings)
                     },
                     modifier = Modifier.weight(1f)
                 )

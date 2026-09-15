@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -61,11 +62,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.LayoutDirection
@@ -76,6 +82,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -123,6 +131,7 @@ import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CalculationEditorScreen(
     viewModel: CalculationEditorViewModel,
@@ -156,7 +165,16 @@ fun CalculationEditorScreen(
         )
     }
 
-    BackHandler {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val isImeVisible = WindowInsets.isImeVisible
+
+    BackHandler(enabled = isImeVisible) {
+        focusManager.clearFocus()
+        keyboardController?.hide()
+    }
+
+    BackHandler(enabled = !isImeVisible) {
         viewModel.handleBackPress(onNavigateBack)
     }
 
@@ -164,6 +182,7 @@ fun CalculationEditorScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(JournalPaper)
+            .imePadding()
     ) {
         Column(
             modifier = Modifier.fillMaxSize()
@@ -403,48 +422,7 @@ fun CalculationEditorScreen(
             }
         }
 
-            // Keyboard Dock
-            if (state.keyboardMode != JournalKeyboardMode.NONE) {
-                when (state.keyboardMode) {
-                    JournalKeyboardMode.TEXT -> {
-                        JournalTextKeyboardDock(
-                            language = state.keyboardLanguage,
-                            shiftMode = state.shiftMode,
-                            expanded = state.keyboardExpanded,
-                            onToggleExpand = { viewModel.toggleKeyboardExpanded() },
-                            onCycleLanguage = { viewModel.cycleLanguage() },
-                            onSelectLanguage = { viewModel.selectLanguage(it) },
-                            onToggleShift = { viewModel.toggleShift() },
-                            onInsertText = { viewModel.applyTextKey(it) },
-                            onBackspace = { viewModel.applyTextBackspace() },
-                            onSwitchToNumericMode = { viewModel.switchToNumericMode() },
-                            onConfirm = {
-                                if (state.activeField == ActiveField.HEADER_TITLE) {
-                                    viewModel.confirmCalculationTitle()
-                                } else {
-                                    state.activeRowId?.let { viewModel.confirmRowEdit(it) }
-                                }
-                            }
-                        )
-                    }
-                    JournalKeyboardMode.NUMBER -> {
-                        JournalCompactNumericDock(
-                            expanded = state.keyboardExpanded,
-                            onToggleExpand = { viewModel.toggleKeyboardExpanded() },
-                            onKey = { viewModel.applyCompactKey(it) },
-                            onSwitchToTextMode = { viewModel.switchToTextMode() },
-                            onConfirm = {
-                                if (state.activeField == ActiveField.HEADER_TITLE) {
-                                    viewModel.confirmCalculationTitle()
-                                } else {
-                                    state.activeRowId?.let { viewModel.confirmRowEdit(it) }
-                                }
-                            }
-                        )
-                    }
-                    JournalKeyboardMode.NONE -> {}
-                }
-            }
+            Spacer(modifier = Modifier.navigationBarsPadding())
         }
 
         // Contextual Calculator Popup
@@ -539,32 +517,6 @@ private fun EditorTopBar(
     onBackClick: () -> Unit
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
-    val infiniteTransition = rememberInfiniteTransition(label = "editor_title_cursor")
-    val cursorAlpha by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 0f,
-        animationSpec = infiniteRepeatable(
-            animation = keyframes {
-                durationMillis = 1000
-                1f at 0
-                1f at 499
-                0f at 500
-                0f at 999
-            },
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "cursor_blink"
-    )
-    var titleLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
-    val titleScrollState = rememberScrollState()
-
-    LaunchedEffect(titleScrollState.maxValue, titleValue.text, isTitleActive) {
-        if (isTitleActive) {
-            titleScrollState.scrollTo(titleScrollState.maxValue)
-        }
-    }
-
-    val isArabicKeyboard = keyboardLanguage == JournalKeyboardLanguage.ARABIC
     val layoutDirection = LocalLayoutDirection.current
     val isRtl = layoutDirection == LayoutDirection.Rtl
 
@@ -616,28 +568,37 @@ private fun EditorTopBar(
                             if (isTitleActive) HighlighterPink.copy(alpha = 0.52f)
                             else HighlighterPink.copy(alpha = 0.35f)
                         )
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null
-                        ) {
-                            keyboardController?.hide()
-                            onTitleClick()
-                        }
                         .padding(horizontal = 10.dp, vertical = 6.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    BoxWithConstraints(
-                        modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        val containerWidth = maxWidth
-                        CompositionLocalProvider(
-                            LocalLayoutDirection provides if (isArabicKeyboard) LayoutDirection.Rtl else LayoutDirection.Ltr
-                        ) {
+                    BasicTextField(
+                        value = titleValue,
+                        onValueChange = onTitleChange,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .onFocusChanged { focusState ->
+                                if (focusState.isFocused) {
+                                    onTitleClick()
+                                }
+                            },
+                        singleLine = true,
+                        textStyle = TextStyle(
+                            fontFamily = resolveJournalFont(titleValue.text, isRtl),
+                            fontSize = if (isArabicScript(titleValue.text) || isRtl) 15.5.sp else 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = JournalInk,
+                            textAlign = TextAlign.Center,
+                            platformStyle = NoFontPadding
+                        ),
+                        cursorBrush = SolidColor(JournalInk),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Next,
+                            capitalization = KeyboardCapitalization.Sentences
+                        ),
+                        decorationBox = { innerTextField ->
                             Box(
-                                modifier = Modifier
-                                    .widthIn(min = containerWidth)
-                                    .horizontalScroll(titleScrollState),
+                                modifier = Modifier.fillMaxWidth(),
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (titleValue.text.isEmpty()) {
@@ -652,66 +613,11 @@ private fun EditorTopBar(
                                         softWrap = false,
                                         style = TextStyle(platformStyle = NoFontPadding)
                                     )
-                                } else {
-                                    Text(
-                                        text = titleValue.text,
-                                        fontFamily = resolveJournalFont(titleValue.text, isRtl),
-                                        fontSize = if (isArabicScript(titleValue.text) || isRtl) 15.5.sp else 16.sp,
-                                        fontWeight = FontWeight.Medium,
-                                        color = JournalInk,
-                                        textAlign = TextAlign.Center,
-                                        maxLines = 1,
-                                        softWrap = false,
-                                        style = TextStyle(platformStyle = NoFontPadding),
-                                        modifier = Modifier.drawWithContent {
-                                            drawContent()
-                                            if (isTitleActive && cursorAlpha > 0f) {
-                                                val layout = titleLayoutResult
-                                                val cursorX = if (layout != null && titleValue.text.isNotEmpty()) {
-                                                    val offset = titleValue.selection.end.coerceIn(0, titleValue.text.length)
-                                                    val rect = layout.getCursorRect(offset)
-                                                    rect.left
-                                                } else {
-                                                    size.width / 2f
-                                                }
-                                                val cursorH = 17.dp.toPx()
-                                                val cursorTop = (size.height - cursorH) / 2f
-                                                drawLine(
-                                                    color = JournalInk.copy(alpha = cursorAlpha),
-                                                    start = Offset(cursorX, cursorTop),
-                                                    end = Offset(cursorX, cursorTop + cursorH),
-                                                    strokeWidth = 1.8.dp.toPx(),
-                                                    cap = StrokeCap.Round
-                                                )
-                                            }
-                                        },
-                                        onTextLayout = { titleLayoutResult = it }
-                                    )
                                 }
-
-                                // Centered blinking cursor when empty and title is active
-                                if (titleValue.text.isEmpty() && isTitleActive && cursorAlpha > 0f) {
-                                    Box(
-                                        modifier = Modifier
-                                            .widthIn(min = containerWidth)
-                                            .height(22.dp)
-                                            .drawWithContent {
-                                                val cursorX = size.width / 2f
-                                                val cursorH = 17.dp.toPx()
-                                                val cursorTop = (size.height - cursorH) / 2f
-                                                drawLine(
-                                                    color = JournalInk.copy(alpha = cursorAlpha),
-                                                    start = Offset(cursorX, cursorTop),
-                                                    end = Offset(cursorX, cursorTop + cursorH),
-                                                    strokeWidth = 1.8.dp.toPx(),
-                                                    cap = StrokeCap.Round
-                                                )
-                                            }
-                                    )
-                                }
+                                innerTextField()
                             }
                         }
-                    }
+                    )
                 }
 
                 // Undo Button (42dp touch target)

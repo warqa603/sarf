@@ -5,7 +5,21 @@
     <string name="app_tagline">Calculation notebook</string>
     <string name="nav_home">Home</string>
     <string name="nav_history">History</string>
+    <string name="nav_savings">Savings</string>
     <string name="nav_settings">Settings</string>
+
+    <!-- Savings & Goals -->
+    <string name="savings_title">Savings &amp; Goals</string>
+    <string name="savings_total_saved">Total Saved</string>
+    <string name="savings_new_goal">New Goal</string>
+    <string name="savings_my_goals">My Financial Goals</string>
+    <string name="savings_no_goals">No goals yet</string>
+    <string name="savings_add_deposit">Add Amount</string>
+    <string name="savings_plan_calculator">Savings Planner</string>
+    <string name="savings_rules_title">Savings Rules &amp; Tips</string>
+    <string name="savings_rule_50_30_20">50/30/20 Rule</string>
+    <string name="savings_rule_envelope">Envelope Method</string>
+    <string name="savings_challenge_20dh">20 DH / Day Challenge</string>
 
     <!-- Home -->
     <string name="home_greeting">Hello %1$s 😊</string>

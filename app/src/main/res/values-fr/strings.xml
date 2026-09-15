@@ -5,7 +5,21 @@
     <string name="app_tagline">Carnet de calculs</string>
     <string name="nav_home">Accueil</string>
     <string name="nav_history">Historique</string>
+    <string name="nav_savings">Épargne</string>
     <string name="nav_settings">Paramètres</string>
+
+    <!-- Savings & Goals -->
+    <string name="savings_title">Épargne &amp; Objectifs</string>
+    <string name="savings_total_saved">Total épargné</string>
+    <string name="savings_new_goal">Nouvel objectif</string>
+    <string name="savings_my_goals">Mes objectifs</string>
+    <string name="savings_no_goals">Aucun objectif pour le moment</string>
+    <string name="savings_add_deposit">Ajouter un montant</string>
+    <string name="savings_plan_calculator">Simulateur d\'épargne</string>
+    <string name="savings_rules_title">Règles &amp; Astuces d\'épargne</string>
+    <string name="savings_rule_50_30_20">Règle 50/30/20</string>
+    <string name="savings_rule_envelope">Méthode des enveloppes</string>
+    <string name="savings_challenge_20dh">Défi 20 DH par jour</string>
 
     <!-- Home -->
     <string name="home_greeting">Bonjour %1$s 😊</string>

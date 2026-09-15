@@ -4,6 +4,7 @@ sealed class AppDestination(val route: String) {
     data object Home : AppDestination("home")
     data object Groups : AppDestination("groups")
     data object History : AppDestination("history")
+    data object Savings : AppDestination("savings")
     data object Settings : AppDestination("settings")
     data object StyleShowcase : AppDestination("style_showcase")
     data object CashRegister : AppDestination("cash_register")

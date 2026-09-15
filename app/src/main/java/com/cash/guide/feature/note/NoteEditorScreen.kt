@@ -16,9 +16,14 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -31,6 +36,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Surface
@@ -49,20 +57,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.platform.LocalTextInputService
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import com.cash.guide.R
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.LayoutDirection
@@ -96,7 +109,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun NoteEditorScreen(
     viewModel: NoteViewModel,
@@ -123,13 +136,19 @@ fun NoteEditorScreen(
     }
 
     // Auto-save on back navigation
-    BackHandler {
+    val isImeVisible = WindowInsets.isImeVisible
+
+    BackHandler(enabled = isImeVisible || uiState.activeInputTarget != NoteInputTarget.NONE) {
+        focusManager.clearFocus()
+        keyboardController?.hide()
         if (uiState.activeInputTarget != NoteInputTarget.NONE) {
             viewModel.closeKeyboard()
-        } else {
-            viewModel.saveChanges()
-            onNavigateBack()
         }
+    }
+
+    BackHandler(enabled = !isImeVisible && uiState.activeInputTarget == NoteInputTarget.NONE) {
+        viewModel.saveChanges()
+        onNavigateBack()
     }
 
     val dateFormatter = remember { SimpleDateFormat("d MMMM yyyy • HH:mm", Locale.getDefault()) }
@@ -158,19 +177,12 @@ fun NoteEditorScreen(
 
     val cursorColor = Color(0xFFE91E63) // Pinkish cursor line like Image 3
 
-    // Suppress system soft keyboard completely so in-app Journal keyboard is used
-    CompositionLocalProvider(
-        @Suppress("DEPRECATION")
-        LocalTextInputService provides null
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(JournalPaper)
+            .imePadding()
     ) {
-        androidx.compose.ui.platform.InterceptPlatformTextInput(
-            interceptor = { _, _ -> kotlinx.coroutines.awaitCancellation() }
-        ) {
-            Box(
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(JournalPaper)
-            ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -219,70 +231,57 @@ fun NoteEditorScreen(
                                     .padding(horizontal = 6.dp)
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(getNoteHighlightPillColor(uiState.colorTag))
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null
-                                    ) {
-                                        keyboardController?.hide()
-                                        viewModel.focusTitle()
-                                    }
                                     .padding(horizontal = 10.dp, vertical = 6.dp),
                                 contentAlignment = Alignment.CenterStart
                             ) {
-                                BoxWithConstraints(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    contentAlignment = Alignment.CenterStart
-                                ) {
-                                    val containerWidth = maxWidth
-                                    val isArabicKeyboard = uiState.keyboardLanguage == com.cash.guide.domain.JournalKeyboardLanguage.ARABIC
-                                    CompositionLocalProvider(
-                                        LocalLayoutDirection provides if (isArabicKeyboard) LayoutDirection.Rtl else LayoutDirection.Ltr
-                                    ) {
+                                val placeholderText = if (isRtl) "عنوان الملاحظة... ✍️" else "Titre de la note..."
+                                BasicTextField(
+                                    value = uiState.title,
+                                    onValueChange = { viewModel.updateTitle(it) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .onFocusChanged { focusState ->
+                                            if (focusState.isFocused) {
+                                                viewModel.focusTitle()
+                                            }
+                                        },
+                                    singleLine = true,
+                                    textStyle = TextStyle(
+                                        fontFamily = resolveJournalFont(uiState.title.text.ifBlank { placeholderText }, isRtl),
+                                        fontSize = if (isRtl) 16.5.sp else 17.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = JournalWritingInk,
+                                        platformStyle = NoFontPadding
+                                    ),
+                                    cursorBrush = SolidColor(cursorColor),
+                                    keyboardOptions = KeyboardOptions(
+                                        keyboardType = KeyboardType.Text,
+                                        imeAction = ImeAction.Next,
+                                        capitalization = KeyboardCapitalization.Sentences
+                                    ),
+                                    keyboardActions = KeyboardActions(
+                                        onNext = { viewModel.focusContent() }
+                                    ),
+                                    decorationBox = { innerTextField ->
                                         Box(
-                                            modifier = Modifier
-                                                .widthIn(min = containerWidth)
-                                                .horizontalScroll(titleScrollState),
+                                            modifier = Modifier.fillMaxWidth(),
                                             contentAlignment = Alignment.CenterStart
                                         ) {
-                                            Row(
-                                                verticalAlignment = Alignment.CenterVertically
-                                            ) {
-                                                if (displayTitle.isEmpty()) {
-                                                    Text(
-                                                        text = if (isRtl) "عنوان الملاحظة... ✍️" else "Titre de la note...",
-                                                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                                                        fontSize = if (isRtl) 16.sp else 16.5.sp,
-                                                        color = JournalMutedInk.copy(alpha = 0.5f),
-                                                        maxLines = 1,
-                                                        softWrap = false,
-                                                        style = TextStyle(platformStyle = NoFontPadding)
-                                                    )
-                                                } else {
-                                                    Text(
-                                                        text = displayTitle,
-                                                        fontFamily = resolveJournalFont(displayTitle, isRtl),
-                                                        fontSize = if (isRtl) 16.5.sp else 17.sp,
-                                                        fontWeight = FontWeight.Bold,
-                                                        color = JournalWritingInk,
-                                                        maxLines = 1,
-                                                        softWrap = false,
-                                                        style = TextStyle(platformStyle = NoFontPadding)
-                                                    )
-                                                }
-
-                                                if (isTitleActive && cursorAlpha > 0f) {
-                                                    Spacer(modifier = Modifier.width(2.dp))
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .width(2.dp)
-                                                            .height(18.dp)
-                                                            .background(cursorColor)
-                                                    )
-                                                }
+                                            if (uiState.title.text.isEmpty()) {
+                                                Text(
+                                                    text = placeholderText,
+                                                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                                    fontSize = if (isRtl) 16.sp else 16.5.sp,
+                                                    color = JournalMutedInk.copy(alpha = 0.5f),
+                                                    maxLines = 1,
+                                                    softWrap = false,
+                                                    style = TextStyle(platformStyle = NoFontPadding)
+                                                )
                                             }
+                                            innerTextField()
                                         }
                                     }
-                                }
+                                )
                             }
 
                             // Pin Button next to Title (toggles pin/unpin directly)
@@ -504,201 +503,90 @@ fun NoteEditorScreen(
                             Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
                             // Rule 3 onwards: Multiline Content directly sitting on the blue lines
-                            BoxWithConstraints(
+                            Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 18.dp)
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null
-                                    ) {
-                                        keyboardController?.hide()
-                                        viewModel.focusContent()
-                                    }
                             ) {
-                                val contentText = uiState.content.text
-                                val isContentActive = uiState.activeInputTarget == NoteInputTarget.CONTENT
-                                val textMeasurer = rememberTextMeasurer()
-                                val availableWidthPx = constraints.maxWidth
+                                val density = LocalDensity.current
+                                val ruleSpacingSp = with(density) { JournalRuleSpacing.toSp() }
+                                val rowHeightPx = with(density) { JournalRuleSpacing.toPx() }
 
+                                val contentText = uiState.content.text
                                 val isArabicKeyboard = uiState.keyboardLanguage == com.cash.guide.domain.JournalKeyboardLanguage.ARABIC
                                 val isContentRtl = isRtl || (contentText.isNotEmpty() && isArabicScript(contentText)) || (contentText.isEmpty() && isArabicKeyboard)
+                                val placeholderText = if (isContentRtl) "اكتب ملاحظة..." else "Écrire une note..."
 
-                                val contentStyle = TextStyle(
-                                    fontFamily = resolveJournalFont(contentText, isContentRtl),
-                                    fontSize = if (isContentRtl) 16.sp else 16.5.sp,
-                                    fontWeight = FontWeight.Normal,
-                                    color = JournalInk,
-                                    platformStyle = NoFontPadding
-                                )
+                                val contentTextStyle = remember(isContentRtl, contentText, placeholderText, ruleSpacingSp) {
+                                    TextStyle(
+                                        fontFamily = resolveJournalFont(contentText.ifBlank { placeholderText }, isContentRtl),
+                                        fontSize = if (isContentRtl) 16.sp else 16.5.sp,
+                                        fontWeight = FontWeight.Normal,
+                                        color = JournalInk,
+                                        lineHeight = ruleSpacingSp,
+                                        lineHeightStyle = LineHeightStyle(
+                                            alignment = LineHeightStyle.Alignment.Proportional,
+                                            trim = LineHeightStyle.Trim.None
+                                        ),
+                                        platformStyle = NoFontPadding
+                                    )
+                                }
 
-                                CompositionLocalProvider(
-                                    LocalLayoutDirection provides if (isContentRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
-                                ) {
-                                    Column(modifier = Modifier.fillMaxWidth()) {
-                                        if (contentText.isEmpty()) {
-                                            // Empty state: "Écrire une note..." sitting on Rule 3
-                                            Box(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .height(JournalRuleSpacing)
-                                            ) {
-                                                if (isContentActive && cursorAlpha > 0f) {
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .align(Alignment.BottomStart)
-                                                            .padding(bottom = 0.5.dp)
-                                                            .width(2.dp)
-                                                            .height(19.dp)
-                                                            .background(cursorColor)
-                                                    )
-                                                }
+                                val textMeasurer = rememberTextMeasurer()
+                                val measuredBaseline = remember(contentTextStyle, isContentRtl) {
+                                    val sampleText = if (isContentRtl) "ملاحظة" else "Ay"
+                                    val result = textMeasurer.measure(
+                                        text = AnnotatedString(sampleText),
+                                        style = contentTextStyle
+                                    )
+                                    result.getLineBaseline(0)
+                                }
+
+                                val yShiftPx = (rowHeightPx - with(density) { 1.0.dp.toPx() }) - measuredBaseline
+                                val yShiftDp = with(density) { yShiftPx.toDp() }
+
+                                BasicTextField(
+                                    value = uiState.content,
+                                    onValueChange = { viewModel.updateContent(it) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .offset(y = yShiftDp)
+                                        .onFocusChanged { focusState ->
+                                            if (focusState.isFocused) {
+                                                viewModel.focusContent()
+                                            }
+                                        },
+                                    textStyle = contentTextStyle,
+                                    cursorBrush = SolidColor(cursorColor),
+                                    keyboardOptions = KeyboardOptions(
+                                        keyboardType = KeyboardType.Text,
+                                        capitalization = KeyboardCapitalization.Sentences
+                                    ),
+                                    decorationBox = { innerTextField ->
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .defaultMinSize(minHeight = JournalRuleSpacing * 8),
+                                            contentAlignment = Alignment.TopStart
+                                        ) {
+                                            if (contentText.isEmpty()) {
                                                 Text(
-                                                    text = if (isContentRtl) "اكتب ملاحظة..." else "Écrire une note...",
-                                                    fontFamily = if (isContentRtl) TajawalFamily else PatrickHandFamily,
-                                                    fontSize = if (isContentRtl) 15.sp else 16.sp,
-                                                    color = JournalMutedInk.copy(alpha = 0.45f),
-                                                    style = TextStyle(platformStyle = NoFontPadding),
-                                                    modifier = Modifier
-                                                        .then(if (isContentActive) Modifier.padding(start = 6.dp) else Modifier)
-                                                        .journalBaselineOnRule(opticalOffsetFromBottom = (-0.5).dp)
+                                                    text = placeholderText,
+                                                    style = contentTextStyle.copy(color = JournalMutedInk.copy(alpha = 0.45f))
                                                 )
                                             }
-                                        } else {
-                                            // Multiline text broken into paragraphs and wrapped to exact 29dp rules
-                                            val paragraphs = remember(contentText) { contentText.split('\n') }
-                                            val paragraphStarts = remember(paragraphs) {
-                                                val starts = mutableListOf<Int>()
-                                                var cur = 0
-                                                paragraphs.forEach { p ->
-                                                    starts.add(cur)
-                                                    cur += p.length + 1
-                                                }
-                                                starts
-                                            }
-                                            val cursorPosition = uiState.content.selection.end
-
-                                            paragraphs.forEachIndexed { pIdx, paragraph ->
-                                                val currentGlobalCharIndex = paragraphStarts[pIdx]
-
-                                                if (paragraph.isEmpty()) {
-                                                    // Empty paragraph takes exactly 1 rule (29dp)
-                                                    val isCursorHere = isContentActive && (cursorPosition == currentGlobalCharIndex)
-                                                    Box(
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .height(JournalRuleSpacing)
-                                                            .clickable(
-                                                                interactionSource = remember { MutableInteractionSource() },
-                                                                indication = null
-                                                            ) {
-                                                                viewModel.focusContent(currentGlobalCharIndex)
-                                                            }
-                                                    ) {
-                                                        if (isCursorHere && cursorAlpha > 0f) {
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .align(Alignment.BottomStart)
-                                                                    .padding(bottom = 0.5.dp)
-                                                                    .width(2.dp)
-                                                                    .height(19.dp)
-                                                                    .background(cursorColor)
-                                                            )
-                                                        }
-                                                    }
-                                                } else {
-                                                    val layoutResult = textMeasurer.measure(
-                                                        text = AnnotatedString(paragraph),
-                                                        style = contentStyle,
-                                                        constraints = Constraints(maxWidth = availableWidthPx)
-                                                    )
-                                                    val lineCount = layoutResult.lineCount
-
-                                                    for (lineIndex in 0 until lineCount) {
-                                                        val lineStartInP = layoutResult.getLineStart(lineIndex)
-                                                        val lineEndInP = layoutResult.getLineEnd(lineIndex)
-                                                        val lineText = paragraph.substring(lineStartInP, lineEndInP)
-
-                                                        val globalLineStart = currentGlobalCharIndex + lineStartInP
-                                                        val globalLineEnd = currentGlobalCharIndex + lineEndInP
-
-                                                        val isCursorInThisLine = isContentActive &&
-                                                                (cursorPosition >= globalLineStart &&
-                                                                        (cursorPosition < globalLineEnd || (cursorPosition == globalLineEnd && lineIndex == lineCount - 1)))
-
-                                                        Box(
-                                                            modifier = Modifier
-                                                                .fillMaxWidth()
-                                                                .height(JournalRuleSpacing)
-                                                                .clickable(
-                                                                    interactionSource = remember { MutableInteractionSource() },
-                                                                    indication = null
-                                                                ) {
-                                                                    viewModel.focusContent(globalLineStart + lineText.length)
-                                                                }
-                                                        ) {
-                                                            Text(
-                                                                text = lineText,
-                                                                style = contentStyle,
-                                                                modifier = Modifier.journalBaselineOnRule(opticalOffsetFromBottom = (-0.5).dp)
-                                                            )
-
-                                                            if (isCursorInThisLine && cursorAlpha > 0f) {
-                                                                val offsetInLine = (cursorPosition - globalLineStart).coerceIn(0, lineText.length)
-                                                                val subLayout = textMeasurer.measure(
-                                                                    text = AnnotatedString(lineText.take(offsetInLine)),
-                                                                    style = contentStyle
-                                                                )
-                                                                val cursorX = if (isContentRtl) {
-                                                                    -subLayout.size.width.toFloat()
-                                                                } else {
-                                                                    subLayout.size.width.toFloat()
-                                                                }
-
-                                                                Box(
-                                                                    modifier = Modifier
-                                                                        .align(Alignment.BottomStart)
-                                                                        .offset(x = with(LocalDensity.current) { cursorX.toDp() })
-                                                                        .padding(bottom = 0.5.dp)
-                                                                        .width(2.dp)
-                                                                        .height(19.dp)
-                                                                        .background(cursorColor)
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
+                                            innerTextField()
                                         }
-
-                                        // 4 blank rules at bottom for breathing room
-                                        Spacer(modifier = Modifier.height(JournalRuleSpacing * 4))
                                     }
-                                }
+                                )
                             }
+
+                            // 4 blank rules at bottom for breathing room
+                            Spacer(modifier = Modifier.height(JournalRuleSpacing * 4))
                         }
                     }
 
-                    // In-app Journal Keyboard Dock
-                    if (uiState.activeInputTarget != NoteInputTarget.NONE) {
-                        JournalTextKeyboardDock(
-                            language = uiState.keyboardLanguage,
-                            shiftMode = uiState.shiftMode,
-                            expanded = uiState.keyboardExpanded,
-                            onToggleExpand = { viewModel.toggleKeyboardExpanded() },
-                            onCycleLanguage = { viewModel.cycleLanguage() },
-                            onSelectLanguage = { viewModel.selectLanguage(it) },
-                            onToggleShift = { viewModel.toggleShift() },
-                            onInsertText = { viewModel.applyTextKey(it) },
-                            onBackspace = { viewModel.applyTextBackspace() },
-                            onSwitchToNumericMode = { },
-                            onConfirm = { viewModel.confirmInput() },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(JournalPaper)
-                                .navigationBarsPadding()
-                        )
-                    }
+                    Spacer(modifier = Modifier.navigationBarsPadding())
                 }
 
                 // Delete Confirmation Dialog
@@ -764,8 +652,6 @@ fun NoteEditorScreen(
                             showAssignGroupDialog = false
                         }
                     )
-                }
             }
         }
-    }
 }

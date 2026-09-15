@@ -17,6 +17,7 @@ import com.cash.guide.data.CalculationRepository
 import com.cash.guide.data.ChecklistRepository
 import com.cash.guide.data.NoteRepository
 import com.cash.guide.data.ReminderRepository
+import com.cash.guide.data.SavingsRepository
 import com.cash.guide.data.SecurityRepository
 import com.cash.guide.data.SettingsRepository
 import com.cash.guide.data.TemplateRepository
@@ -29,6 +30,7 @@ import com.cash.guide.feature.editor.CalculationEditorViewModel
 import com.cash.guide.feature.history.HistoryViewModel
 import com.cash.guide.feature.home.HomeViewModel
 import com.cash.guide.feature.groups.GroupsViewModel
+import com.cash.guide.feature.savings.SavingsViewModel
 import com.cash.guide.feature.settings.SettingsViewModel
 import com.cash.guide.ui.notebook.JournalLockScreen
 import com.cash.guide.ui.notebook.JournalPaper
@@ -83,6 +85,9 @@ fun HssabiApp(
     }
     val reminderRepository = remember {
         ReminderRepository(database.reminderDao(), context)
+    }
+    val savingsRepository = remember {
+        SavingsRepository(database.savingsDao())
     }
     val settingsRepository = remember { SettingsRepository(context) }
     val securityRepository = remember { SecurityRepository(context) }
@@ -178,6 +183,7 @@ fun HssabiApp(
     }
     val groupsViewModel = viewModel { GroupsViewModel(calculationRepository, noteRepository, checklistRepository) }
     val historyViewModel = viewModel { HistoryViewModel(calculationRepository) }
+    val savingsViewModel = viewModel { SavingsViewModel(savingsRepository) }
     val backupManager = remember { BackupManager(database) }
     val settingsViewModel = viewModel { SettingsViewModel(settingsRepository, backupManager, calculationRepository, securityRepository) }
 
@@ -201,13 +207,13 @@ fun HssabiApp(
     val isTopLevel = currentRoute in listOf(
         AppDestination.Home.route,
         AppDestination.Groups.route,
-        AppDestination.History.route,
+        AppDestination.Savings.route,
         AppDestination.Settings.route
     )
 
     val currentDestination = when (currentRoute) {
         AppDestination.Groups.route -> AppDestination.Groups
-        AppDestination.History.route -> AppDestination.History
+        AppDestination.Savings.route -> AppDestination.Savings
         AppDestination.Settings.route -> AppDestination.Settings
         else -> AppDestination.Home
     }
@@ -256,6 +262,7 @@ fun HssabiApp(
                     homeViewModel = homeViewModel,
                     groupsViewModel = groupsViewModel,
                     historyViewModel = historyViewModel,
+                    savingsViewModel = savingsViewModel,
                     settingsViewModel = settingsViewModel,
                     calculationRepository = calculationRepository,
                     checklistRepository = checklistRepository,

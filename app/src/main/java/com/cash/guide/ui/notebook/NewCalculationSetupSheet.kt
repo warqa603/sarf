@@ -1,5 +1,6 @@
 package com.cash.guide.ui.notebook
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -7,11 +8,14 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,6 +28,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalBottomSheetDefaults
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -39,9 +44,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
@@ -66,7 +73,7 @@ import kotlinx.coroutines.launch
  * - Clean title input with native keyboard and clear '✕' button.
  * - Single solid background choice chips for Type and Currency.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun NewCalculationSetupSheet(
     defaultCurrency: MoneyUnit = MoneyUnit.DIRHAM,
@@ -79,12 +86,14 @@ fun NewCalculationSetupSheet(
     val isRtl = layoutDirection == LayoutDirection.Rtl
     val coroutineScope = rememberCoroutineScope()
     val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val repo = templateRepository ?: remember { TemplateRepository.getInstance(context) }
     val customTemplates by repo.customTemplates.collectAsState(emptyList())
     val builtInTemplates = remember(isRtl) { repo.getBuiltInTemplates(isRtl) }
 
+    var isTitleFocused by remember { mutableStateOf(false) }
     var title by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf("PERSONNEL") } // "PERSONNEL" or "CREDIT"
     var selectedCurrency by remember { mutableStateOf(defaultCurrency) }
@@ -100,6 +109,7 @@ fun NewCalculationSetupSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
+        properties = ModalBottomSheetDefaults.properties(shouldDismissOnBackPress = false),
         containerColor = JournalPaper,
         tonalElevation = 2.dp,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
@@ -112,6 +122,17 @@ fun NewCalculationSetupSheet(
             )
         }
     ) {
+        val isImeVisible = WindowInsets.isImeVisible
+
+        BackHandler {
+            if (isImeVisible) {
+                keyboardController?.hide()
+                focusManager.clearFocus(force = true)
+            } else {
+                onDismiss()
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -315,7 +336,8 @@ fun NewCalculationSetupSheet(
                         singleLine = true,
                         modifier = Modifier
                             .weight(1f)
-                            .focusRequester(titleFocusRequester),
+                            .focusRequester(titleFocusRequester)
+                            .onFocusChanged { isTitleFocused = it.isFocused },
                         textStyle = TextStyle(
                             fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                             fontSize = 15.5.sp,

@@ -103,6 +103,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
@@ -387,17 +389,17 @@ fun JournalEntryRow(
                     .journalBaselineOnRule()
             )
 
-            Box(
-                contentAlignment = Alignment.CenterStart,
-                modifier = Modifier
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        keyboardController?.hide()
-                        onTitleFocused()
-                    }
+            BasicTextField(
+                value = titleValue,
+                onValueChange = onTitleValueChange,
+                modifier = titleFocusMod
+                    .weight(1f, fill = false)
                     .offset(y = 6.7.dp)
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            onTitleFocused()
+                        }
+                    }
                     .drawWithContent {
                         drawContent()
                         if (isTitleActive) {
@@ -411,57 +413,44 @@ fun JournalEntryRow(
                                 strokeWidth = sw,
                                 cap = StrokeCap.Round
                             )
-
-                            // Blinking cursor
-                            if (cursorAlpha > 0f) {
-                                val layout = titleLayoutResult
-                                val cursorX = if (layout != null && titleValue.text.isNotEmpty()) {
-                                    val offset = titleValue.selection.end.coerceIn(0, titleValue.text.length)
-                                    val rect = layout.getCursorRect(offset)
-                                    rect.left
-                                } else {
-                                    if (isRtl) size.width - 2.dp.toPx() else 1.dp.toPx()
-                                }
-                                val cursorH = 17.dp.toPx()
-                                val cursorTop = (size.height - cursorH) / 2f
-                                drawLine(
-                                    color = JournalInk.copy(alpha = cursorAlpha),
-                                    start = Offset(cursorX, cursorTop),
-                                    end = Offset(cursorX, cursorTop + cursorH),
-                                    strokeWidth = 1.8.dp.toPx(),
-                                    cap = StrokeCap.Round
-                                )
-                            }
                         }
                     }
-                    .semantics { testTag = "tag_row_title_$rowNumber" }
-            ) {
-                if (titleValue.text.isEmpty()) {
-                    val placeholderText = stringResource(R.string.editor_item_placeholder)
-                    Text(
-                        text = placeholderText,
-                        fontFamily = resolveJournalFont(placeholderText, isRtl),
-                        fontSize = if (isArabicScript(placeholderText) || isRtl) 14.5.sp else 15.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = JournalMutedInk.copy(alpha = if (isTitleActive) 0.50f else 0.40f),
-                        style = TextStyle(platformStyle = NoFontPadding)
-                    )
-                } else {
-                    val isTextArabic = isArabicScript(titleValue.text)
-                    Text(
-                        text = highlightNumbersInText(titleValue.text, JournalInk),
-                        fontFamily = resolveJournalFont(titleValue.text, isRtl),
-                        fontSize = if (isTextArabic || isRtl) 14.5.sp else 15.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = JournalInk,
-                        style = TextStyle(
-                            platformStyle = NoFontPadding,
-                            textDirection = if (isTextArabic) TextDirection.Rtl else TextDirection.ContentOrLtr
-                        ),
-                        onTextLayout = { titleLayoutResult = it }
-                    )
+                    .semantics { testTag = "tag_row_title_$rowNumber" },
+                singleLine = true,
+                textStyle = TextStyle(
+                    fontFamily = resolveJournalFont(titleValue.text, isRtl),
+                    fontSize = if (isArabicScript(titleValue.text) || isRtl) 14.5.sp else 15.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = JournalInk,
+                    platformStyle = NoFontPadding,
+                    textDirection = if (isArabicScript(titleValue.text)) TextDirection.Rtl else TextDirection.ContentOrLtr
+                ),
+                cursorBrush = SolidColor(JournalInk),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Text,
+                    imeAction = ImeAction.Next,
+                    capitalization = KeyboardCapitalization.Sentences
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { onAmountFocused() }
+                ),
+                decorationBox = { innerTextField ->
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        if (titleValue.text.isEmpty()) {
+                            val placeholderText = stringResource(R.string.editor_item_placeholder)
+                            Text(
+                                text = placeholderText,
+                                fontFamily = resolveJournalFont(placeholderText, isRtl),
+                                fontSize = if (isArabicScript(placeholderText) || isRtl) 14.5.sp else 15.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = JournalMutedInk.copy(alpha = if (isTitleActive) 0.50f else 0.40f),
+                                style = TextStyle(platformStyle = NoFontPadding)
+                            )
+                        }
+                        innerTextField()
+                    }
                 }
-            }
+            )
         }
 
         Spacer(modifier = Modifier.width(8.dp))
@@ -472,18 +461,17 @@ fun JournalEntryRow(
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             // Editable Amount
-            Box(
-                contentAlignment = Alignment.CenterStart,
-                modifier = Modifier
+            BasicTextField(
+                value = amountValue,
+                onValueChange = onAmountValueChange,
+                modifier = amountFocusMod
                     .widthIn(min = 28.dp)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null
-                    ) {
-                        keyboardController?.hide()
-                        onAmountFocused()
-                    }
                     .offset(y = 5.7.dp)
+                    .onFocusChanged { focusState ->
+                        if (focusState.isFocused) {
+                            onAmountFocused()
+                        }
+                    }
                     .drawWithContent {
                         drawContent()
                         if (isAmountActive) {
@@ -504,61 +492,44 @@ fun JournalEntryRow(
                                 strokeWidth = sw,
                                 cap = StrokeCap.Round
                             )
-
-                            // Blinking cursor
-                            if (cursorAlpha > 0f) {
-                                val layout = amountLayoutResult
-                                val cursorX = if (layout != null && amountValue.text.isNotEmpty()) {
-                                    val offset = amountValue.selection.end.coerceIn(0, amountValue.text.length)
-                                    val rect = layout.getCursorRect(offset)
-                                    rect.left
-                                } else {
-                                    if (isRtl) size.width - 2.dp.toPx() else 1.dp.toPx()
-                                }
-                                val cursorH = 17.dp.toPx()
-                                val cursorTop = (size.height - cursorH) / 2f
-                                drawLine(
-                                    color = JournalInk.copy(alpha = cursorAlpha),
-                                    start = Offset(cursorX, cursorTop),
-                                    end = Offset(cursorX, cursorTop + cursorH),
-                                    strokeWidth = 1.8.dp.toPx(),
-                                    cap = StrokeCap.Round
-                                )
-                            }
                         }
                     }
-                    .semantics { testTag = "tag_row_amount_$rowNumber" }
-            ) {
-                if (amountValue.text.isEmpty()) {
-                    Text(
-                        text = "0",
-                        fontFamily = PatrickHandFamily,
-                        fontSize = 15.5.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = JournalMutedInk.copy(alpha = if (isAmountActive) 0.50f else 0.45f),
-                        style = TextStyle(platformStyle = NoFontPadding)
-                    )
-                } else if (!isAmountActive && amountValue.text.isNotEmpty()) {
-                    Text(
-                        text = JournalLedgerManager.formatFrenchNumber(amountValue.text),
-                        fontFamily = PatrickHandFamily,
-                        fontSize = 15.5.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = amountTextColor,
-                        style = TextStyle(platformStyle = NoFontPadding)
-                    )
-                } else {
-                    Text(
-                        text = amountValue.text,
-                        fontFamily = PatrickHandFamily,
-                        fontSize = 15.5.sp,
-                        fontWeight = FontWeight.Normal,
-                        color = amountTextColor,
-                        style = TextStyle(platformStyle = NoFontPadding),
-                        onTextLayout = { amountLayoutResult = it }
-                    )
+                    .semantics { testTag = "tag_row_amount_$rowNumber" },
+                singleLine = true,
+                textStyle = TextStyle(
+                    fontFamily = PatrickHandFamily,
+                    fontSize = 15.5.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = amountTextColor,
+                    platformStyle = NoFontPadding
+                ),
+                cursorBrush = SolidColor(JournalInk),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Decimal,
+                    imeAction = ImeAction.Done
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        keyboardController?.hide()
+                        onConfirm()
+                    }
+                ),
+                decorationBox = { innerTextField ->
+                    Box(contentAlignment = Alignment.CenterStart) {
+                        if (amountValue.text.isEmpty()) {
+                            Text(
+                                text = "0",
+                                fontFamily = PatrickHandFamily,
+                                fontSize = 15.5.sp,
+                                fontWeight = FontWeight.Normal,
+                                color = JournalMutedInk.copy(alpha = if (isAmountActive) 0.50f else 0.45f),
+                                style = TextStyle(platformStyle = NoFontPadding)
+                            )
+                        }
+                        innerTextField()
+                    }
                 }
-            }
+            )
 
             // Suffix ("درهم" / "ريال" / "DH")
             val isLatinSuffix = currencySuffix.contains(Regex("[a-zA-Z]"))
