@@ -211,6 +211,7 @@ enum class SimulatorMode {
 
 /** All sections in order. Branching logic is computed in ViewModel. */
 enum class QuestionnaireSection {
+    GOAL_SETUP,
     A_PERSONAL,
     B_INCOME,
     C_ESSENTIALS,
@@ -228,8 +229,16 @@ enum class QuestionnaireSection {
 
 /** The mutable answers the user is filling in during the questionnaire. */
 data class QuestionnaireAnswers(
-    val section: QuestionnaireSection = QuestionnaireSection.A_PERSONAL,
+    val section: QuestionnaireSection = QuestionnaireSection.GOAL_SETUP,
     val stepWithinSection: Int = 0,
+
+    // Step 0 — Goal Definition
+    val goalPreset: String = "CUSTOM",
+    val goalTitle: String = "",
+    val goalTargetCentimes: Long = 1000000L, // 10 000 DH default
+    val goalInitialCentimes: Long = 0L,
+    val goalTargetMonths: Int = 6,
+    val goalColorTag: String = "BLUE",
 
     // Section A
     val goalOwnership: String = "GOAL_SOLO",

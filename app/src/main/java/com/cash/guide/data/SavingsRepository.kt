@@ -99,6 +99,12 @@ class SavingsRepository(
         savingsDao.updateGoal(updated)
     }
 
+    suspend fun getGoalById(id: String): SavingsGoalEntity? = savingsDao.getGoalById(id)
+
+    suspend fun updateGoalEntity(goal: SavingsGoalEntity) {
+        savingsDao.updateGoal(goal)
+    }
+
     suspend fun addDeposit(
         goalId: String,
         amountCentimes: Long,

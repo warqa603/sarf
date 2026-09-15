@@ -119,7 +119,7 @@ fun SavingsScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             ) {
-                // 1. Centered 3 Tabs (Mes objectifs | Diagnostic | Conseils) fitting between 2 lines (29dp)
+                // 1. Centered 2 Tabs (Mes objectifs | Conseils) fitting between 2 lines (29dp)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -157,7 +157,7 @@ fun SavingsScreen(
                             )
                         }
 
-                        // Divider line (شلطة 1)
+                        // Divider line (شلطة واحدة بين التابين)
                         Box(
                             modifier = Modifier
                                 .width(1.dp)
@@ -165,51 +165,23 @@ fun SavingsScreen(
                                 .background(JournalRule.copy(alpha = 0.60f))
                         )
 
-                        // Tab 2: التحليل / Diagnostic
-                        val isTab2 = uiState.selectedTab == SavingsTab.DIAGNOSTIC
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                                .background(if (isTab2) HighlighterYellow.copy(alpha = 0.55f) else Color.Transparent)
-                                .clickable { viewModel.selectTab(SavingsTab.DIAGNOSTIC) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = if (isRtl) "التحليل" else "Diagnostic",
-                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                                fontWeight = if (isTab2) FontWeight.Bold else FontWeight.Medium,
-                                fontSize = 13.sp,
-                                color = if (isTab2) JournalWritingInk else JournalMutedInk,
-                                style = TextStyle(platformStyle = NoFontPadding)
-                            )
-                        }
-
-                        // Divider line (شلطة 2)
-                        Box(
-                            modifier = Modifier
-                                .width(1.dp)
-                                .height(16.dp)
-                                .background(JournalRule.copy(alpha = 0.60f))
-                        )
-
-                        // Tab 3: مقالات / Conseils
-                        val isTab3 = uiState.selectedTab == SavingsTab.TIPS
+                        // Tab 2: المقالات / Conseils
+                        val isTab2 = uiState.selectedTab == SavingsTab.TIPS
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .clip(RoundedCornerShape(topEnd = 5.dp, bottomEnd = 5.dp))
-                                .background(if (isTab3) HighlighterYellow.copy(alpha = 0.55f) else Color.Transparent)
+                                .background(if (isTab2) HighlighterYellow.copy(alpha = 0.55f) else Color.Transparent)
                                 .clickable { viewModel.selectTab(SavingsTab.TIPS) },
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = if (isRtl) "مقالات" else "Conseils",
+                                text = if (isRtl) "المقالات" else "Conseils",
                                 fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                                fontWeight = if (isTab3) FontWeight.Bold else FontWeight.Medium,
+                                fontWeight = if (isTab2) FontWeight.Bold else FontWeight.Medium,
                                 fontSize = 13.sp,
-                                color = if (isTab3) JournalWritingInk else JournalMutedInk,
+                                color = if (isTab2) JournalWritingInk else JournalMutedInk,
                                 style = TextStyle(platformStyle = NoFontPadding)
                             )
                         }
@@ -225,7 +197,7 @@ fun SavingsScreen(
                         if (activeGoal == null || uiState.goals.isEmpty()) {
                             SavingsEmptyState(
                                 isRtl = isRtl,
-                                onStartWizard = { viewModel.startWizard() }
+                                onStartWizard = { viewModel.openQuestionnaire(null) }
                             )
                         } else {
                             if (uiState.goals.size > 1) {
@@ -233,7 +205,7 @@ fun SavingsScreen(
                                     goals = uiState.goals,
                                     activeGoalId = activeGoal.id,
                                     onSelectGoal = { viewModel.selectGoal(it) },
-                                    onNewPlan = { viewModel.startWizard() },
+                                    onNewPlan = { viewModel.openQuestionnaire(null) },
                                     isRtl = isRtl
                                 )
                                 Spacer(modifier = Modifier.height(JournalRuleSpacing))
@@ -245,49 +217,13 @@ fun SavingsScreen(
                                 deposits = uiState.activeGoalDeposits,
                                 isRtl = isRtl,
                                 onAddDeposit = { viewModel.openDepositSheet(activeGoal) },
+                                onEditGoal = { viewModel.openQuestionnaire(activeGoal) },
                                 onDeleteGoal = { goalToDelete = activeGoal },
-                                onNewPlan = { viewModel.startWizard() },
+                                onNewPlan = { viewModel.openQuestionnaire(null) },
                                 onDeleteDeposit = { depositToDelete = it },
                                 onApplySuggestedDuration = { newMonths ->
                                     viewModel.applySuggestedDuration(activeGoal.id, newMonths)
                                 }
-                            )
-                        }
-                    }
-                    SavingsTab.DIAGNOSTIC -> {
-                        val activeGoal = uiState.activeGoal ?: uiState.goals.firstOrNull()
-                        if (activeGoal == null || uiState.goals.isEmpty()) {
-                            SavingsDiagnosticEmptyState(
-                                isRtl = isRtl,
-                                onStartWizard = { viewModel.startWizard() }
-                            )
-                        } else {
-                            if (uiState.goals.size > 1) {
-                                GoalSwitcherChips(
-                                    goals = uiState.goals,
-                                    activeGoalId = activeGoal.id,
-                                    onSelectGoal = { viewModel.selectGoal(it) },
-                                    onNewPlan = { viewModel.startWizard() },
-                                    isRtl = isRtl
-                                )
-                                Spacer(modifier = Modifier.height(JournalRuleSpacing))
-                            }
-
-                            SavingsDiagnosticFullSection(
-                                goal = activeGoal,
-                                diagnosis = uiState.diagnosis,
-                                fullDiagnostic = uiState.fullDiagnosticResult,
-                                aiCoachAdvice = uiState.aiCoachAdvice,
-                                isAiCoachLoading = uiState.isAiCoachLoading,
-                                isRtl = isRtl,
-                                onRequestAiCoachAdvice = { viewModel.requestAiCoachAdvice(activeGoal, isRtl) },
-                                onClearAiCoachAdvice = { viewModel.clearAiCoachAdvice() },
-                                onApplySuggestedDuration = { newMonths ->
-                                    viewModel.applySuggestedDuration(activeGoal.id, newMonths)
-                                },
-                                onOpenQuestionnaire = { viewModel.openQuestionnaire() },
-                                onOpenSimulator = { viewModel.openSimulator() },
-                                onOpenCheckIn = { viewModel.openMonthlyCheckIn() }
                             )
                         }
                     }
@@ -375,12 +311,12 @@ fun SavingsScreen(
 
     // Full Financial Interview Questionnaire Sheet
     val activeGoalForSheets = uiState.activeGoal ?: uiState.goals.firstOrNull()
-    if (uiState.isQuestionnaireOpen && activeGoalForSheets != null) {
+    if (uiState.isQuestionnaireOpen) {
         FinancialQuestionnaireSheet(
             answers = uiState.questionnaireState,
             goal = activeGoalForSheets,
             onUpdateAnswers = { viewModel.updateQuestionnaireAnswers(it) },
-            onSubmit = { viewModel.submitQuestionnaire(it) },
+            onSubmit = { viewModel.submitQuestionnaire() },
             onClose = { viewModel.closeQuestionnaire() }
         )
     }
@@ -451,9 +387,9 @@ private fun SavingsEmptyState(
 
         Text(
             text = if (isRtl) {
-                "ماعندك حتى هدف توفير دابا.. جاوب على 6 ديال الأسئلة بسيطة والتطبيق غادي يقاد ليك خطة مالية مخصصة على قياس صاليرك ومصاريفك."
+                "ماعندك حتى هدف توفير دابا.. حدد هدفك وجاوب على استبيان بسيط والتطبيق غادي يقاد ليك خطة مالية مخصصة على قياسك."
             } else {
-                "Vous n'avez pas encore d'objectif actif. Répondez à quelques questions pour bâtir un plan sur-mesure !"
+                "Vous n'avez pas encore d'objectif actif. Définissez votre objectif et vos finances pour bâtir un plan sur-mesure !"
             },
             fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
             fontSize = 14.sp,
@@ -476,7 +412,7 @@ private fun SavingsEmptyState(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = if (isRtl) "+ إضافة هدف جديد 🚀" else "+ Ajouter un nouvel objectif 🚀",
+                text = if (isRtl) "+ ابدأ تحديد الهدف والخطة 🚀" else "+ Définir un objectif et un plan 🚀",
                 fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 15.sp,
@@ -588,6 +524,7 @@ private fun HeroGoalSection(
     deposits: List<SavingsDepositEntity>,
     isRtl: Boolean,
     onAddDeposit: () -> Unit,
+    onEditGoal: () -> Unit,
     onDeleteGoal: () -> Unit,
     onNewPlan: () -> Unit,
     onDeleteDeposit: (SavingsDepositEntity) -> Unit,
@@ -897,7 +834,7 @@ private fun HeroGoalSection(
                         .background(HighlighterGreen.copy(alpha = 0.40f))
                         .border(1.dp, JournalRule.copy(alpha = 0.50f), RoundedCornerShape(6.dp))
                         .clickable(role = Role.Button, onClick = onAddDeposit)
-                        .padding(horizontal = 18.dp),
+                        .padding(horizontal = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -910,7 +847,27 @@ private fun HeroGoalSection(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Edit Goal / Plan Icon button
+                Box(
+                    modifier = Modifier
+                        .size(JournalRuleSpacing)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(HighlighterYellow.copy(alpha = 0.35f))
+                        .border(1.dp, JournalRule.copy(alpha = 0.50f), RoundedCornerShape(6.dp))
+                        .clickable(role = Role.Button, onClick = onEditGoal),
+                    contentAlignment = Alignment.Center
+                ) {
+                    HisabiSketchIcon(
+                        symbol = HisabiSymbol.Pencil,
+                        contentDescription = "Edit Goal",
+                        tint = JournalWritingInk,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
 
                 // Delete Goal Icon button (RED icon & red tint)
                 Box(

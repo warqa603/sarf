@@ -46,9 +46,9 @@ import com.cash.guide.ui.notebook.*
 @Composable
 fun FinancialQuestionnaireSheet(
     answers: QuestionnaireAnswers,
-    goal: SavingsGoalEntity,
+    goal: SavingsGoalEntity? = null,
     onUpdateAnswers: (QuestionnaireAnswers) -> Unit,
-    onSubmit: (SavingsGoalEntity) -> Unit,
+    onSubmit: () -> Unit,
     onClose: () -> Unit,
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 ) {
@@ -105,6 +105,7 @@ fun FinancialQuestionnaireSheet(
 
             // ── Step content ───────────────────────────────────────────────────
             when (currentStep) {
+                QuestionnaireStepId.GOAL_SETUP -> StepGoalSetup(answers, isRtl, onUpdateAnswers)
                 QuestionnaireStepId.A1_OWNERSHIP -> StepA1Ownership(answers, isRtl, onUpdateAnswers)
                 QuestionnaireStepId.A2_DEPENDENTS -> StepA2Dependents(answers, isRtl, onUpdateAnswers)
                 QuestionnaireStepId.A3_FAMILY_COMMITMENT -> StepA3FamilyCommitment(answers, isRtl, onUpdateAnswers)
@@ -139,7 +140,7 @@ fun FinancialQuestionnaireSheet(
                     .border(1.dp, JournalMutedInk.copy(alpha = 0.25f), RoundedCornerShape(12.dp))
                     .clickable(role = Role.Button) {
                         if (isLast) {
-                            onSubmit(goal)
+                            onSubmit()
                         } else {
                             if (currentStepIdx < allSteps.size - 1) currentStepIdx++
                         }
@@ -148,7 +149,7 @@ fun FinancialQuestionnaireSheet(
             ) {
                 Text(
                     text = if (isLast) {
-                        if (isRtl) "احفظ التشخيص 🚀" else "Enregistrer le diagnostic 🚀"
+                        if (isRtl) "احفظ الهدف والخطة 🚀" else "Enregistrer l'objectif et le plan 🚀"
                     } else {
                         if (isRtl) "التالي ←" else "Suivant →"
                     },
@@ -170,6 +171,7 @@ fun FinancialQuestionnaireSheet(
 // ══════════════════════════════════════════════════════════════════════════════
 
 private enum class QuestionnaireStepId {
+    GOAL_SETUP,
     A1_OWNERSHIP, A2_DEPENDENTS, A3_FAMILY_COMMITMENT,
     B1_INCOME, B2_INCOME_TYPE, B3_INCOME_RANGE,
     C_ESSENTIALS,
@@ -187,6 +189,7 @@ private enum class QuestionnaireStepId {
 
 private fun buildVisibleSteps(answers: QuestionnaireAnswers): List<QuestionnaireStepId> {
     val steps = mutableListOf<QuestionnaireStepId>()
+    steps += QuestionnaireStepId.GOAL_SETUP
     steps += QuestionnaireStepId.A1_OWNERSHIP
     steps += QuestionnaireStepId.A2_DEPENDENTS
     if (answers.dependentsCount > 0 || answers.hasFamilyCommitments) {
@@ -479,6 +482,302 @@ private fun AmountField(
                 color = JournalMutedInk,
                 style = TextStyle(platformStyle = NoFontPadding)
             )
+        }
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Step 0 — Goal Setup
+// ══════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun StepGoalSetup(
+    a: QuestionnaireAnswers,
+    isRtl: Boolean,
+    onUpdate: (QuestionnaireAnswers) -> Unit
+) {
+    val presets = listOf(
+        Triple("CAR", if (isRtl) "🚗 سيارة" else "🚗 Voiture", if (isRtl) "شراء سيارة" else "Achat voiture"),
+        Triple("HOUSE", if (isRtl) "🏠 سكن" else "🏠 Logement", if (isRtl) "دفعة السكن" else "Apport logement"),
+        Triple("EMERGENCY", if (isRtl) "🛡️ طوارئ" else "🛡️ Urgence", if (isRtl) "صندوق الطوارئ" else "Fonds d'urgence"),
+        Triple("EVENT", if (isRtl) "🎉 مناسبة" else "🎉 Événement", if (isRtl) "مناسبة عائلية" else "Événement familial"),
+        Triple("PROJECT", if (isRtl) "💼 مشروع" else "💼 Projet", if (isRtl) "بداية مشروع" else "Projet perso"),
+        Triple("OTHER", if (isRtl) "🎯 هدف خاص" else "🎯 Autre", if (isRtl) "هدف شخصي" else "Mon objectif")
+    )
+
+    val durationOptions = listOf(3, 6, 12, 18, 24, 36)
+    val colorOptions = listOf(
+        "BLUE" to Color(0xFF2A6F97),
+        "GREEN" to Color(0xFF2E7D32),
+        "AMBER" to Color(0xFFE65100),
+        "PURPLE" to Color(0xFF6A1B9A)
+    )
+
+    Column(Modifier.fillMaxWidth()) {
+        StepTitle(if (isRtl) "🎯 حدد هدفك المالي" else "🎯 Définissez votre objectif d'épargne")
+        StepSubtitle(if (isRtl) "هاد الهدف هو البوصلة ديال خطتك والتحليل المالي ديالك" else "Cet objectif sera la boussole de votre plan et de votre diagnostic")
+        Spacer(Modifier.height(14.dp))
+
+        // Preset chips in 2 rows of 3
+        Text(
+            text = if (isRtl) "نوع الهدف" else "Type d'objectif",
+            fontFamily = TajawalFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = 13.sp,
+            color = JournalWritingInk,
+            style = TextStyle(platformStyle = NoFontPadding)
+        )
+        Spacer(Modifier.height(6.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            presets.chunked(3).forEach { rowPresets ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    rowPresets.forEach { (key, label, defaultTitle) ->
+                        val isSelected = a.goalPreset == key
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSelected) HighlighterYellow.copy(alpha = 0.50f) else JournalPaper)
+                                .border(
+                                    1.dp,
+                                    if (isSelected) JournalWritingInk else JournalMutedInk.copy(alpha = 0.25f),
+                                    RoundedCornerShape(8.dp)
+                                )
+                                .clickable {
+                                    onUpdate(
+                                        a.copy(
+                                            goalPreset = key,
+                                            goalTitle = if (a.goalTitle.isBlank() || presets.any { it.third == a.goalTitle }) defaultTitle else a.goalTitle
+                                        )
+                                    )
+                                }
+                                .padding(vertical = 8.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = label,
+                                fontFamily = TajawalFamily,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                fontSize = 12.sp,
+                                color = JournalWritingInk,
+                                style = TextStyle(platformStyle = NoFontPadding),
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // Title input field
+        Text(
+            text = if (isRtl) "عنوان الهدف" else "Nom de l'objectif",
+            fontFamily = TajawalFamily,
+            fontWeight = FontWeight.Medium,
+            fontSize = 13.sp,
+            color = JournalMutedInk,
+            style = TextStyle(platformStyle = NoFontPadding)
+        )
+        Spacer(Modifier.height(4.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(42.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .background(JournalPaper)
+                .border(1.dp, JournalMutedInk.copy(alpha = 0.30f), RoundedCornerShape(8.dp))
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            BasicTextField(
+                value = a.goalTitle,
+                onValueChange = { onUpdate(a.copy(goalTitle = it)) },
+                modifier = Modifier.weight(1f),
+                textStyle = TextStyle(
+                    fontFamily = TajawalFamily,
+                    fontSize = 14.sp,
+                    color = JournalWritingInk,
+                    platformStyle = NoFontPadding
+                ),
+                singleLine = true,
+                cursorBrush = SolidColor(JournalInk),
+                decorationBox = { inner ->
+                    if (a.goalTitle.isEmpty()) {
+                        Text(
+                            text = if (isRtl) "مثلاً: دفعة الشقة، سيارة مستعملة..." else "Ex: Apport appartement...",
+                            fontFamily = TajawalFamily,
+                            fontSize = 13.sp,
+                            color = JournalMutedInk.copy(alpha = 0.6f),
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                    }
+                    inner()
+                }
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // Target Amount
+        AmountField(
+            label = if (isRtl) "المبلغ المستهدف الإجمالي" else "Montant total visé",
+            centimes = a.goalTargetCentimes,
+            onCentimesChange = { onUpdate(a.copy(goalTargetCentimes = it)) },
+            placeholder = "10000"
+        )
+
+        Spacer(Modifier.height(10.dp))
+
+        // Initial Amount
+        AmountField(
+            label = if (isRtl) "المبلغ المتوفر حالياً (إن وجد)" else "Montant déjà de côté (si existant)",
+            centimes = a.goalInitialCentimes,
+            onCentimesChange = { onUpdate(a.copy(goalInitialCentimes = it)) },
+            placeholder = "0"
+        )
+
+        Spacer(Modifier.height(12.dp))
+
+        // Target Duration
+        Text(
+            text = if (isRtl) "المدة المستهدفة (بالأشهر)" else "Durée visée (en mois)",
+            fontFamily = TajawalFamily,
+            fontWeight = FontWeight.Medium,
+            fontSize = 13.sp,
+            color = JournalMutedInk,
+            style = TextStyle(platformStyle = NoFontPadding)
+        )
+        Spacer(Modifier.height(6.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            durationOptions.forEach { months ->
+                val isSelected = a.goalTargetMonths == months
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isSelected) HighlighterYellow.copy(alpha = 0.50f) else JournalPaper)
+                        .border(
+                            1.dp,
+                            if (isSelected) JournalWritingInk else JournalMutedInk.copy(alpha = 0.25f),
+                            RoundedCornerShape(8.dp)
+                        )
+                        .clickable { onUpdate(a.copy(goalTargetMonths = months)) }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "$months ${if (isRtl) "ش" else "m"}",
+                        fontFamily = TajawalFamily,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 12.sp,
+                        color = JournalWritingInk,
+                        style = TextStyle(platformStyle = NoFontPadding)
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // Color tag selection
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = if (isRtl) "لون التمييز" else "Couleur du carnet",
+                fontFamily = TajawalFamily,
+                fontWeight = FontWeight.Medium,
+                fontSize = 13.sp,
+                color = JournalMutedInk,
+                style = TextStyle(platformStyle = NoFontPadding)
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                colorOptions.forEach { (tag, color) ->
+                    val isSelected = a.goalColorTag == tag
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                            .border(
+                                width = if (isSelected) 2.5.dp else 0.dp,
+                                color = if (isSelected) JournalWritingInk else Color.Transparent,
+                                shape = CircleShape
+                            )
+                            .clickable { onUpdate(a.copy(goalColorTag = tag)) }
+                    )
+                }
+            }
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        // Live calculation preview box
+        val remaining = maxOf(0L, a.goalTargetCentimes - a.goalInitialCentimes)
+        val perMonth = if (a.goalTargetMonths > 0) remaining / a.goalTargetMonths else 0L
+        val perDay = perMonth / 30
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(JournalPaper)
+                .border(1.dp, JournalMutedInk.copy(alpha = 0.25f), RoundedCornerShape(10.dp))
+                .padding(12.dp)
+        ) {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = if (isRtl) "المطلوب شهرياً:" else "Requis par mois :",
+                        fontFamily = TajawalFamily,
+                        fontSize = 13.sp,
+                        color = JournalMutedInk,
+                        style = TextStyle(platformStyle = NoFontPadding)
+                    )
+                    Text(
+                        text = "${perMonth / 100} DH",
+                        fontFamily = TajawalFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
+                        color = JournalWritingInk,
+                        style = TextStyle(platformStyle = NoFontPadding)
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = if (isRtl) "المطلوب يومياً:" else "Requis par jour :",
+                        fontFamily = TajawalFamily,
+                        fontSize = 12.sp,
+                        color = JournalMutedInk,
+                        style = TextStyle(platformStyle = NoFontPadding)
+                    )
+                    Text(
+                        text = "~${perDay / 100} DH / ${if (isRtl) "يوم" else "j"}",
+                        fontFamily = TajawalFamily,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 12.5.sp,
+                        color = JournalMutedInk,
+                        style = TextStyle(platformStyle = NoFontPadding)
+                    )
+                }
+            }
         }
     }
 }
@@ -1218,24 +1517,28 @@ private fun StepLGoalFlexibility(a: QuestionnaireAnswers, isRtl: Boolean, onUpda
 // ══════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun StepReview(a: QuestionnaireAnswers, goal: SavingsGoalEntity, isRtl: Boolean) {
+private fun StepReview(a: QuestionnaireAnswers, goal: SavingsGoalEntity?, isRtl: Boolean) {
     val income = a.netMonthlyIncomeCentimes / 100
     val essentials = (a.housingCentimes + a.utilitiesCentimes + a.internetPhoneCentimes + a.groceriesCentimes + a.workTransportCentimes + a.healthCentimes + a.educationCentimes + a.insuranceCentimes) / 100
     val debts = a.debtPaymentsCentimes / 100
     val leakCount = a.selectedLeaks.filter { it != "NONE" }.size
 
+    val goalTitle = goal?.title ?: a.goalTitle.ifBlank { if (isRtl) "الهدف المالي" else "Objectif financier" }
+    val goalTarget = (goal?.targetAmountCentimes ?: a.goalTargetCentimes) / 100
+    val goalMonths = goal?.targetMonths ?: a.goalTargetMonths
+
     Column(Modifier.fillMaxWidth()) {
-        StepTitle(if (isRtl) "🎯 ملخص البروفايل المالي" else "🎯 Résumé de votre profil financier")
-        StepSubtitle(if (isRtl) "هاد المعلومات غادي يعطيك التشخيص على المقاس" else "Ces informations génèreront votre diagnostic personnalisé")
+        StepTitle(if (isRtl) "🎯 ملخص البروفايل والهدف" else "🎯 Résumé du profil et de l'objectif")
+        StepSubtitle(if (isRtl) "هاد المعلومات غادي تضبط الهدف والتحليل ديالك على المقاس" else "Ces informations calibreront votre objectif et votre analyse personnalisée")
         Spacer(Modifier.height(14.dp))
 
         listOf(
+            "🎯 " + (if (isRtl) "الهدف" else "Objectif") to "$goalTitle — $goalTarget DH",
+            "📅 " + (if (isRtl) "المدة" else "Durée") to "$goalMonths ${if (isRtl) "شهر" else "mois"}",
             "💰 " + (if (isRtl) "الدخل الشهري" else "Revenu mensuel") to (if (income > 0) "$income DH" else if (isRtl) "غير محدد" else "Non précisé"),
             "🏠 " + (if (isRtl) "الأساسيات المحمية" else "Charges protégées") to (if (essentials > 0) "$essentials DH" else if (isRtl) "0 DH" else "0 DH"),
             "📋 " + (if (isRtl) "الأداءات والديون" else "Mensualités dettes") to (if (debts > 0) "$debts DH" else if (isRtl) "بدون ديون" else "Sans dettes"),
             "💸 " + (if (isRtl) "نقاط التسرب المحددة" else "Fuites identifiées") to (if (leakCount > 0) "$leakCount ${if (isRtl) "باب" else "postes"}" else if (isRtl) "بدون تسرب" else "Aucune fuite"),
-            "🎯 " + (if (isRtl) "الهدف" else "Objectif") to "${goal.title} — ${goal.targetAmountCentimes / 100} DH",
-            "📅 " + (if (isRtl) "المدة" else "Durée") to "${goal.targetMonths} ${if (isRtl) "شهر" else "mois"}",
             "🔧 " + (if (isRtl) "المرونة" else "Flexibilité") to when (a.deadlineFlexibility) {
                 "FIXED" -> if (isRtl) "ثابت" else "Fixe"
                 "VERY_FLEXIBLE" -> if (isRtl) "مرن جداً" else "Très flexible"

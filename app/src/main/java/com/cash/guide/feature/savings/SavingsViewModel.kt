@@ -22,7 +22,6 @@ import java.util.Calendar
 
 enum class SavingsTab {
     PLAN,
-    DIAGNOSTIC,
     TIPS
 }
 
@@ -124,6 +123,7 @@ class SavingsViewModel(
     val isAiCoachLoading: StateFlow<Boolean> = _isAiCoachLoading.asStateFlow()
 
     // Questionnaire state
+    private val _targetGoalForQuestionnaire = MutableStateFlow<SavingsGoalEntity?>(null)
     private val _isQuestionnaireOpen = MutableStateFlow(false)
     private val _questionnaireState = MutableStateFlow(QuestionnaireAnswers())
     private val _fullDiagnosticResult = MutableStateFlow<FullDiagnosticResult?>(null)
@@ -435,39 +435,123 @@ class SavingsViewModel(
     }
 
     // ── Questionnaire ─────────────────────────────────────────────────────────
+    val targetGoalForQuestionnaire: StateFlow<SavingsGoalEntity?> = _targetGoalForQuestionnaire.asStateFlow()
 
-    fun openQuestionnaire() {
-        val existingAnswers = _questionnaireAnswers.value
-        _questionnaireState.value = existingAnswers ?: QuestionnaireAnswers()
+    fun openQuestionnaire(targetGoal: SavingsGoalEntity? = null) {
+        _targetGoalForQuestionnaire.value = targetGoal
+        if (targetGoal != null) {
+            _selectedGoalId.value = targetGoal.id
+            val existingAnswers = _questionnaireAnswers.value
+            _questionnaireState.value = (existingAnswers ?: QuestionnaireAnswers()).copy(
+                goalPreset = when (targetGoal.colorTag) {
+                    "BLUE" -> "CAR"
+                    "GREEN" -> "HOUSE"
+                    "AMBER" -> "EMERGENCY"
+                    "PURPLE" -> "EVENT"
+                    "PINK" -> "PROJECT"
+                    else -> "CUSTOM"
+                },
+                goalTitle = targetGoal.title,
+                goalTargetCentimes = targetGoal.targetAmountCentimes,
+                goalInitialCentimes = targetGoal.initialAmountCentimes,
+                goalTargetMonths = targetGoal.targetMonths,
+                goalColorTag = targetGoal.colorTag
+            )
+        } else {
+            _questionnaireState.value = QuestionnaireAnswers(
+                goalPreset = "CAR",
+                goalTitle = "شراء سيارة",
+                goalTargetCentimes = 10000000L,
+                goalInitialCentimes = 0L,
+                goalTargetMonths = 24,
+                goalColorTag = "BLUE"
+            )
+        }
         _isQuestionnaireOpen.value = true
     }
 
     fun closeQuestionnaire() {
         _isQuestionnaireOpen.value = false
+        _targetGoalForQuestionnaire.value = null
     }
 
     fun updateQuestionnaireAnswers(answers: QuestionnaireAnswers) {
         _questionnaireState.value = answers
     }
 
-    fun submitQuestionnaire(goal: SavingsGoalEntity) {
+    fun submitQuestionnaire() {
         val answers = _questionnaireState.value
+        val existingGoal = _targetGoalForQuestionnaire.value
         viewModelScope.launch {
-            val tags = FinancialDiagnosticEngine.buildTags(answers, goal)
-            val existing = repository.getProfileForGoal(goal.id)
-            if (existing != null) {
-                val updated = FinancialDiagnosticEngine.answersToEntity(answers, goal.id, tags)
-                    .copy(id = existing.id, createdAtEpochMs = existing.createdAtEpochMs)
+            val months = answers.goalTargetMonths.coerceAtLeast(1)
+            val targetCentimes = answers.goalTargetCentimes.coerceAtLeast(10000L)
+            val initialCentimes = answers.goalInitialCentimes.coerceAtLeast(0L)
+            val targetEpochMs = Calendar.getInstance().apply {
+                add(Calendar.MONTH, months)
+            }.timeInMillis
+            val monthlyContrib = targetCentimes / months
+
+            val goalToUse: SavingsGoalEntity = if (existingGoal != null) {
+                val updatedGoal = existingGoal.copy(
+                    title = answers.goalTitle.ifBlank { existingGoal.title },
+                    targetAmountCentimes = targetCentimes,
+                    initialAmountCentimes = initialCentimes,
+                    targetMonths = months,
+                    targetDateEpochMs = targetEpochMs,
+                    monthlyContributionCentimes = monthlyContrib,
+                    colorTag = answers.goalColorTag,
+                    updatedAtEpochMs = System.currentTimeMillis()
+                )
+                repository.updateGoalEntity(updatedGoal)
+                updatedGoal
+            } else {
+                val newTitle = answers.goalTitle.ifBlank { "هدف جديد" }
+                val newId = repository.createGoal(
+                    title = newTitle,
+                    targetAmountCentimes = targetCentimes,
+                    initialAmountCentimes = initialCentimes,
+                    monthlyContributionCentimes = monthlyContrib,
+                    targetDateEpochMs = targetEpochMs,
+                    colorTag = answers.goalColorTag,
+                    targetMonths = months,
+                    monthlySalaryCentimes = answers.netMonthlyIncomeCentimes
+                )
+                _selectedGoalId.value = newId
+                val now = System.currentTimeMillis()
+                repository.getGoalById(newId) ?: SavingsGoalEntity(
+                    id = newId,
+                    title = newTitle,
+                    targetAmountCentimes = targetCentimes,
+                    initialAmountCentimes = initialCentimes,
+                    currentAmountCentimes = initialCentimes,
+                    monthlyContributionCentimes = monthlyContrib,
+                    targetDateEpochMs = targetEpochMs,
+                    colorTag = answers.goalColorTag,
+                    targetMonths = months,
+                    createdAtEpochMs = now,
+                    updatedAtEpochMs = now
+                )
+            }
+
+            // Tags & Profile
+            val tags = FinancialDiagnosticEngine.buildTags(answers, goalToUse)
+            val existingProfile = repository.getProfileForGoal(goalToUse.id)
+            if (existingProfile != null) {
+                val updated = FinancialDiagnosticEngine.answersToEntity(answers, goalToUse.id, tags)
+                    .copy(id = existingProfile.id, createdAtEpochMs = existingProfile.createdAtEpochMs)
                 repository.updateFinancialProfile(updated)
             } else {
-                val entity = FinancialDiagnosticEngine.answersToEntity(answers, goal.id, tags)
+                val entity = FinancialDiagnosticEngine.answersToEntity(answers, goalToUse.id, tags)
                 repository.saveFinancialProfile(entity)
             }
-            // Compute and cache result
-            val result = FinancialDiagnosticEngine.buildResult(answers, goal)
+
+            // Result
+            val result = FinancialDiagnosticEngine.buildResult(answers, goalToUse)
             _fullDiagnosticResult.value = result
             _questionnaireAnswers.value = answers
             _isQuestionnaireOpen.value = false
+            _targetGoalForQuestionnaire.value = null
+            _selectedTab.value = SavingsTab.PLAN
         }
     }
 
