@@ -1,5 +1,7 @@
 package com.cash.guide.data
 
+import com.cash.guide.data.db.FinancialProfileDao
+import com.cash.guide.data.db.FinancialProfileEntity
 import com.cash.guide.data.db.SavingsDao
 import com.cash.guide.data.db.SavingsDepositEntity
 import com.cash.guide.data.db.SavingsGoalEntity
@@ -7,7 +9,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
 
-class SavingsRepository(private val savingsDao: SavingsDao) {
+class SavingsRepository(
+    private val savingsDao: SavingsDao,
+    private val financialProfileDao: FinancialProfileDao
+) {
 
     val allGoals: Flow<List<SavingsGoalEntity>> = savingsDao.getAllGoals()
 
@@ -117,7 +122,8 @@ class SavingsRepository(private val savingsDao: SavingsDao) {
         savingsDao.updateGoalProgress(goalId, newAmount, isCompleted, now)
     }
 
-    suspend fun deleteGoal(id: String) {
+    suspend fun deleteGoalWithProfile(id: String) {
+        financialProfileDao.deleteProfileForGoal(id)
         savingsDao.deleteGoal(id)
     }
 
@@ -152,5 +158,21 @@ class SavingsRepository(private val savingsDao: SavingsDao) {
 
     fun getDepositsForGoal(goalId: String): Flow<List<SavingsDepositEntity>> {
         return savingsDao.getDepositsForGoal(goalId)
+    }
+
+    suspend fun saveFinancialProfile(entity: FinancialProfileEntity) {
+        financialProfileDao.insertProfile(entity)
+    }
+
+    suspend fun updateFinancialProfile(entity: FinancialProfileEntity) {
+        financialProfileDao.updateProfile(entity)
+    }
+
+    fun getProfileForGoalFlow(goalId: String): Flow<FinancialProfileEntity?> {
+        return financialProfileDao.getProfileForGoalFlow(goalId)
+    }
+
+    suspend fun getProfileForGoal(goalId: String): FinancialProfileEntity? {
+        return financialProfileDao.getProfileForGoal(goalId)
     }
 }

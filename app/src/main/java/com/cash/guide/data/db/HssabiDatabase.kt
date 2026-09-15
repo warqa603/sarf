@@ -17,9 +17,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         NoteEntity::class,
         ReminderEntity::class,
         SavingsGoalEntity::class,
-        SavingsDepositEntity::class
+        SavingsDepositEntity::class,
+        FinancialProfileEntity::class
     ],
-    version = 12,
+    version = 13,
     exportSchema = true
 )
 abstract class HssabiDatabase : RoomDatabase() {
@@ -30,6 +31,8 @@ abstract class HssabiDatabase : RoomDatabase() {
     abstract fun noteDao(): NoteDao
     abstract fun reminderDao(): ReminderDao
     abstract fun savingsDao(): SavingsDao
+    abstract fun financialProfileDao(): FinancialProfileDao
+
 
 
     companion object {
@@ -235,6 +238,72 @@ abstract class HssabiDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_12_13 = object : Migration(12, 13) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `financial_profiles` (
+                        `id` TEXT NOT NULL,
+                        `goalId` TEXT NOT NULL,
+                        `goalOwnership` TEXT NOT NULL DEFAULT 'GOAL_SOLO',
+                        `dependentsCount` INTEGER NOT NULL DEFAULT 0,
+                        `familyCommitmentCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `netMonthlyIncomeCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `incomeType` TEXT NOT NULL DEFAULT 'INCOME_STABLE',
+                        `incomeLowestCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `incomeHighestCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `additionalIncomeSources` TEXT NOT NULL DEFAULT '[]',
+                        `additionalIncomeRegularity` TEXT NOT NULL DEFAULT '',
+                        `housingCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `utilitiesCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `internetPhoneCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `groceriesCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `workTransportCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `workTransportType` TEXT NOT NULL DEFAULT 'TRANSIT',
+                        `healthCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `educationCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `insuranceCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `otherEssentialsCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `debtType` TEXT NOT NULL DEFAULT 'DEBT_NONE',
+                        `debtPaymentsCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `paymentDelayFrequency` INTEGER NOT NULL DEFAULT 0,
+                        `endOfMonthBorrowFrequency` INTEGER NOT NULL DEFAULT 0,
+                        `emergencyFundCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `emergencyResponse` TEXT NOT NULL DEFAULT 'UNKNOWN',
+                        `emergencyFundLocation` TEXT NOT NULL DEFAULT 'NONE',
+                        `monthEndSituation` TEXT NOT NULL DEFAULT 'END_LITTLE',
+                        `spendingAwareness` TEXT NOT NULL DEFAULT 'APPROXIMATELY',
+                        `spendingTrackingHabit` TEXT NOT NULL DEFAULT 'SOMETIMES',
+                        `selectedLeaks` TEXT NOT NULL DEFAULT '[]',
+                        `leakDetails` TEXT NOT NULL DEFAULT '{}',
+                        `seasonalExpenses` TEXT NOT NULL DEFAULT '[]',
+                        `savingTiming` TEXT NOT NULL DEFAULT 'SAVE_END',
+                        `hasStandingTransfer` INTEGER NOT NULL DEFAULT 0,
+                        `bonusHandling` TEXT NOT NULL DEFAULT 'DEPENDS',
+                        `comfortSavingCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `minimumSavingCentimes` INTEGER NOT NULL DEFAULT 0,
+                        `purchaseDecisionStyle` TEXT NOT NULL DEFAULT 'WAIT_A_BIT',
+                        `discountTriggerBuying` INTEGER NOT NULL DEFAULT 1,
+                        `usesShoppingList` TEXT NOT NULL DEFAULT 'SOMETIMES',
+                        `paymentMethodThatMakesSpendMore` TEXT NOT NULL DEFAULT 'CARD',
+                        `userProtectedPreferences` TEXT NOT NULL DEFAULT '[]',
+                        `goalImportance` TEXT NOT NULL DEFAULT 'IMPORTANT',
+                        `deadlineFlexibility` TEXT NOT NULL DEFAULT 'FLEXIBLE_3M',
+                        `willingToIncreaseIncome` INTEGER NOT NULL DEFAULT 0,
+                        `willingToCutFlexible` TEXT NOT NULL DEFAULT 'A_LITTLE',
+                        `computedTags` TEXT NOT NULL DEFAULT '[]',
+                        `answersVersion` INTEGER NOT NULL DEFAULT 1,
+                        `createdAtEpochMs` INTEGER NOT NULL,
+                        `updatedAtEpochMs` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_financial_profiles_goalId` ON `financial_profiles` (`goalId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_financial_profiles_createdAtEpochMs` ON `financial_profiles` (`createdAtEpochMs`)")
+            }
+        }
+
         fun getInstance(context: Context): HssabiDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -242,7 +311,7 @@ abstract class HssabiDatabase : RoomDatabase() {
                     HssabiDatabase::class.java,
                     "hssabi.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
                     .build()
                     .also { INSTANCE = it }
             }

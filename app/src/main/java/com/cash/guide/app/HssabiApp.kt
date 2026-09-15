@@ -87,7 +87,7 @@ fun HssabiApp(
         ReminderRepository(database.reminderDao(), context)
     }
     val savingsRepository = remember {
-        SavingsRepository(database.savingsDao())
+        SavingsRepository(database.savingsDao(), database.financialProfileDao())
     }
     val settingsRepository = remember { SettingsRepository(context) }
     val securityRepository = remember { SecurityRepository(context) }

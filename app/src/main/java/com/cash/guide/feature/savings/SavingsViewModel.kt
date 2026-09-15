@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Calendar
 
@@ -83,7 +84,18 @@ data class SavingsUiState(
     val diagnosis: PlanDiagnosis? = null,
     val depositTargetGoal: SavingsGoalEntity? = null,
     val aiCoachAdvice: String? = null,
-    val isAiCoachLoading: Boolean = false
+    val isAiCoachLoading: Boolean = false,
+    // New: full diagnostic result from questionnaire engine
+    val fullDiagnosticResult: FullDiagnosticResult? = null,
+    val questionnaireAnswers: QuestionnaireAnswers? = null,
+    // Questionnaire flow
+    val isQuestionnaireOpen: Boolean = false,
+    val questionnaireState: QuestionnaireAnswers = QuestionnaireAnswers(),
+    // Simulator
+    val isSimulatorOpen: Boolean = false,
+    val simulatorState: SimulatorState = SimulatorState(),
+    // Monthly check-in
+    val isCheckInOpen: Boolean = false
 )
 
 class SavingsViewModel(
@@ -111,6 +123,19 @@ class SavingsViewModel(
     private val _isAiCoachLoading = MutableStateFlow(false)
     val isAiCoachLoading: StateFlow<Boolean> = _isAiCoachLoading.asStateFlow()
 
+    // Questionnaire state
+    private val _isQuestionnaireOpen = MutableStateFlow(false)
+    private val _questionnaireState = MutableStateFlow(QuestionnaireAnswers())
+    private val _fullDiagnosticResult = MutableStateFlow<FullDiagnosticResult?>(null)
+    private val _questionnaireAnswers = MutableStateFlow<QuestionnaireAnswers?>(null)
+
+    // Simulator state
+    private val _isSimulatorOpen = MutableStateFlow(false)
+    private val _simulatorState = MutableStateFlow(SimulatorState())
+
+    // Check-in state
+    private val _isCheckInOpen = MutableStateFlow(false)
+
     @OptIn(ExperimentalCoroutinesApi::class)
     private val activeGoalDepositsFlow: Flow<List<SavingsDepositEntity>> = combine(
         repository.allGoals,
@@ -125,18 +150,42 @@ class SavingsViewModel(
         else flowOf(emptyList())
     }
 
+    /** Observe active goal's profile reactively */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val activeProfileFlow = combine(
+        repository.allGoals,
+        _selectedGoalId
+    ) { goals, selId ->
+        val active = goals.firstOrNull { it.id == selId }
+            ?: goals.firstOrNull { !it.isCompleted }
+            ?: goals.firstOrNull()
+        active?.id
+    }.flatMapLatest { goalId ->
+        if (goalId != null) repository.getProfileForGoalFlow(goalId)
+        else flowOf(null)
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     val uiState: StateFlow<SavingsUiState> = combine(
-        repository.allGoals,
-        repository.totalSavedCentimes,
-        _selectedTab,
-        _isWizardOpen,
-        _wizardForm,
-        _depositTargetGoal,
-        _selectedGoalId,
-        activeGoalDepositsFlow,
-        _aiCoachAdvice,
-        _isAiCoachLoading
+        listOf(
+            repository.allGoals,
+            repository.totalSavedCentimes,
+            _selectedTab,
+            _isWizardOpen,
+            _wizardForm,
+            _depositTargetGoal,
+            _selectedGoalId,
+            activeGoalDepositsFlow,
+            _aiCoachAdvice,
+            _isAiCoachLoading,
+            _fullDiagnosticResult,
+            _questionnaireAnswers,
+            _isQuestionnaireOpen,
+            _questionnaireState,
+            _isSimulatorOpen,
+            _simulatorState,
+            _isCheckInOpen
+        )
     ) { args: Array<Any?> ->
         @Suppress("UNCHECKED_CAST")
         val goals = args[0] as List<SavingsGoalEntity>
@@ -150,6 +199,13 @@ class SavingsViewModel(
         val deposits = args[7] as List<SavingsDepositEntity>
         val coachAdvice = args[8] as String?
         val isCoachLoading = args[9] as Boolean
+        val fullDiag = args[10] as FullDiagnosticResult?
+        val qAnswers = args[11] as QuestionnaireAnswers?
+        val isQOpen = args[12] as Boolean
+        val qState = args[13] as QuestionnaireAnswers
+        val isSimOpen = args[14] as Boolean
+        val simState = args[15] as SimulatorState
+        val isChkOpen = args[16] as Boolean
 
         val activeGoal = goals.firstOrNull { it.id == selId }
             ?: goals.firstOrNull { !it.isCompleted }
@@ -167,13 +223,45 @@ class SavingsViewModel(
             diagnosis = diagnosis,
             depositTargetGoal = depGoal,
             aiCoachAdvice = coachAdvice,
-            isAiCoachLoading = isCoachLoading
+            isAiCoachLoading = isCoachLoading,
+            fullDiagnosticResult = fullDiag,
+            questionnaireAnswers = qAnswers,
+            isQuestionnaireOpen = isQOpen,
+            questionnaireState = qState,
+            isSimulatorOpen = isSimOpen,
+            simulatorState = simState,
+            isCheckInOpen = isChkOpen
         )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = SavingsUiState()
     )
+
+    init {
+        // Whenever active goal changes, load its profile and recompute full diagnostic
+        viewModelScope.launch {
+            combine(
+                activeProfileFlow,
+                repository.allGoals,
+                _selectedGoalId
+            ) { profileEntity, goals, selId ->
+                val activeGoal = goals.firstOrNull { it.id == selId }
+                    ?: goals.firstOrNull { !it.isCompleted }
+                    ?: goals.firstOrNull()
+                Pair(profileEntity, activeGoal)
+            }.collect { (profileEntity, activeGoal) ->
+                if (profileEntity != null && activeGoal != null) {
+                    val answers = FinancialDiagnosticEngine.entityToAnswers(profileEntity)
+                    _questionnaireAnswers.value = answers
+                    _fullDiagnosticResult.value = FinancialDiagnosticEngine.buildResult(answers, activeGoal)
+                } else {
+                    _questionnaireAnswers.value = null
+                    _fullDiagnosticResult.value = null
+                }
+            }
+        }
+    }
 
     fun selectGoal(goalId: String) {
         _selectedGoalId.value = goalId
@@ -330,7 +418,7 @@ class SavingsViewModel(
             if (_selectedGoalId.value == goalId) {
                 _selectedGoalId.value = null
             }
-            repository.deleteGoal(goalId)
+            repository.deleteGoalWithProfile(goalId)
         }
     }
 
@@ -345,6 +433,84 @@ class SavingsViewModel(
             repository.updateGoalDuration(goalId, newMonths)
         }
     }
+
+    // ── Questionnaire ─────────────────────────────────────────────────────────
+
+    fun openQuestionnaire() {
+        val existingAnswers = _questionnaireAnswers.value
+        _questionnaireState.value = existingAnswers ?: QuestionnaireAnswers()
+        _isQuestionnaireOpen.value = true
+    }
+
+    fun closeQuestionnaire() {
+        _isQuestionnaireOpen.value = false
+    }
+
+    fun updateQuestionnaireAnswers(answers: QuestionnaireAnswers) {
+        _questionnaireState.value = answers
+    }
+
+    fun submitQuestionnaire(goal: SavingsGoalEntity) {
+        val answers = _questionnaireState.value
+        viewModelScope.launch {
+            val tags = FinancialDiagnosticEngine.buildTags(answers, goal)
+            val existing = repository.getProfileForGoal(goal.id)
+            if (existing != null) {
+                val updated = FinancialDiagnosticEngine.answersToEntity(answers, goal.id, tags)
+                    .copy(id = existing.id, createdAtEpochMs = existing.createdAtEpochMs)
+                repository.updateFinancialProfile(updated)
+            } else {
+                val entity = FinancialDiagnosticEngine.answersToEntity(answers, goal.id, tags)
+                repository.saveFinancialProfile(entity)
+            }
+            // Compute and cache result
+            val result = FinancialDiagnosticEngine.buildResult(answers, goal)
+            _fullDiagnosticResult.value = result
+            _questionnaireAnswers.value = answers
+            _isQuestionnaireOpen.value = false
+        }
+    }
+
+    // ── Simulator ─────────────────────────────────────────────────────────────
+
+    fun openSimulator() {
+        _isSimulatorOpen.value = true
+    }
+
+    fun closeSimulator() {
+        _isSimulatorOpen.value = false
+    }
+
+    fun updateSimulatorState(state: SimulatorState) {
+        _simulatorState.value = state
+    }
+
+    // ── Monthly Check-In ──────────────────────────────────────────────────────
+
+    fun openMonthlyCheckIn() {
+        _isCheckInOpen.value = true
+    }
+
+    fun closeCheckIn() {
+        _isCheckInOpen.value = false
+    }
+
+    fun submitCheckIn(goal: SavingsGoalEntity, checkIn: MonthlyCheckInAnswers) {
+        viewModelScope.launch {
+            // If income/obligations changed, flag the questionnaire as stale
+            if (checkIn.incomeOrObligationsChanged) {
+                // Open full questionnaire next time
+                _questionnaireState.value = _questionnaireAnswers.value ?: QuestionnaireAnswers()
+            }
+            // If user saved something this month, log it as a deposit
+            if (checkIn.actualSavedCentimes > 0) {
+                repository.addDeposit(goal.id, checkIn.actualSavedCentimes, "فحص الشهر")
+            }
+            _isCheckInOpen.value = false
+        }
+    }
+
+    // ── AI Coach ─────────────────────────────────────────────────────────────
 
     fun requestAiCoachAdvice(goal: SavingsGoalEntity, isRtl: Boolean) {
         if (_isAiCoachLoading.value) return
@@ -389,6 +555,8 @@ class SavingsViewModel(
     fun clearAiCoachAdvice() {
         _aiCoachAdvice.value = null
     }
+
+    // ── Legacy computeDiagnosis (kept for Plan tab backward compat) ───────────
 
     private fun computeDiagnosis(goal: SavingsGoalEntity): PlanDiagnosis {
         val target = goal.targetAmountCentimes / 100.0
