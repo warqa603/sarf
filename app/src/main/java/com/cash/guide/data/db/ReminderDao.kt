@@ -39,4 +39,23 @@ interface ReminderDao {
 
     @Query("UPDATE reminders SET targetEpochMs = :nextTargetEpochMs, updatedAtEpochMs = :updatedAt WHERE id = :id")
     suspend fun updateNextOccurrence(id: String, nextTargetEpochMs: Long, updatedAt: Long)
+
+    @Query("SELECT * FROM reminders")
+    suspend fun getAllRemindersList(): List<ReminderEntity>
+
+    @Query("DELETE FROM reminders")
+    suspend fun deleteAllReminders()
+
+    @androidx.room.Transaction
+    suspend fun restoreReminders(
+        reminders: List<ReminderEntity>,
+        replaceExisting: Boolean
+    ) {
+        if (replaceExisting) {
+            deleteAllReminders()
+        }
+        for (reminder in reminders) {
+            insert(reminder)
+        }
+    }
 }

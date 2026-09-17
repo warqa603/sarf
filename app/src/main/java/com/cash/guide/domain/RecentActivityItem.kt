@@ -42,7 +42,12 @@ sealed interface RecentActivityItem {
         val note: NoteEntity
     ) : RecentActivityItem {
         override val id: String get() = note.id
-        override val title: String get() = note.title.ifBlank { note.content.take(30) }
+        override val title: String get() = note.title.ifBlank {
+            note.content.replace(Regex("==([a-zA-Z]:)?(.*?)== *"), "$2 ")
+                .replace(Regex("[#*_~`✓☐•]"), "")
+                .trim()
+                .take(30)
+        }
         override val updatedAtEpochMs: Long get() = note.updatedAtEpochMs
         override val activityType: ActivityType get() = ActivityType.NOTE
     }

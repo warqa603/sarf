@@ -11,13 +11,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.core.view.WindowCompat
 import com.cash.guide.app.HssabiApp
 import com.cash.guide.ui.theme.HisabiTheme
+import android.app.Activity
 
 class MainActivity : FragmentActivity() {
+    companion object {
+        var currentActivity: Activity? = null
+    }
 
     private val deepLinkUriState = mutableStateOf<Uri?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        currentActivity = this
         deepLinkUriState.value = intent?.data
 
         // Initialize Google Mobile Ads SDK (AdMob)
@@ -50,6 +55,11 @@ class MainActivity : FragmentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         deepLinkUriState.value = intent.data
+    }
+
+    override fun onDestroy() {
+        if (currentActivity == this) currentActivity = null
+        super.onDestroy()
     }
 }
 

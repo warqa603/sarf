@@ -42,4 +42,34 @@ interface SavingsDao {
 
     @Query("SELECT SUM(currentAmountCentimes) FROM savings_goals")
     fun getTotalSavedCentimes(): Flow<Long?>
+
+    @Query("SELECT * FROM savings_goals")
+    suspend fun getAllGoalsList(): List<SavingsGoalEntity>
+
+    @Query("SELECT * FROM savings_deposits")
+    suspend fun getAllDepositsList(): List<SavingsDepositEntity>
+
+    @Query("DELETE FROM savings_goals")
+    suspend fun deleteAllGoals()
+
+    @Query("DELETE FROM savings_deposits")
+    suspend fun deleteAllDeposits()
+
+    @androidx.room.Transaction
+    suspend fun restoreSavings(
+        goals: List<SavingsGoalEntity>,
+        deposits: List<SavingsDepositEntity>,
+        replaceExisting: Boolean
+    ) {
+        if (replaceExisting) {
+            deleteAllDeposits()
+            deleteAllGoals()
+        }
+        for (goal in goals) {
+            insertGoal(goal)
+        }
+        for (deposit in deposits) {
+            insertDeposit(deposit)
+        }
+    }
 }

@@ -39,11 +39,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import android.widget.Toast
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -105,9 +109,214 @@ import com.cash.guide.ui.notebook.TajawalFamily
 import com.cash.guide.ui.notebook.isArabicScript
 import com.cash.guide.ui.notebook.journalBaselineOnRule
 import com.cash.guide.ui.notebook.resolveJournalFont
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
+import com.cash.guide.ui.notebook.HighlighterGreen
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+class NoteMarkdownVisualTransformation : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        val raw = text.text
+        if (!raw.contains("==") && !raw.contains("✓") && !raw.contains("☑")) {
+            return TransformedText(text, OffsetMapping.Identity)
+        }
+        val builder = AnnotatedString.Builder(raw)
+        
+        // Highlighting
+        val regex = Regex("==((?:[pgboy]:)?)(.*?)==", RegexOption.DOT_MATCHES_ALL)
+        for (match in regex.findAll(raw)) {
+            val colorPrefix = match.groupValues[1]
+            val hlColor = when (colorPrefix.lowercase()) {
+                "p:" -> HighlighterPink.copy(alpha = 0.55f)
+                "g:" -> HighlighterGreen.copy(alpha = 0.55f)
+                "b:" -> HighlighterBlue.copy(alpha = 0.55f)
+                "o:" -> Color(0xFFFFD180).copy(alpha = 0.65f)
+                else -> HighlighterYellow.copy(alpha = 0.60f)
+            }
+            val start = match.range.first
+            val end = match.range.last + 1
+            val contentStart = start + 2 + colorPrefix.length
+            val contentEnd = end - 2
+
+            // Dim delimiters so brackets stay visible but unobtrusive
+            builder.addStyle(
+                SpanStyle(color = JournalMutedInk.copy(alpha = 0.22f)),
+                start,
+                contentStart
+            )
+            builder.addStyle(
+                SpanStyle(color = JournalMutedInk.copy(alpha = 0.22f)),
+                contentEnd,
+                end
+            )
+
+            // Highlight content
+            if (contentStart < contentEnd) {
+                builder.addStyle(
+                    SpanStyle(
+                        background = hlColor,
+                        fontWeight = FontWeight.Medium
+                    ),
+                    contentStart,
+                    contentEnd
+                )
+            }
+        }
+        
+        // Strikethrough completed checklist items
+        var currentOffset = 0
+        for (line in raw.split("\n")) {
+            if (line.startsWith("✓ ") || line.startsWith("☑ ")) {
+                builder.addStyle(
+                    SpanStyle(
+                        textDecoration = androidx.compose.ui.text.style.TextDecoration.LineThrough,
+                        color = JournalMutedInk.copy(alpha = 0.55f)
+                    ),
+                    currentOffset,
+                    currentOffset + line.length
+                )
+            }
+            currentOffset += line.length + 1
+        }
+        
+        return TransformedText(builder.toAnnotatedString(), OffsetMapping.Identity)
+    }
+}
+
+@Composable
+private fun NoteVoiceDictationBanner(
+    uiState: NoteEditorUiState,
+    isRtl: Boolean,
+    onCommit: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "voice_pulse")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 1000
+                0.35f at 0
+                1.0f at 500
+                0.35f at 1000
+            },
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "pulse_alpha"
+    )
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 10.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = JournalPaper,
+        border = androidx.compose.foundation.BorderStroke(
+            1.2.dp,
+            if (uiState.dictationError != null) JournalActionDelete.copy(alpha = 0.55f) else HighlighterPink.copy(alpha = 0.65f)
+        ),
+        tonalElevation = 0.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 7.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (uiState.dictationError != null) JournalActionDelete
+                                else Color(0xFFE91E63).copy(alpha = pulseAlpha)
+                            )
+                    )
+
+                    val textToShow = when {
+                        uiState.dictationError != null -> uiState.dictationError
+                        uiState.partialDictation.isNotBlank() -> uiState.partialDictation
+                        uiState.isListening -> if (isRtl) "كنسمع... هضر دابا 🎙️" else "À l'écoute... parlez 🎙️"
+                        else -> ""
+                    }
+
+                    Text(
+                        text = textToShow ?: "",
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontSize = 14.sp,
+                        color = if (uiState.dictationError != null) JournalActionDelete else JournalWritingInk,
+                        fontWeight = if (uiState.partialDictation.isNotBlank()) FontWeight.Medium else FontWeight.Normal,
+                        maxLines = 2,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(JournalMutedInk.copy(alpha = 0.08f))
+                            .clickable(role = Role.Button) { onCancel() }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.note_voice_dictation_cancel),
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontSize = 12.sp,
+                            color = JournalMutedInk,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+
+                    if (uiState.partialDictation.isNotBlank() || uiState.isListening) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(HighlighterPink.copy(alpha = 0.55f))
+                                .clickable(role = Role.Button) { onCommit() }
+                                .padding(horizontal = 9.dp, vertical = 4.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.note_voice_dictation_insert),
+                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                fontSize = 12.sp,
+                                color = JournalWritingInk,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalLayoutApi::class)
 @Composable
@@ -124,15 +333,39 @@ fun NoteEditorScreen(
     val isRtl = layoutDirection == LayoutDirection.Rtl
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
+    val clipboardManager = LocalClipboardManager.current
 
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showAssignGroupDialog by remember { mutableStateOf(false) }
     val titleScrollState = rememberScrollState()
 
+    val recordAudioPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            viewModel.startListening()
+        } else {
+            Toast.makeText(
+                context,
+                context.getString(R.string.permission_mic_rationale),
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
     LaunchedEffect(titleScrollState.maxValue, uiState.title.text, uiState.activeInputTarget) {
         if (uiState.activeInputTarget == NoteInputTarget.TITLE) {
             titleScrollState.scrollTo(titleScrollState.maxValue)
         }
+    }
+
+    val adMobManager = remember { com.cash.guide.domain.ads.AdMobManager.getInstance(context) }
+    var initialLoadDone by remember { androidx.compose.runtime.mutableStateOf(false) }
+    LaunchedEffect(uiState.content.text, uiState.title.text) {
+        if (initialLoadDone) {
+            adMobManager.reportModification()
+        }
+        initialLoadDone = true
     }
 
     // Auto-save on back navigation
@@ -450,31 +683,183 @@ fun NoteEditorScreen(
                                         )
                                     }
 
-                                    // Share Button
+                                    // Share & Actions Button with Dropdown Menu
+                                    var showShareMenu by remember { mutableStateOf(false) }
+
                                     Box(
-                                        modifier = Modifier
-                                            .height(JournalRuleSpacing)
-                                            .width(32.dp)
-                                            .clip(CircleShape)
-                                            .clickable(role = Role.Button) {
-                                                viewModel.closeKeyboard()
-                                                viewModel.saveChanges()
-                                                NoteShareHelper.shareAsImage(
-                                                    context = context,
-                                                    note = viewModel.getNoteEntity(),
-                                                    isRtl = isRtl,
-                                                    coroutineScope = coroutineScope
-                                                )
-                                            },
                                         contentAlignment = Alignment.BottomCenter
                                     ) {
-                                        HisabiSketchIcon(
-                                            symbol = HisabiSymbol.Share,
-                                            contentDescription = "Partager",
-                                            tint = JournalInk,
-                                            size = 18.dp,
-                                            modifier = Modifier.offset(y = 2.8.dp)
-                                        )
+                                        Box(
+                                            modifier = Modifier
+                                                .height(JournalRuleSpacing)
+                                                .width(32.dp)
+                                                .clip(CircleShape)
+                                                .clickable(role = Role.Button) {
+                                                    viewModel.closeKeyboard()
+                                                    showShareMenu = true
+                                                },
+                                            contentAlignment = Alignment.BottomCenter
+                                        ) {
+                                            HisabiSketchIcon(
+                                                symbol = HisabiSymbol.Share,
+                                                contentDescription = stringResource(R.string.share_chooser_title),
+                                                tint = JournalInk,
+                                                size = 18.dp,
+                                                modifier = Modifier.offset(y = 2.8.dp)
+                                            )
+                                        }
+
+                                        DropdownMenu(
+                                            expanded = showShareMenu,
+                                            onDismissRequest = { showShareMenu = false },
+                                            modifier = Modifier
+                                                .background(JournalPaper)
+                                                .padding(vertical = 4.dp)
+                                        ) {
+                                            // 1. Share as Image
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Text(
+                                                        text = stringResource(R.string.note_share_as_image),
+                                                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                                        fontSize = 14.5.sp,
+                                                        color = JournalInk
+                                                    )
+                                                },
+                                                leadingIcon = {
+                                                    HisabiSketchIcon(
+                                                        symbol = HisabiSymbol.Page,
+                                                        contentDescription = null,
+                                                        tint = JournalInk,
+                                                        size = 18.dp
+                                                    )
+                                                },
+                                                onClick = {
+                                                    showShareMenu = false
+                                                    viewModel.saveChanges()
+                                                    NoteShareHelper.shareAsImage(
+                                                        context = context,
+                                                        note = viewModel.getNoteEntity(),
+                                                        isRtl = isRtl,
+                                                        coroutineScope = coroutineScope
+                                                    )
+                                                }
+                                            )
+
+                                            // 2. Share as Text
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Text(
+                                                        text = stringResource(R.string.note_share_as_text),
+                                                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                                        fontSize = 14.5.sp,
+                                                        color = JournalInk
+                                                    )
+                                                },
+                                                leadingIcon = {
+                                                    HisabiSketchIcon(
+                                                        symbol = HisabiSymbol.Share,
+                                                        contentDescription = null,
+                                                        tint = JournalInk,
+                                                        size = 18.dp
+                                                    )
+                                                },
+                                                onClick = {
+                                                    showShareMenu = false
+                                                    viewModel.saveChanges()
+                                                    NoteShareHelper.shareAsText(
+                                                        context = context,
+                                                        note = viewModel.getNoteEntity()
+                                                    )
+                                                }
+                                            )
+
+                                            HorizontalDivider(
+                                                color = JournalRule.copy(alpha = 0.25f),
+                                                modifier = Modifier.padding(vertical = 4.dp)
+                                            )
+
+                                            // 3. Copy whole note
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Text(
+                                                        text = stringResource(R.string.note_copy_all),
+                                                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                                        fontSize = 14.5.sp,
+                                                        color = JournalInk
+                                                    )
+                                                },
+                                                leadingIcon = {
+                                                    HisabiSketchIcon(
+                                                        symbol = HisabiSymbol.Copy,
+                                                        contentDescription = null,
+                                                        tint = JournalInk,
+                                                        size = 18.dp
+                                                    )
+                                                },
+                                                onClick = {
+                                                    showShareMenu = false
+                                                    viewModel.copy { text ->
+                                                        clipboardManager.setText(AnnotatedString(text))
+                                                        Toast.makeText(context, R.string.note_toast_copied, Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            )
+
+                                            // 4. Duplicate note
+                                            DropdownMenuItem(
+                                                text = {
+                                                    Text(
+                                                        text = stringResource(R.string.note_duplicate),
+                                                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                                        fontSize = 14.5.sp,
+                                                        color = JournalInk
+                                                    )
+                                                },
+                                                leadingIcon = {
+                                                    HisabiSketchIcon(
+                                                        symbol = HisabiSymbol.Plus,
+                                                        contentDescription = null,
+                                                        tint = JournalInk,
+                                                        size = 18.dp
+                                                    )
+                                                },
+                                                onClick = {
+                                                    showShareMenu = false
+                                                    viewModel.saveChanges()
+                                                    val suffix = if (isRtl) "(نسخة)" else "(Copie)"
+                                                    viewModel.duplicateNote(suffix) {
+                                                        Toast.makeText(context, R.string.note_toast_duplicated, Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            )
+
+                                            // 5. Clear text
+                                            if (uiState.content.text.isNotEmpty()) {
+                                                DropdownMenuItem(
+                                                    text = {
+                                                        Text(
+                                                            text = stringResource(R.string.note_clear_content),
+                                                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                                            fontSize = 14.5.sp,
+                                                            color = JournalActionDelete
+                                                        )
+                                                    },
+                                                    leadingIcon = {
+                                                        HisabiSketchIcon(
+                                                            symbol = HisabiSymbol.Close,
+                                                            contentDescription = null,
+                                                            tint = JournalActionDelete,
+                                                            size = 18.dp
+                                                        )
+                                                    },
+                                                    onClick = {
+                                                        showShareMenu = false
+                                                        viewModel.clearContent()
+                                                    }
+                                                )
+                                            }
+                                        }
                                     }
 
                                     // Trash / Poubelle Button (Black sketch ink, triggers delete confirmation)
@@ -557,6 +942,7 @@ fun NoteEditorScreen(
                                             }
                                         },
                                     textStyle = contentTextStyle,
+                                    visualTransformation = remember { NoteMarkdownVisualTransformation() },
                                     cursorBrush = SolidColor(cursorColor),
                                     keyboardOptions = KeyboardOptions(
                                         keyboardType = KeyboardType.Text,
@@ -585,6 +971,27 @@ fun NoteEditorScreen(
                             Spacer(modifier = Modifier.height(JournalRuleSpacing * 4))
                         }
                     }
+
+                    if (uiState.isListening || uiState.partialDictation.isNotBlank() || uiState.dictationError != null) {
+                        NoteVoiceDictationBanner(
+                            uiState = uiState,
+                            isRtl = isRtl,
+                            onCommit = { viewModel.commitDictation() },
+                            onCancel = { viewModel.cancelDictation() }
+                        )
+                    }
+
+                    NoteAccessoryBar(
+                        uiState = uiState,
+                        viewModel = viewModel,
+                        isRtl = isRtl,
+                        onRequestAudioPermission = {
+                            recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        },
+                        onShowToast = { resId ->
+                            Toast.makeText(context, resId, Toast.LENGTH_SHORT).show()
+                        }
+                    )
 
                     Spacer(modifier = Modifier.navigationBarsPadding())
                 }
@@ -652,6 +1059,360 @@ fun NoteEditorScreen(
                             showAssignGroupDialog = false
                         }
                     )
+                }
+        }
+}
+
+@Composable
+private fun NoteAccessoryBar(
+    uiState: NoteEditorUiState,
+    viewModel: NoteViewModel,
+    isRtl: Boolean,
+    onRequestAudioPermission: () -> Unit,
+    onShowToast: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    val scrollState = rememberScrollState()
+    val isListening = uiState.isListening
+
+    val (words, chars) = remember(uiState.content.text) {
+        viewModel.getStats()
+    }
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(44.dp),
+        color = JournalPaper,
+        tonalElevation = 0.dp
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(JournalRule.copy(alpha = 0.35f))
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .horizontalScroll(scrollState)
+                    .padding(horizontal = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                // 1. Undo
+                AccessoryIconButton(
+                    symbol = HisabiSymbol.Undo,
+                    contentDescription = stringResource(R.string.note_action_undo),
+                    enabled = uiState.canUndo,
+                    onClick = { viewModel.undo() }
+                )
+
+                // 2. Redo
+                AccessoryIconButton(
+                    symbol = HisabiSymbol.Redo,
+                    contentDescription = stringResource(R.string.note_action_redo),
+                    enabled = uiState.canRedo,
+                    onClick = { viewModel.redo() }
+                )
+
+                AccessoryVerticalDivider()
+
+                // 3. Paste
+                AccessoryIconButton(
+                    symbol = HisabiSymbol.Paste,
+                    contentDescription = stringResource(R.string.note_action_paste),
+                    onClick = {
+                        val clipText = clipboardManager.getText()?.text
+                        if (!clipText.isNullOrEmpty()) {
+                            viewModel.paste(clipText)
+                            onShowToast(R.string.note_toast_pasted)
+                        } else {
+                            onShowToast(R.string.note_toast_empty_clipboard)
+                        }
+                    }
+                )
+
+                // 4. Copy
+                AccessoryIconButton(
+                    symbol = HisabiSymbol.Copy,
+                    contentDescription = stringResource(R.string.note_action_copy),
+                    onClick = {
+                        viewModel.copy { textToCopy ->
+                            clipboardManager.setText(AnnotatedString(textToCopy))
+                            onShowToast(R.string.note_toast_copied)
+                        }
+                    }
+                )
+
+                // 5. Cut
+                AccessoryIconButton(
+                    symbol = HisabiSymbol.Cut,
+                    contentDescription = stringResource(R.string.note_action_cut),
+                    onClick = {
+                        viewModel.cut { textToCut ->
+                            clipboardManager.setText(AnnotatedString(textToCut))
+                            onShowToast(R.string.note_toast_cut)
+                        }
+                    }
+                )
+
+                // 6. Select All
+                AccessoryTextButton(
+                    text = if (isRtl) "تحديد الكل" else "Tout",
+                    onClick = { viewModel.selectAll() }
+                )
+
+                AccessoryVerticalDivider()
+
+                // 7. Highlighter Tool
+                var showHighlighterPalette by remember { mutableStateOf(false) }
+                val activeHlColor = when (uiState.activeHighlighterColor) {
+                    "PINK" -> HighlighterPink
+                    "GREEN" -> HighlighterGreen
+                    "BLUE" -> HighlighterBlue
+                    "ORANGE" -> Color(0xFFFFD180)
+                    else -> HighlighterYellow
+                }
+
+                Box(contentAlignment = Alignment.Center) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(activeHlColor.copy(alpha = 0.35f))
+                            .clickable(role = Role.Button) {
+                                viewModel.toggleHighlight()
+                            }
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        HisabiSketchIcon(
+                            symbol = HisabiSymbol.Highlighter,
+                            contentDescription = stringResource(R.string.note_action_highlight),
+                            tint = JournalWritingInk,
+                            size = 17.dp
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(14.dp)
+                                .clip(CircleShape)
+                                .clickable { showHighlighterPalette = true },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            HisabiSketchIcon(
+                                symbol = HisabiSymbol.ChevronDown,
+                                contentDescription = null,
+                                tint = JournalMutedInk,
+                                size = 9.dp
+                            )
+                        }
+                    }
+
+                    DropdownMenu(
+                        expanded = showHighlighterPalette,
+                        onDismissRequest = { showHighlighterPalette = false },
+                        modifier = Modifier
+                            .background(JournalPaper)
+                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(2.dp)
+                        ) {
+                            val colors = listOf(
+                                "YELLOW" to HighlighterYellow,
+                                "GREEN" to HighlighterGreen,
+                                "PINK" to HighlighterPink,
+                                "BLUE" to HighlighterBlue,
+                                "ORANGE" to Color(0xFFFFD180)
+                            )
+                            colors.forEach { (tag, color) ->
+                                val isSelected = uiState.activeHighlighterColor == tag
+                                Box(
+                                    modifier = Modifier
+                                        .size(26.dp)
+                                        .clip(CircleShape)
+                                        .clickable {
+                                            viewModel.setActiveHighlighterColor(tag)
+                                            viewModel.toggleHighlight(tag)
+                                            showHighlighterPalette = false
+                                        },
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(if (isSelected) 22.dp else 18.dp)
+                                            .clip(CircleShape)
+                                            .background(color.copy(alpha = 0.85f))
+                                            .then(
+                                                if (isSelected) Modifier.border(2.dp, JournalInk, CircleShape)
+                                                else Modifier.border(1.dp, JournalInk.copy(alpha = 0.25f), CircleShape)
+                                            )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                AccessoryVerticalDivider()
+
+                // 8. Checkbox
+                AccessoryIconButton(
+                    symbol = HisabiSymbol.CheckBox,
+                    contentDescription = stringResource(R.string.note_action_checkbox),
+                    onClick = { viewModel.insertCheckbox() }
+                )
+
+                // 9. Bullet
+                AccessoryTextButton(
+                    text = "•",
+                    fontSize = 20.sp,
+                    onClick = { viewModel.insertBullet() }
+                )
+
+                // 10. Numbered list
+                AccessoryTextButton(
+                    text = "1.",
+                    fontSize = 14.sp,
+                    onClick = { viewModel.insertNumberedItem() }
+                )
+
+                // 11. Divider
+                AccessoryTextButton(
+                    text = "───",
+                    fontSize = 11.sp,
+                    onClick = { viewModel.insertDivider() }
+                )
+
+                // 12. Timestamp
+                AccessoryIconButton(
+                    symbol = HisabiSymbol.Clock,
+                    contentDescription = stringResource(R.string.note_action_timestamp),
+                    onClick = { viewModel.insertTimestamp() }
+                )
+
+                AccessoryVerticalDivider()
+
+                // 13. Mic / Dictation
+                val micBg = if (isListening) Color(0xFFFCE4EC) else Color.Transparent
+                val micTint = if (isListening) Color(0xFFE91E63) else JournalInk
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(micBg)
+                        .clickable(role = Role.Button) {
+                            val hasPermission = ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.RECORD_AUDIO
+                            ) == PackageManager.PERMISSION_GRANTED
+
+                            if (isListening) {
+                                viewModel.commitDictation()
+                            } else {
+                                if (hasPermission) {
+                                    viewModel.startListening()
+                                } else {
+                                    onRequestAudioPermission()
+                                }
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    HisabiSketchIcon(
+                        symbol = HisabiSymbol.Microphone,
+                        contentDescription = stringResource(R.string.note_voice_hint),
+                        tint = micTint,
+                        size = 17.dp
+                    )
+                }
+
+                // 13. Word & Char Stats
+                if (chars > 0) {
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(JournalMutedInk.copy(alpha = 0.08f))
+                            .padding(horizontal = 7.dp, vertical = 3.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (isRtl) "$words كلمة • $chars حرف" else "$words mots • $chars car.",
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontSize = 11.sp,
+                            color = JournalMutedInk.copy(alpha = 0.8f),
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                    }
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun AccessoryIconButton(
+    symbol: HisabiSymbol,
+    contentDescription: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        HisabiSketchIcon(
+            symbol = symbol,
+            contentDescription = contentDescription,
+            tint = if (enabled) JournalInk else JournalMutedInk.copy(alpha = 0.28f),
+            size = 16.dp
+        )
+    }
+}
+
+@Composable
+private fun AccessoryTextButton(
+    text: String,
+    fontSize: androidx.compose.ui.unit.TextUnit = 13.sp,
+    onClick: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .height(32.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 6.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            fontFamily = PatrickHandFamily,
+            fontWeight = FontWeight.Bold,
+            fontSize = fontSize,
+            color = JournalInk,
+            style = TextStyle(platformStyle = NoFontPadding)
+        )
+    }
+}
+
+@Composable
+private fun AccessoryVerticalDivider() {
+    Box(
+        modifier = Modifier
+            .height(16.dp)
+            .width(1.dp)
+            .background(JournalRule.copy(alpha = 0.35f))
+    )
 }

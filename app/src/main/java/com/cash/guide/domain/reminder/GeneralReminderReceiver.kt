@@ -115,7 +115,7 @@ class GeneralReminderReceiver : BroadcastReceiver() {
                     }
 
                     val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-                        .setSmallIcon(R.mipmap.ic_launcher)
+                        .setSmallIcon(R.drawable.ic_stat_sarf_notification)
                         .setContentTitle(reminder.title)
                         .setContentText(if (reminder.description.isNotBlank()) reminder.description else recurrenceLabel)
                         .setPriority(NotificationCompat.PRIORITY_HIGH)

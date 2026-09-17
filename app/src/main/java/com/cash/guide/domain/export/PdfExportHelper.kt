@@ -649,7 +649,7 @@ object PdfExportHelper {
             textAlign = if (isRtl) Paint.Align.LEFT else Paint.Align.RIGHT
         }
 
-        val watermark = "SARF • ${context.getString(R.string.share_footer_watermark)}"
+        val watermark = "WARQA • ${context.getString(R.string.share_footer_watermark)}"
         val pageStr = if (isRtl) "صفحة $pageNumber" else "Page $pageNumber"
 
         if (isRtl) {

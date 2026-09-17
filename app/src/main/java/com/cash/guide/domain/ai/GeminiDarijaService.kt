@@ -41,7 +41,7 @@ object GeminiDarijaService {
     private const val TAG = "GeminiDarijaService"
     private const val BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
-    var currentModel: String = "gemini-flash-lite-latest"
+    var currentModel: String = "gemini-2.5-flash"
 
     private fun getApiKey(): String {
         return BuildConfig.GEMINI_API_KEY
@@ -137,7 +137,7 @@ object GeminiDarijaService {
         val scriptRule = getScriptInstruction(outputScript)
 
         val systemPrompt = """
-            You are an expert Moroccan Darija assistant for the notebook app "Sarf".
+            You are an expert Moroccan Darija assistant for the notebook app "Warqa" (ورقة).
             The user dictated a list of items or groceries in Moroccan Darija, Arabic, or French.
             Extract ALL items into a clean list, separating each item even if spoken rapidly in a single sentence.
             If the user mentioned quantities (e.g. 2kg, نص كيلو, رابعة, بكية, قرعة, ربطة, 3 حبات, 5 لتر), include the quantity in the item label.
@@ -223,7 +223,7 @@ object GeminiDarijaService {
         } else ""
 
         val systemPrompt = """
-            You are an expert Moroccan accountant assistant for the notebook app "Sarf".
+            You are an expert Moroccan accountant assistant for the notebook app "Warqa" (ورقة).
             The user dictated monetary entries, purchases, or expenses in Moroccan Darija, French, or Arabic.
             Extract ALL items into a clean calculation list with amounts in Dirhams (MAD).
 
@@ -546,7 +546,7 @@ object GeminiDarijaService {
         }
 
         val prompt = """
-            You are an expert Moroccan Financial Coach ("كوتش مالي مغربي محترف") for the notebook app "Sarf".
+            You are an expert Moroccan Financial Coach ("كوتش مالي مغربي محترف") for the notebook app "Warqa" (ورقة).
             The user wants advice on their savings plan:
             - Goal: $goalTitle ($targetAmountDh DH over $targetMonths months)
             - Monthly Salary: $monthlySalaryDh DH

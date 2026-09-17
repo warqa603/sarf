@@ -142,10 +142,10 @@ fun HssabiApp(
     val isArabicLanguage = appLanguage == "ar" || appLanguage == "dar" || appLanguage.startsWith("ar")
     val loc = remember(appLanguage) {
         when (appLanguage) {
-            "dar" -> Locale("ar", "MA")
-            "ar" -> Locale("ar")
-            "en" -> Locale("en")
-            else -> Locale("fr")
+            "dar" -> Locale.forLanguageTag("ar-MA")
+            "ar" -> Locale.forLanguageTag("ar")
+            "en" -> Locale.forLanguageTag("en")
+            else -> Locale.forLanguageTag("fr")
         }
     }
     val localizedConfig = remember(appLanguage, configuration) {
@@ -231,20 +231,23 @@ fun HssabiApp(
         Scaffold(
             bottomBar = {
                 if (isTopLevel) {
-                    NotebookBottomNavigation(
-                        currentDestination = currentDestination,
-                        onNavigateTo = { dest ->
-                            if (currentRoute != dest.route) {
-                                navController.navigate(dest.route) {
-                                    popUpTo(AppDestination.Home.route) {
-                                        saveState = true
+                        androidx.compose.foundation.layout.Column {
+                            com.cash.guide.ui.components.NotebookBannerAd()
+                            NotebookBottomNavigation(
+                                currentDestination = currentDestination,
+                                onNavigateTo = { dest ->
+                                    if (currentRoute != dest.route) {
+                                        navController.navigate(dest.route) {
+                                            popUpTo(AppDestination.Home.route) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
-                            }
+                            )
                         }
-                    )
                 }
             }
         ) { innerPadding ->

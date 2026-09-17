@@ -92,13 +92,13 @@ fun RemindersOverviewScreen(
     var showMonthPicker by remember { mutableStateOf(false) }
 
     val currentMonthDisplay = remember(isRtl) {
-        val formatter = SimpleDateFormat("MMMM yyyy", if (isRtl) Locale("ar") else Locale.FRENCH)
+        val formatter = SimpleDateFormat("MMMM yyyy", if (isRtl) Locale.forLanguageTag("ar") else Locale.FRENCH)
         formatter.format(Date()).replaceFirstChar { it.uppercase() }
     }
 
     val timeFormatter = remember { SimpleDateFormat("HH:mm", Locale.US) }
     val dateFormatter = remember(isRtl) {
-        SimpleDateFormat("d MMM", if (isRtl) Locale("ar") else Locale.FRENCH)
+        SimpleDateFormat("d MMM", if (isRtl) Locale.forLanguageTag("ar") else Locale.FRENCH)
     }
 
     Box(
@@ -404,7 +404,7 @@ private fun ReminderRowItem(
     }
 
     val timeStr = String.format(Locale.US, "%02d:%02d", reminder.timeHour, reminder.timeMinute)
-    val dateStr = SimpleDateFormat("d MMM", if (isRtl) Locale("ar") else Locale.FRENCH).format(Date(reminder.targetEpochMs))
+    val dateStr = SimpleDateFormat("d MMM", if (isRtl) Locale.forLanguageTag("ar") else Locale.FRENCH).format(Date(reminder.targetEpochMs))
 
     Row(
         modifier = Modifier

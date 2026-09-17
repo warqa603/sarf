@@ -430,6 +430,211 @@ object FinancialDiagnosticEngine {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
+    // 5b. Comprehensive Actionable Advice Engine (Real-world personalized levers)
+    // ══════════════════════════════════════════════════════════════════════════
+
+    fun generatePersonalizedAdviceCards(
+        answers: QuestionnaireAnswers,
+        tags: Set<String>,
+        leaks: List<LeakInsight>,
+        metrics: DiagnosticMetrics,
+        goal: SavingsGoalEntity
+    ): List<DiagnosticAdviceCard> {
+        val cards = mutableListOf<DiagnosticAdviceCard>()
+
+        // ── Priority 1: Safety, Debt & Survival Levers ──
+        if (answers.endOfMonthBorrowFrequency >= 2) {
+            cards += DiagnosticAdviceCard(
+                id = "STOP_BORROWING",
+                priorityLevel = 1,
+                iconEmoji = "🛑",
+                titleAr = "أولوية الأمان: إيقاف استلاف نهاية الشهر",
+                titleFr = "Priorité sécurité : stopper les emprunts de fin de mois",
+                detailedAdviceAr = "إلى كنتي كتسلف فـ آخر الشهر باش تكمل، ما تبداش بقسط توفير كبير يضغط عليك. ركز أولاً على عزل مصروف الأسبوع كاش وتفادي أي دين جديد، حيت كل سلف كيحكم على الشهر الجاي بالعجز.",
+                detailedAdviceFr = "Si vous empruntez pour boucler les fins de mois, évitez une mensualité d'épargne trop forte. Isolez les dépenses de la semaine en cash et gelez tout nouvel emprunt.",
+                concreteImpactAr = "استقرار التوازن المالي وتفادي دوامة الديون",
+                concreteImpactFr = "Stabiliser le budget et stopper l'effet boule de neige",
+                categoryTag = "DEBT"
+            )
+        } else if (answers.debtPaymentsCentimes > 0 && answers.debtType != "DEBT_NONE") {
+            cards += DiagnosticAdviceCard(
+                id = "DEBT_SNOWBALL",
+                priorityLevel = 1,
+                iconEmoji = "📋",
+                titleAr = "استراتيجية التعامل مع أقساط الديون",
+                titleFr = "Stratégie de désendettement progressif",
+                detailedAdviceAr = "الأقساط الشهرية كتستهلك جزء مهم من مدخولك. اعتمد استراتيجية تسديد أصغر كريدي أولاً باش تحرر قسط شهري كامل وتحولو مباشرة لحصالة هدفك.",
+                detailedAdviceFr = "Remboursez en priorité la plus petite dette pour libérer rapidement une mensualité complète et la basculer vers votre objectif.",
+                concreteImpactAr = "تحرير سيولة إضافية ثابتة شهرياً",
+                concreteImpactFr = "Libération d'une marge mensuelle pérenne",
+                categoryTag = "DEBT"
+            )
+        }
+
+        if (answers.emergencyFundCentimes <= 0 || answers.emergencyFundLocation == "NONE" || DiagnosticTag.NO_EMERGENCY_FUND in tags) {
+            cards += DiagnosticAdviceCard(
+                id = "EMERGENCY_SHIELD",
+                priorityLevel = 1,
+                iconEmoji = "🛡️",
+                titleAr = "حزام الأمان قبل الهدف (صندوق الطوارئ)",
+                titleFr = "Coussin de sécurité avant l'objectif",
+                detailedAdviceAr = "أي هدف توفير بلا صندوق طوارئ يقدر ينهار فـ أول مفاجأة (بان فـ السيارة، طبيب، إصلاح فـ الدار). خصص 200 إلى 400 DH شهرياً فـ حساب بنكي منفصل بلا كارط كيشي حتى تجمع على الأقل مصاريف شهر واحد من الأساسيات.",
+                detailedAdviceFr = "Tout objectif sans fonds d'urgence risque d'être cassé au premier imprévu (santé, panne, travaux). Isolez 200 à 400 DH/mois sur un compte séparé sans carte.",
+                concreteImpactAr = "حماية الهدف من السحب والكسر الفجائي",
+                concreteImpactFr = "Protection de votre épargne contre les retraits imprévus",
+                categoryTag = "EMERGENCY"
+            )
+        }
+
+        // ── Priority 2: Targeted Leaks Reduction ──
+        val protectedPrefs = answers.userProtectedPreferences
+        val actionableLeaks = leaks.filter { it.key !in protectedPrefs }
+        for (leak in actionableLeaks.take(2)) {
+            val saveHalfMonth = (leak.monthlyDrainDh * 0.5).toInt()
+            val saveHalfYear = (leak.saving50pctAnnualDh).toInt()
+            when (leak.key) {
+                "CAFE", "FOOD_OUT" -> {
+                    cards += DiagnosticAdviceCard(
+                        id = "LEAK_CAFE_FOOD",
+                        priorityLevel = 2,
+                        iconEmoji = "☕",
+                        titleAr = "استرجع مصاريف القهوة والزنقة بلا ما تقطع مع الصحاب",
+                        titleFr = "Optimiser cafés et repas extérieurs sans privation",
+                        detailedAdviceAr = "ما تقطعش القهوة نهائياً؛ شرب قهوة الصباح فـ المكتب أو الدار، وخصص جلسة المقهى مع الأصدقاء كمتعة أسبوعية. نقص 50% من التردد كيرجع ليك +$saveHalfMonth DH شهرياً بلا ما تحس بأي حرمان.",
+                        detailedAdviceFr = "Ne vous privez pas totalement : prenez le café du matin à la maison ou au bureau, et gardez la sortie café comme moment plaisir entre amis. Réduire de 50% dégage +$saveHalfMonth DH/mois.",
+                        concreteImpactAr = "+$saveHalfMonth DH/شهر (+$saveHalfYear DH/عام)",
+                        concreteImpactFr = "+$saveHalfMonth DH/mois (+$saveHalfYear DH/an)",
+                        categoryTag = "LEAK"
+                    )
+                }
+                "SHOPPING" -> {
+                    cards += DiagnosticAdviceCard(
+                        id = "LEAK_SHOPPING",
+                        priorityLevel = 2,
+                        iconEmoji = "🛍️",
+                        titleAr = "سلاح قاعدة 24 ساعة ضد الشراء الاندفاعي",
+                        titleFr = "La règle des 24h contre les achats impulsifs",
+                        detailedAdviceAr = "قبل ما تشري أي حاجة فايتة 150 DH وما كانتش مبرمجة فـ الميزانية، فرض على راسك تنتظر 24 ساعة. فـ أغلب الحالات، الرغبة اللحظية كتهدا وكتكتشف أنك ما محتاجهاش فعلاً.",
+                        detailedAdviceFr = "Avant tout achat non prévu de plus de 150 DH, imposez-vous un délai de 24h. Dans la majorité des cas, l'envie retombe et l'argent reste dans votre poche.",
+                        concreteImpactAr = "+$saveHalfMonth DH/شهر توفير فوري",
+                        concreteImpactFr = "+$saveHalfMonth DH/mois économisés",
+                        categoryTag = "LEAK"
+                    )
+                }
+                "SUBSCRIPTIONS" -> {
+                    cards += DiagnosticAdviceCard(
+                        id = "LEAK_SUBSCRIPTIONS",
+                        priorityLevel = 2,
+                        iconEmoji = "📱",
+                        titleAr = "مراجعة الفورفيات والاشتراكات المنسية",
+                        titleFr = "Audit des forfaits et abonnements oubliés",
+                        detailedAdviceAr = "راجع فورفي الهاتف المنزلي والنقال، اشتراكات التطبيقات والقنوات. تبديل الفورفي لـ عرض مناسب أو إلغاء اشتراك غير مستعمل كيعطيك توفير فوري دائم بلا أي مجهود يومي.",
+                        detailedAdviceFr = "Revoyez vos forfaits téléphone/internet et résiliez les abonnements inutilisés. Un ajustement rapide génère une économie permanente chaque mois.",
+                        concreteImpactAr = "+100 إلى +250 DH/شهر ثابتة",
+                        concreteImpactFr = "+100 à +250 DH/mois permanents",
+                        categoryTag = "LEAK"
+                    )
+                }
+                else -> {
+                    cards += DiagnosticAdviceCard(
+                        id = "LEAK_GENERIC_${leak.key}",
+                        priorityLevel = 2,
+                        iconEmoji = "✂️",
+                        titleAr = "تقليص تسرب \"${leak.titleAr}\" تدريجياً",
+                        titleFr = "Maîtrise progressive du poste \"${leak.titleFr}\"",
+                        detailedAdviceAr = "هاد الباب كيستنزف قرابة ${leak.monthStr} DH شهرياً (${leak.annualStr} DH فـ العام!). وضع سقف أسبوعي أو تقليص عدد المرات للنصف كافي يمول قسط هدفك.",
+                        detailedAdviceFr = "Ce poste draine environ ${leak.monthStr} DH/mois (${leak.annualStr} DH/an !). Plafonner à la semaine ou diviser par deux suffit à financer votre objectif.",
+                        concreteImpactAr = "+$saveHalfMonth DH/شهر (+$saveHalfYear DH/عام)",
+                        concreteImpactFr = "+$saveHalfMonth DH/mois (+$saveHalfYear DH/an)",
+                        categoryTag = "LEAK"
+                    )
+                }
+            }
+        }
+
+        // ── Priority 2 / 3: Income & Seasonal Levers ──
+        if (answers.incomeType != "INCOME_STABLE") {
+            cards += DiagnosticAdviceCard(
+                id = "VARIABLE_INCOME_PACING",
+                priorityLevel = 2,
+                iconEmoji = "💼",
+                titleAr = "قاعدة الصالير الوهمي لأصحاب الدخل المتغير",
+                titleFr = "Règle du salaire de base pour revenus variables",
+                detailedAdviceAr = "حيت مدخولك كيتغير من شهر لشهر، حدد لنفسك راتباً شهرياً ثابتاً على أساس أضعف شهر. فـ الشهور القوية، خبي الفائض فـ حساب عازل (Buffer) باش يغطي الشهور الضعيفة ويبقى قسط التوفير منتظم ومستقر.",
+                detailedAdviceFr = "Fixez-vous un salaire mensuel de référence basé sur vos mois les plus faibles. Lors des mois forts, versez l'excédent sur un compte tampon pour lisser les périodes creuses.",
+                concreteImpactAr = "ضمان استمرارية التوفير بلا انقطاع",
+                concreteImpactFr = "Continuité de l'effort d'épargne toute l'année",
+                categoryTag = "PACING"
+            )
+        }
+
+        if (DiagnosticTag.IRREGULAR_EXPENSE_UNFUNDED in tags || answers.seasonalExpenses.isNotEmpty()) {
+            cards += DiagnosticAdviceCard(
+                id = "SEASONAL_PROVISION",
+                priorityLevel = 2,
+                iconEmoji = "🌙",
+                titleAr = "عزل مخصصات المناسبات السنوية مسبقاً",
+                titleFr = "Provisions mensuelles pour chocs saisonniers",
+                detailedAdviceAr = "المناسبات المغربية (العيد الكبير، رمضان، الدخول المدرسي، التأمين) ماشي مفاجآت؛ كتجي كل عام فـ نفس التاريخ. عزل 10% شهرياً فـ صندوق خاص بالمناسبات باش نهار توصل ما تضطرش تكسر هدفك ولا تستلف.",
+                detailedAdviceFr = "Les événements saisonniers (Aïd, Ramadan, rentrée scolaire, assurances) arrivent chaque année à date fixe. Isolez 10% chaque mois dans une provision dédiée pour ne jamais toucher à votre objectif.",
+                concreteImpactAr = "تفادي الصدمات والكسر القسري للهدف",
+                concreteImpactFr = "Éviter les ruptures forcées de plan d'épargne",
+                categoryTag = "SEASONAL"
+            )
+        }
+
+        // ── Priority 3: Habits & Execution Excellence ──
+        if (answers.savingTiming != "SAVE_FIRST") {
+            val reqStr = JournalLedgerManager.formatFrenchNumber((metrics.requiredMonthlyCentimes / 100).toString())
+            cards += DiagnosticAdviceCard(
+                id = "PAY_YOURSELF_FIRST",
+                priorityLevel = 3,
+                iconEmoji = "🚀",
+                titleAr = "قاعدة: خلص راسك الأول نهار الصالير",
+                titleFr = "Règle d'or : Payez-vous d'abord le jour de paie",
+                detailedAdviceAr = "ما تسناش نهاية الشهر باش توفر شنو شاط، حيت فـ الغالب ما كيشيط والو. نهار كيدخل الصالير، حوّل $reqStr DH لحساب الهدف مباشرة كأنها فاتورة واجبة الأداء، وعيش بالباقي. هاد العادة كتزيد نسبة نجاح الهدف بـ 3 أضعاف.",
+                detailedAdviceFr = "N'attendez pas la fin du mois pour épargner ce qui reste. Dès réception de la paie, virez les $reqStr DH vers l'objectif comme une facture obligatoire. Cette règle multiplie par 3 vos chances de réussite.",
+                concreteImpactAr = "ضمان الوصول للهدف بنسبة تفوق 90%",
+                concreteImpactFr = "Taux de réussite de l'objectif > 90%",
+                categoryTag = "TIMING"
+            )
+        }
+
+        if (DiagnosticTag.SPENDING_VISIBILITY_LOW in tags || answers.spendingTrackingHabit == "NONE") {
+            cards += DiagnosticAdviceCard(
+                id = "CASH_ENVELOPES",
+                priorityLevel = 3,
+                iconEmoji = "✉️",
+                titleAr = "الأظرفة النقدية للكماليات والمصروف الأسبوعي",
+                titleFr = "La méthode des enveloppes cash pour la semaine",
+                detailedAdviceAr = "سحب ميزانية المصروف والكماليات نقداً كل يوم إثنين فـ أظرفة، وخلي البطاقة البنكية فـ الدار. الدفع نقداً كيحسسك بالفلوس كتنقص وكيفرملك الدماغ تلقائياً ضد المصاريف العشوائية.",
+                detailedAdviceFr = "Retirez votre budget de poche en espèces chaque lundi et laissez la carte bancaire à la maison. Payer en liquide rend la dépense concrète et freine naturellement les achats impulsifs.",
+                concreteImpactAr = "تقليص المصاريف العشوائية بنسبة 20-30%",
+                concreteImpactFr = "Baisse des dépenses impulsives de 20 à 30%",
+                categoryTag = "BEHAVIOR"
+            )
+        }
+
+        if (metrics.feasibility == GoalFeasibility.TIGHT || metrics.feasibility == GoalFeasibility.AGGRESSIVE) {
+            cards += DiagnosticAdviceCard(
+                id = "GOAL_PACING",
+                priorityLevel = 3,
+                iconEmoji = "⏳",
+                titleAr = "تمديد المدة قليلاً لضمان الاستمرارية",
+                titleFr = "Ajustement du calendrier pour un marathon serein",
+                detailedAdviceAr = "التوفير سباق ماراثون ماشي سباق سرعة. الهدف الحالي كيتطلب قسط فايت طاقتك المريحة. تمديد المدة بـ بضعة أشهر كيخفف العبء الشهري ويخليك تلتزم بلا ما تختنق ولا تستسلم فـ نص الطريق.",
+                detailedAdviceFr = "L'épargne est un marathon. Le plan actuel exige une mensualité serrée par rapport à vos marges. Prolonger de quelques mois allège la charge et garantit d'arriver au bout sans abandonner.",
+                concreteImpactAr = "خطة مريحة ومستدامة بدون ضغط نفسي",
+                concreteImpactFr = "Plan pérenne sans asphyxie financière",
+                categoryTag = "PACING"
+            )
+        }
+
+        // Return sorted by priority (1 safety first, then 2 leaks, then 3 habits)
+        return cards.sortedBy { it.priorityLevel }.take(5)
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
     // 6. Score and rank article recommendations
     // ══════════════════════════════════════════════════════════════════════════
 
@@ -490,8 +695,8 @@ object FinancialDiagnosticEngine {
         if (DiagnosticTag.NO_EMERGENCY_FUND in tags) {
             warnings += DiagnosticWarning(
                 tag = DiagnosticTag.NO_EMERGENCY_FUND,
-                messageAr = "بلا صندوق طوارئ: أي مصروف غير متوقع غادي يضرب الهدف مباشرة",
-                messageFr = "Sans fonds d'urgence : tout imprévu attaquera directement votre objectif"
+                messageAr = "بلا صندوق طوارئ: أي طارئ يقدر يهدد استقرار الهدف",
+                messageFr = "Sans fonds d'urgence : tout imprévu fragilise l'objectif"
             )
         }
         if (DiagnosticTag.IRREGULAR_EXPENSE_UNFUNDED in tags) {
@@ -558,19 +763,19 @@ object FinancialDiagnosticEngine {
         val topLeakNameFr = leaks.firstOrNull()?.titleFr ?: "les dépenses flexibles"
 
         val ar = when (feasibility) {
-            GoalFeasibility.COMFORTABLE -> "الهدف داخل فالقدرة ديالك بهامش مريح. الـ $requiredStr درهم/شهر أقل من إمكانياتك. استمر وما تزيدش تفكر فيه."
-            GoalFeasibility.FEASIBLE -> "الهدف واقعي — يحتاج $requiredStr درهم/شهر وهامشك المريح $capacityStr درهم. غير خاص الانتظام."
-            GoalFeasibility.TIGHT -> "الهدف ممكن ولكن الخطة غادي تضغط عليك. يحتاج $requiredStr درهم/شهر بينما قدرتك المريحة $capacityStr درهم. أكبر فرصة: $topLeakName."
-            GoalFeasibility.AGGRESSIVE -> "المبلغ والمدة الحاليين قاصحين على الميزانية — يحتاج $requiredStr درهم/شهر بينما الهامش $capacityStr درهم. الأفضل مد المدة أو تقليص $topLeakName."
-            GoalFeasibility.UNSAFE_NOW -> "قبل ما نسرعو فهاد الهدف، خاصنا نرجعو مساحة آمنة فالشهر. التدفق الحالي ما يسمحش بقسط إضافي ثابت."
+            GoalFeasibility.COMFORTABLE -> "الهدف داخل فالقدرة ديالك بهامش مريح (قسط $requiredStr درهم/شهر)."
+            GoalFeasibility.FEASIBLE -> "الهدف واقعي — يحتاج $requiredStr درهم/شهر وهامشك المريح $capacityStr درهم."
+            GoalFeasibility.TIGHT -> "الهدف ممكن لكن ضاغط — يحتاج $requiredStr درهم. أكبر فرصة: $topLeakName."
+            GoalFeasibility.AGGRESSIVE -> "الخطة قاصحة ($requiredStr درهم/شهر). الأفضل مد المدة أو خفض $topLeakName."
+            GoalFeasibility.UNSAFE_NOW -> "الأولوية استرجاع هامش أمان شهري قبل التفكير في قسط إضافي ثابت."
         }
 
         val fr = when (feasibility) {
-            GoalFeasibility.COMFORTABLE -> "L'objectif est dans vos capacités avec une marge confortable. $requiredStr DH/mois est en deçà de vos possibilités. Continuez sans vous poser trop de questions."
-            GoalFeasibility.FEASIBLE -> "Objectif réaliste — il faut $requiredStr DH/mois et votre capacité confort est $capacityStr DH. Il suffit d'être régulier."
-            GoalFeasibility.TIGHT -> "L'objectif est possible mais le plan va vous serrer. Il faut $requiredStr DH/mois alors que votre capacité est $capacityStr DH. Meilleure opportunité : $topLeakNameFr."
-            GoalFeasibility.AGGRESSIVE -> "Montant et délai actuels sont trop exigeants — $requiredStr DH/mois requis pour $capacityStr DH de marge réelle. Mieux vaut allonger le délai ou réduire $topLeakNameFr."
-            GoalFeasibility.UNSAFE_NOW -> "Avant d'accélérer sur cet objectif, il faut retrouver une marge sécurisée chaque mois. Le flux actuel ne permet pas une mensualité supplémentaire fixe."
+            GoalFeasibility.COMFORTABLE -> "L'objectif est dans vos capacités ($requiredStr DH/mois très accessible)."
+            GoalFeasibility.FEASIBLE -> "Objectif réaliste — besoin de $requiredStr DH/mois pour une capacité de $capacityStr DH."
+            GoalFeasibility.TIGHT -> "Objectif tendu — $requiredStr DH/mois. Meilleure opportunité : $topLeakNameFr."
+            GoalFeasibility.AGGRESSIVE -> "Plan exigeant ($requiredStr DH/mois). Mieux vaut allonger ou réduire $topLeakNameFr."
+            GoalFeasibility.UNSAFE_NOW -> "Priorité : retrouver une sécurité mensuelle avant toute épargne fixe."
         }
 
         return Pair(ar, fr)
@@ -586,7 +791,7 @@ object FinancialDiagnosticEngine {
 
         if (answers.housingCentimes > 0) { ar += "🏠 الكراء أو قرض السكن: أساس الاستقرار"; fr += "🏠 Loyer ou crédit logement : pilier de stabilité" }
         if (answers.healthCentimes > 0) { ar += "🏥 الصحة والتطبيب: أولوية قصوى لا تقشف فيها"; fr += "🏥 Santé et pharmacie : priorité absolue" }
-        if (answers.groceriesCentimes > 0) { ar += "🥗 التقضية المنزلية: أساس الصحة وموفر 60% مقارنة بالزنقة"; fr += "🥗 Courses alimentaires : base de santé, 60% moins cher" }
+        if (answers.groceriesCentimes > 0) { ar += "🥗 التقضية المنزلية: أساس الصحة والتوفير العائلي"; fr += "🥗 Courses maison : base de santé et d'économie" }
         if (answers.educationCentimes > 0) { ar += "📚 الدراسة والتعليم: استثمار لا نمسه"; fr += "📚 Scolarité : investissement sacré" }
         if (answers.utilitiesCentimes > 0) { ar += "⚡ الفواتير الأساسية: نرشد بعقل ولا نقطع"; fr += "⚡ Factures essentielles : à optimiser, jamais couper" }
         if (answers.familyCommitmentCentimes > 0) { ar += "👨‍👩‍👧 التزامات العائلة: حاجة محمية ومصنفة أساسية"; fr += "👨‍👩‍👧 Obligations familiales : poste protégé" }
@@ -656,6 +861,7 @@ object FinancialDiagnosticEngine {
         val (protectedAr, protectedFr) = buildProtectedAreas(answers)
         val protectedPrefs = answers.userProtectedPreferences
         val actions = generateTopActions(tags, leaks, metrics, goal, protectedPrefs)
+        val adviceCards = generatePersonalizedAdviceCards(answers, tags, leaks, metrics, goal)
         val contentIds = scoreContentIds(tags, goalPreset)
         val (austerityAr, austerityFr) = buildAusteritySteps(leaks, goal, metrics)
 
@@ -672,6 +878,7 @@ object FinancialDiagnosticEngine {
             protectedAreasFr = protectedFr,
             planOptions = plans,
             topActions = actions,
+            adviceCards = adviceCards,
             recommendedContentIds = contentIds,
             austerityStepsAr = austerityAr,
             austerityStepsFr = austerityFr

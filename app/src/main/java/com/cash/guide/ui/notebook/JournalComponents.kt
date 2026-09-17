@@ -39,7 +39,9 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import com.cash.guide.domain.MoneyMath
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -105,8 +107,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.KeyboardCapitalization
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextDirection
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
@@ -217,6 +220,93 @@ fun JournalRuledDocument(
                 )
             }
         }
+    }
+}
+
+/**
+ * Ruled document with tactile paper texture and 29dp horizontal rules that scroll with content in a virtualized LazyColumn.
+ * Ideal for screens with large or dynamic lists of items (History, Checklists, Groups) allowing LazyList item recycling.
+ */
+@Composable
+fun JournalLazyRuledDocument(
+    modifier: Modifier = Modifier,
+    listState: LazyListState = rememberLazyListState(),
+    clearFocusOnTap: Boolean = false,
+    contentPadding: PaddingValues = PaddingValues(0.dp),
+    content: LazyListScope.() -> Unit
+) {
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (listState.isScrollInProgress && clearFocusOnTap) {
+            focusManager.clearFocus()
+            keyboardController?.hide()
+        }
+    }
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(JournalPaper)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                enabled = clearFocusOnTap
+            ) {
+                focusManager.clearFocus()
+                keyboardController?.hide()
+            }
+    ) {
+        LazyColumn(
+            state = listState,
+            contentPadding = contentPadding,
+            modifier = Modifier
+                .fillMaxSize()
+                .drawBehind {
+                    // 1. Subtle tactile paper grain / flecks
+                    val dotColor = JournalInk.copy(alpha = 0.022f)
+                    var px = 18f
+                    while (px < size.width) {
+                        var py = 22f
+                        while (py < size.height) {
+                            drawCircle(
+                                color = dotColor,
+                                radius = 0.9f,
+                                center = Offset(px, py)
+                            )
+                            py += 64f
+                        }
+                        px += 48f
+                    }
+
+                    // 2. 29dp Horizontal Rules synchronized with LazyList scroll
+                    val rowHeightPx = JournalRuleSpacing.roundToPx().toFloat()
+                    if (rowHeightPx > 0f) {
+                        val firstItem = listState.layoutInfo.visibleItemsInfo.firstOrNull()
+                        val scrollOffset = if (firstItem != null) {
+                            val mod = (firstItem.offset % rowHeightPx)
+                            if (mod <= 0f) mod else mod - rowHeightPx
+                        } else {
+                            0f
+                        }
+
+                        var y = scrollOffset + rowHeightPx
+                        while (y <= size.height) {
+                            if (y >= 0f) {
+                                drawLine(
+                                    color = JournalRule.copy(alpha = 0.35f),
+                                    start = Offset(0f, y),
+                                    end = Offset(size.width, y),
+                                    strokeWidth = 0.6.dp.toPx()
+                                )
+                            }
+                            y += rowHeightPx
+                        }
+                    }
+                },
+            content = content
+        )
     }
 }
 
@@ -422,6 +512,7 @@ fun JournalEntryRow(
                     fontSize = if (isArabicScript(titleValue.text) || isRtl) 14.5.sp else 15.sp,
                     fontWeight = FontWeight.Medium,
                     color = JournalInk,
+                    textAlign = TextAlign.Start,
                     platformStyle = NoFontPadding,
                     textDirection = if (isArabicScript(titleValue.text)) TextDirection.Rtl else TextDirection.ContentOrLtr
                 ),
@@ -501,6 +592,7 @@ fun JournalEntryRow(
                     fontSize = 15.5.sp,
                     fontWeight = FontWeight.Normal,
                     color = amountTextColor,
+                    textAlign = TextAlign.End,
                     platformStyle = NoFontPadding
                 ),
                 cursorBrush = SolidColor(JournalInk),
@@ -515,13 +607,14 @@ fun JournalEntryRow(
                     }
                 ),
                 decorationBox = { innerTextField ->
-                    Box(contentAlignment = Alignment.CenterStart) {
+                    Box(contentAlignment = Alignment.CenterEnd) {
                         if (amountValue.text.isEmpty()) {
                             Text(
                                 text = "0",
                                 fontFamily = PatrickHandFamily,
                                 fontSize = 15.5.sp,
                                 fontWeight = FontWeight.Normal,
+                                textAlign = TextAlign.End,
                                 color = JournalMutedInk.copy(alpha = if (isAmountActive) 0.50f else 0.45f),
                                 style = TextStyle(platformStyle = NoFontPadding)
                             )
@@ -2659,7 +2752,7 @@ fun JournalSectionBadge(
                     color = badgeColor
                 )
             },
-        contentAlignment = if (isRtl) Alignment.CenterEnd else Alignment.CenterStart
+        contentAlignment = Alignment.CenterStart
     ) {
         Row(
             modifier = Modifier
@@ -4718,15 +4811,7 @@ fun NotebookActivityRow(
                     )
                 }
                 is RecentActivityItem.ChecklistActivity, is RecentActivityItem.NoteActivity -> {
-                    Text(
-                        text = if (isRtl) "←" else "→",
-                        fontFamily = PatrickHandFamily,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = JournalMutedInk.copy(alpha = 0.70f),
-                        style = TextStyle(platformStyle = NoFontPadding),
-                        modifier = Modifier.journalBaselineOnRule()
-                    )
+                    // Clean trailing layout with 3-dots menu
                 }
             }
 

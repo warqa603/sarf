@@ -1,4 +1,4 @@
-﻿package com.cash.guide.ui.components
+package com.cash.guide.ui.components
 
 import android.Manifest
 import android.app.Activity
@@ -130,6 +130,7 @@ fun AiVoiceInputDialog(
                             if (target == AiVoiceInputTarget.CHECKLIST) {
                                 val result = GeminiDarijaService.parseChecklistFromDarija(text)
                                 if (result != null && result.items.isNotEmpty()) {
+                                    creditManager.consumeCredit()
                                     extractedChecklistResult = result
                                     flowStep = VoiceFlowStep.REVIEW_CHECKLIST
                                 } else {
@@ -139,6 +140,7 @@ fun AiVoiceInputDialog(
                             } else {
                                 val result = GeminiDarijaService.parseCalculationFromDarija(text)
                                 if (result != null && result.entries.isNotEmpty()) {
+                                    creditManager.consumeCredit()
                                     extractedCalculationResult = result
                                     flowStep = VoiceFlowStep.REVIEW_CALCULATION
                                 } else {
@@ -147,12 +149,18 @@ fun AiVoiceInputDialog(
                                 }
                             }
                         } catch (e: Exception) {
-                            errorMessage = "حدث خطأ في الاتصال بالذكاء الاصطناعي"
+                            errorMessage = "حدث خطأ في الاتصال بالذكاء الاصطناعي: ${e.message}"
                             flowStep = VoiceFlowStep.ERROR
                         }
                     }
                 }
             }
+        }
+    }
+
+    DisposableEffect(speechHelper) {
+        onDispose {
+            speechHelper.destroy()
         }
     }
 
@@ -251,7 +259,7 @@ fun AiVoiceInputDialog(
                         }
 
                         Text(
-                            text = "سلاو ليك المحاولات اليومية (5/5) ⏳",
+                            text = "سلاو ليك المحاولات اليومية (3/3) ⏳",
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = Color(0xFFF57F17),
@@ -261,7 +269,7 @@ fun AiVoiceInputDialog(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         Text(
-                            text = "تفرج فإشهار فيديو قصير (15-30 ثانية) وربح 5 محاولات إضافية فوراً لتسجيل السلعة والحسابات!",
+                            text = "تفرج فإشهار فيديو قصير (15-30 ثانية) وربح 3 محاولات إضافية فوراً لتسجيل السلعة والحسابات!",
                             fontSize = 13.5.sp,
                             color = JournalInk,
                             textAlign = TextAlign.Center,
@@ -277,13 +285,18 @@ fun AiVoiceInputDialog(
                                 .fillMaxWidth()
                                 .clickable {
                                     if (activity != null) {
-                                        adMobManager.showRewardedAd(
-                                            activity = activity,
-                                            onRewardEarned = {
-                                                creditManager.addRewardCredits(5)
-                                                flowStep = VoiceFlowStep.LISTENING
-                                            }
-                                        )
+                                        if (adMobManager.isRewardedReady.value) {
+                                            adMobManager.showRewardedAd(
+                                                activity = activity,
+                                                onRewardEarned = {
+                                                    creditManager.addRewardCredits(3)
+                                                    flowStep = VoiceFlowStep.LISTENING
+                                                }
+                                            )
+                                        } else {
+                                            android.widget.Toast.makeText(context, "الإعلان غير جاهز بعد، المرجو المحاولة مرة أخرى", android.widget.Toast.LENGTH_SHORT).show()
+                                            adMobManager.loadRewardedAd()
+                                        }
                                     }
                                 }
                         ) {
@@ -300,7 +313,7 @@ fun AiVoiceInputDialog(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "مشاهدة إعلان وربح 5 محاولات 🎁",
+                                    text = "مشاهدة إعلان وربح 3 محاولات 🎁",
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.5.sp

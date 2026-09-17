@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ModalBottomSheetDefaults
+import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -61,7 +61,7 @@ fun DiagnosticSimulatorSheet(
                     .background(JournalMutedInk.copy(alpha = 0.35f))
             )
         },
-        properties = ModalBottomSheetDefaults.properties(shouldDismissOnBackPress = true)
+        properties = ModalBottomSheetProperties(shouldDismissOnBackPress = true)
     ) {
         Column(
             modifier = Modifier

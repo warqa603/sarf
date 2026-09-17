@@ -16,7 +16,7 @@ data class ParsedChecklist(
 
 object ChecklistLinkHelper {
 
-    private const val HTTPS_BASE_URL = "https://amine603.github.io/sarf/checklist/"
+    private const val HTTPS_BASE_URL = "https://warqa603.github.io/sarf/checklist/"
     private const val CUSTOM_SCHEME = "sarf"
     private const val CUSTOM_HOST = "checklist"
 
@@ -124,7 +124,7 @@ object ChecklistLinkHelper {
     }
 
     /**
-     * Parses an incoming deep link URL string (either https://amine603.github.io/sarf/checklist?... or sarf://checklist?...).
+     * Parses an incoming deep link URL string (either https://warqa603.github.io/sarf/checklist?... or sarf://checklist?...).
      */
     fun parseDeepLink(url: String): ParsedChecklist? {
         val uri = try { java.net.URI(url) } catch (_: Exception) { null }
@@ -133,7 +133,7 @@ object ChecklistLinkHelper {
         val path = uri?.path ?: ""
 
         val isHttpsMatch = (scheme == "https" || scheme == "http") && (
-            ((host == "amine603.github.io") && (path.startsWith("/sarf/checklist") || path.startsWith("/sarf") || url.contains("amine603.github.io/sarf"))) ||
+            ((host == "warqa603.github.io") && (path.startsWith("/sarf/checklist") || path.startsWith("/sarf") || url.contains("warqa603.github.io/sarf"))) ||
             ((host == "sarf.app" || host == "www.sarf.app") && (path.startsWith("/checklist") || url.contains("sarf.app/checklist")))
         )
         val isCustomSchemeMatch = scheme == CUSTOM_SCHEME && (host == CUSTOM_HOST || path.contains(CUSTOM_HOST) || url.startsWith("sarf://checklist"))

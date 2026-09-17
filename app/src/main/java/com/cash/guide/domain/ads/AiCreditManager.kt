@@ -27,8 +27,10 @@ class AiCreditManager(context: Context) {
     private fun checkAndResetDailyCredits() {
         val today = getTodayDateString()
         val lastDate = prefs.getString(KEY_LAST_RESET_DATE, "")
-        if (lastDate != today) {
-            // New day: grant daily free credits
+        val currentPrefsCredits = prefs.getInt(KEY_CREDITS, DAILY_FREE_CREDITS)
+        
+        if (lastDate != today || currentPrefsCredits > DAILY_FREE_CREDITS) {
+            // New day or needs correction: grant daily free credits
             prefs.edit()
                 .putString(KEY_LAST_RESET_DATE, today)
                 .putInt(KEY_CREDITS, DAILY_FREE_CREDITS)
@@ -86,9 +88,9 @@ class AiCreditManager(context: Context) {
         private const val KEY_CREDITS = "credits_count"
         private const val KEY_LAST_RESET_DATE = "last_reset_date"
 
-        const val DAILY_FREE_CREDITS = 5
-        const val REWARD_CREDITS_PER_AD = 5
-        const val IS_TEST_UNLIMITED = true
+        const val DAILY_FREE_CREDITS = 3
+        const val REWARD_CREDITS_PER_AD = 3
+        val IS_TEST_UNLIMITED: Boolean = false
 
         @Volatile
         private var instance: AiCreditManager? = null

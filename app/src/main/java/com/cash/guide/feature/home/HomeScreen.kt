@@ -127,11 +127,18 @@ import com.cash.guide.data.TemplateRepository
 import com.cash.guide.data.db.CalculationWithItems
 import com.cash.guide.data.db.ReminderRecurrence
 
-private tailrec fun Context.findActivity(): Activity? = when (this) {
-    is Activity -> this
-    is LocalizedContextWrapper -> originalActivity ?: baseContext.findActivity()
-    is ContextWrapper -> baseContext.findActivity()
-    else -> null
+private fun Context.findActivity(): Activity? {
+    var ctx: Context? = this
+    while (ctx != null) {
+        if (ctx is Activity) return ctx
+        if (ctx is LocalizedContextWrapper && ctx.originalActivity != null) return ctx.originalActivity
+        if (ctx is ContextWrapper) {
+            ctx = ctx.baseContext
+        } else {
+            break
+        }
+    }
+    return null
 }
 
 @Composable
@@ -502,11 +509,11 @@ fun HomeScreen(
                 },
                 onNewChecklist = {
                     viewModel.setFabExpanded(false)
-                    onOpenChecklist()
+                    onNewChecklist()
                 },
                 onNewNote = {
                     viewModel.setFabExpanded(false)
-                    onOpenNotes()
+                    onNewNote()
                 },
                 onNewReminder = {
                     viewModel.setFabExpanded(false)
@@ -920,33 +927,31 @@ private fun CategoryQuickCard(
             ),
         contentAlignment = Alignment.Center
     ) {
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            Row(
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            // Colored dot permanently representing the category at start
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 3.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                // Colored dot permanently representing the category on the left
-                Box(
-                    modifier = Modifier
-                        .size(6.dp)
-                        .background(color = dotColor, shape = CircleShape)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = title,
-                    fontFamily = resolveJournalFont(title, isRtl),
-                    fontSize = if (isArabicScript(title) || isRtl) 11.5.sp else 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = JournalWritingInk,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
-                    style = TextStyle(platformStyle = NoFontPadding)
-                )
-            }
+                    .size(6.dp)
+                    .background(color = dotColor, shape = CircleShape)
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = title,
+                fontFamily = resolveJournalFont(title, isRtl),
+                fontSize = if (isArabicScript(title) || isRtl) 11.5.sp else 12.sp,
+                fontWeight = FontWeight.Medium,
+                color = JournalWritingInk,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis,
+                style = TextStyle(platformStyle = NoFontPadding)
+            )
         }
     }
 }

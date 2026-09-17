@@ -137,8 +137,8 @@ android {
     // Play Store: Bundle configuration (recommended for smaller downloads)
     bundle {
         language {
-            // Enable language splits to reduce APK size
-            enableSplit = true
+            // Disabled: In-app language picker requires all locales to be bundled in the APK
+            enableSplit = false
         }
         density {
             // Enable density splits (optional, can reduce APK size)

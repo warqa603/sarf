@@ -79,19 +79,14 @@ class SettingsViewModel(
     fun selectLanguage(languageCode: String) {
         viewModelScope.launch {
             settingsRepository.setAppLanguage(languageCode)
-            val locale = when (languageCode) {
-                "dar" -> java.util.Locale("ar", "MA")
-                "ar" -> java.util.Locale("ar")
-                "en" -> java.util.Locale("en")
-                else -> java.util.Locale("fr")
-            }
-            java.util.Locale.setDefault(locale)
             val appLocaleTag = when (languageCode) {
                 "dar" -> "ar-MA"
                 "ar" -> "ar"
                 "en" -> "en"
                 else -> "fr"
             }
+            val locale = java.util.Locale.forLanguageTag(appLocaleTag)
+            java.util.Locale.setDefault(locale)
             val appLocale = LocaleListCompat.forLanguageTags(appLocaleTag)
             AppCompatDelegate.setApplicationLocales(appLocale)
         }
@@ -135,7 +130,7 @@ class SettingsViewModel(
                 val intent = Intent(Intent.ACTION_SEND).apply {
                     type = "application/octet-stream"
                     putExtra(Intent.EXTRA_STREAM, shareUri)
-                    putExtra(Intent.EXTRA_SUBJECT, "Sarf Backup (.calc)")
+                    putExtra(Intent.EXTRA_SUBJECT, "Warqa Backup (.calc)")
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
                 val chooser = Intent.createChooser(intent, chooserTitle).apply {

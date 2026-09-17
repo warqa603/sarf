@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sarf • قائمة الحسابات والتشيك ليست</title>
+    <title>Warqa • ورقة - قائمة وتكوشي الحسابات</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -231,7 +231,7 @@
 <body>
     <div class="container">
         <header class="brand-header">
-            <h1>Sarf • كناش الحسابات المغربي 📒</h1>
+            <h1>Warqa • ورقة 📒</h1>
             <p>قائمة مشتريات مشتركة</p>
         </header>
 
@@ -240,7 +240,7 @@
         <div class="cta-box">
             <button class="btn-open" id="openAppBtn" onclick="launchApp()">
                 <span>📱</span>
-                <span>فتح القائمة في تطبيق صرف</span>
+                <span>فتح القائمة في تطبيق ورقة</span>
             </button>
         </div>
 
@@ -255,8 +255,8 @@
         </div>
 
         <footer class="footer">
-            <p>تم الإنشاء بواسطة تطبيق <strong>صرف (Sarf)</strong></p>
-            <p style="margin-top: 4px;">تطبيق الحسابات المغربي بدون إنترنت 100%</p>
+            <p>تم الإنشاء بواسطة تطبيق <strong>ورقة (Warqa)</strong></p>
+            <p style="margin-top: 4px;">دفتر الحسابات والمذكرات المغربي بدون إنترنت 100%</p>
         </footer>
     </div>
 
@@ -301,7 +301,7 @@
 
         // Render checklist in UI
         document.getElementById('checklistTitle').textContent = checklistData.title;
-        document.title = checklistData.title + " • Sarf";
+        document.title = checklistData.title + " • Warqa";
 
         const itemsListEl = document.getElementById('itemsList');
         itemsListEl.innerHTML = '';

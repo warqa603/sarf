@@ -69,7 +69,7 @@ object ChecklistShareHelper {
             }
         }
 
-        sb.append("\n🔗 افتح القائمة وتكوشيها في تطبيق صرف:\n")
+        sb.append("\n🔗 افتح القائمة وتكوشيها في تطبيق ورقة:\n")
         sb.append(deepLink)
 
         val sendIntent = Intent(Intent.ACTION_SEND).apply {
@@ -418,7 +418,7 @@ object ChecklistShareHelper {
             textSize = 28f
             textAlign = Paint.Align.CENTER
         }
-        canvas.drawText("Sarf • كناش الحسابات المغربي", width / 2f, footerY, footerPaint)
+        canvas.drawText("Warqa • ورقة وستيلو فـ جيبك", width / 2f, footerY, footerPaint)
 
         return bitmap
     }

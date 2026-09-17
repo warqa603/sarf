@@ -22,6 +22,7 @@ import java.util.Calendar
 
 enum class SavingsTab {
     PLAN,
+    DIAGNOSTIC,
     TIPS
 }
 
@@ -551,7 +552,7 @@ class SavingsViewModel(
             _questionnaireAnswers.value = answers
             _isQuestionnaireOpen.value = false
             _targetGoalForQuestionnaire.value = null
-            _selectedTab.value = SavingsTab.PLAN
+            _selectedTab.value = SavingsTab.DIAGNOSTIC
         }
     }
 

@@ -37,6 +37,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.res.stringResource
+import com.cash.guide.R
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -994,7 +996,7 @@ private fun HisabiHomeScreen(
             ) {
                 Column {
                     Text(
-                        text = "حسابي",
+                        text = stringResource(R.string.app_name),
                         style = TextStyle(
                             fontFamily = TajawalFamily,
                             fontSize = 21.sp,
@@ -1004,7 +1006,7 @@ private fun HisabiHomeScreen(
                         modifier = Modifier.baselineOnPaperRule()
                     )
                     Text(
-                        text = "دفتر الحساب والصرف المغربي",
+                        text = stringResource(R.string.app_tagline),
                         style = arabicWritingStyle(color = MutedInk, sizeSp = 13.5f),
                         modifier = Modifier.baselineOnPaperRule()
                     )

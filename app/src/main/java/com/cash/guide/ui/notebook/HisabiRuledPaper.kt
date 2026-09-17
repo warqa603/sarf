@@ -152,6 +152,30 @@ fun Modifier.journalTextOnRules(
     }
 
 /**
+ * Ensures a card, box, or custom container's total measured height snaps to an exact multiple
+ * of the notebook rule spacing [lineHeight].
+ * This guarantees that elements placed after this container land 100% in phase with
+ * the background blue notebook rules.
+ */
+fun Modifier.snapHeightToRule(
+    lineHeight: Dp = JournalRuleSpacing
+): Modifier = this.layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    val rulePx = lineHeight.roundToPx()
+    if (rulePx <= 0) {
+        layout(placeable.width, placeable.height) {
+            placeable.placeRelative(0, 0)
+        }
+    } else {
+        val remainder = placeable.height % rulePx
+        val snappedHeight = if (remainder == 0) placeable.height else placeable.height + (rulePx - remainder)
+        layout(placeable.width, snappedHeight) {
+            placeable.placeRelative(0, 0)
+        }
+    }
+}
+
+/**
  * Dedicated component for text with an organic highlighter marker stroke:
  * 1. Measures text at its natural glyph height (with font padding excluded).
  * 2. Positions the measured FirstBaseline directly on the paper rule (rowHeight).

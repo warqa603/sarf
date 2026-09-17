@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Brand and navigation -->
-    <string name="app_name">Hssabi</string>
+    <string name="app_name">Warqa</string>
     <string name="app_tagline">Calculation notebook</string>
     <string name="nav_home">Home</string>
     <string name="nav_history">History</string>
@@ -128,7 +128,7 @@
     <string name="action_duplicate">Duplicate</string>
     <string name="action_share_image">Share as image</string>
     <string name="share_chooser_title">Share calculation</string>
-    <string name="share_footer_watermark">Created with Hssabi</string>
+    <string name="share_footer_watermark">Created with Warqa</string>
     <string name="share_total_label">TOTAL</string>
     <string name="share_empty_items">No items</string>
     <string name="share_article_prefix">Item</string>
@@ -259,7 +259,7 @@
     <string name="backup_toast_export_success">Backup file .calc created successfully!</string>
     <string name="backup_toast_restore_success">Data restored successfully!</string>
     <string name="backup_toast_error">Error during operation. Please verify the .calc file.</string>
-    <string name="backup_toast_share_title">Share Hssabi backup</string>
+    <string name="backup_toast_share_title">Share Warqa backup</string>
     <string name="home_greeting_prefix">Hello </string>
     <string name="home_greeting_morning">Good morning</string>
     <string name="home_greeting_evening">Good evening</string>
@@ -268,8 +268,8 @@
     <string name="edit_profile_placeholder">Enter your name...</string>
     <string name="edit_profile_save">Save</string>
     <string name="edit_profile_cancel">Cancel</string>
-    <string name="share_watermark">Made with Hssabi</string>
-    <string name="share_brand">Hssabi • Notebook</string>
+    <string name="share_watermark">Made with Warqa</string>
+    <string name="share_brand">Warqa • Notebook</string>
     <string name="history_month_empty">No calculations recorded in %1$s</string>
 
     <!-- Export options and formats -->
@@ -382,4 +382,31 @@
     <string name="note_voice_hint">🎙️ Quick voice dictation</string>
     <string name="note_title_hint">Note title...</string>
     <string name="note_body_hint">Write your thoughts, ideas or memos here... ✍️\nYou can also tap the mic to dictate!</string>
+    <string name="note_action_copy">Copy</string>
+    <string name="note_action_paste">Paste</string>
+    <string name="note_action_cut">Cut</string>
+    <string name="note_action_select_all">Select all</string>
+    <string name="note_action_undo">Undo</string>
+    <string name="note_action_redo">Redo</string>
+    <string name="note_action_checkbox">Checkbox</string>
+    <string name="note_action_bullet">Bullet</string>
+    <string name="note_action_number">Numbering</string>
+    <string name="note_action_divider">Divider</string>
+    <string name="note_action_timestamp">Current time</string>
+    <string name="note_toast_copied">Copied to clipboard</string>
+    <string name="note_toast_pasted">Pasted from clipboard</string>
+    <string name="note_toast_cut">Cut to clipboard</string>
+    <string name="note_toast_duplicated">Note duplicated</string>
+    <string name="note_toast_empty_clipboard">Clipboard is empty</string>
+    <string name="note_share_as_image">Share as image</string>
+    <string name="note_share_as_text">Share as text</string>
+    <string name="note_copy_all">Copy whole note</string>
+    <string name="note_duplicate">Duplicate note</string>
+    <string name="note_clear_content">Clear text</string>
+    <string name="note_stats_format">%1$d words • %2$d chars</string>
+    <string name="note_share_error">Unable to share note</string>
+    <string name="note_action_highlight">Highlight</string>
+    <string name="note_voice_dictation_insert">Insert ✓</string>
+    <string name="note_voice_dictation_cancel">Cancel ✕</string>
+    <string name="permission_mic_rationale">Microphone permission is required for voice dictation.</string>
 </resources>

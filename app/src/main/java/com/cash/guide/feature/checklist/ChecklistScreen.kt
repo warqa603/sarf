@@ -105,7 +105,8 @@ import com.cash.guide.ui.notebook.JournalMutedInk
 import com.cash.guide.ui.notebook.JournalPaper
 import com.cash.guide.ui.notebook.JournalRule
 import com.cash.guide.ui.notebook.JournalRuleSpacing
-import com.cash.guide.ui.notebook.JournalRuledDocument
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.cash.guide.ui.notebook.JournalLazyRuledDocument
 import com.cash.guide.ui.notebook.JournalTextKeyboardDock
 import com.cash.guide.ui.notebook.JournalWritingInk
 import com.cash.guide.ui.notebook.NoFontPadding
@@ -187,6 +188,15 @@ fun ChecklistScreen(
     val totalCount = current?.totalCount ?: 0
     val completedCount = current?.completedCount ?: 0
     val isAllCompleted = totalCount > 0 && completedCount == totalCount
+
+    val adMobManager = remember { com.cash.guide.domain.ads.AdMobManager.getInstance(context) }
+    var initialLoadDone by remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(state.titleInput.text, current?.sortedItems) {
+        if (initialLoadDone) {
+            adMobManager.reportModification()
+        }
+        initialLoadDone = true
+    }
 
     Box(
         modifier = Modifier
@@ -443,7 +453,7 @@ fun ChecklistScreen(
                 }
             }
 
-            JournalRuledDocument(
+            JournalLazyRuledDocument(
                 listState = listState,
                 clearFocusOnTap = true,
                 modifier = Modifier
@@ -451,53 +461,60 @@ fun ChecklistScreen(
                     .fillMaxWidth()
             ) {
                 // Always have 1 notebook rule at top: either "Supprimer les cochés" or an empty spacer rule
-                if (completedCount > 0) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(JournalRuleSpacing)
-                            .padding(horizontal = 14.dp),
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        val deleteCheckedText = if (isRtl) "حذف المشطوبين ($completedCount)" else "Supprimer les cochés ($completedCount)"
-                        Text(
-                            text = deleteCheckedText,
-                            fontFamily = resolveJournalFont(deleteCheckedText, isRtl),
-                            fontSize = if (isRtl) 13.sp else 13.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = ColorCoral,
-                            style = TextStyle(platformStyle = NoFontPadding),
+                item(key = "top_rule") {
+                    if (completedCount > 0) {
+                        Row(
                             modifier = Modifier
-                                .journalBaselineOnRule()
-                                .clickable { viewModel.deleteCompletedItems() }
-                        )
+                                .fillMaxWidth()
+                                .height(JournalRuleSpacing)
+                                .padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            val deleteCheckedText = if (isRtl) "حذف المشطوبين ($completedCount)" else "Supprimer les cochés ($completedCount)"
+                            Text(
+                                text = deleteCheckedText,
+                                fontFamily = resolveJournalFont(deleteCheckedText, isRtl),
+                                fontSize = if (isRtl) 13.sp else 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = ColorCoral,
+                                style = TextStyle(platformStyle = NoFontPadding),
+                                modifier = Modifier
+                                    .journalBaselineOnRule()
+                                    .clickable { viewModel.deleteCompletedItems() }
+                            )
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.height(JournalRuleSpacing))
                     }
-                } else {
-                    Spacer(modifier = Modifier.height(JournalRuleSpacing))
                 }
 
                 if (items.isEmpty()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(JournalRuleSpacing)
-                            .padding(horizontal = 14.dp),
-                        verticalAlignment = Alignment.Bottom
-                    ) {
-                        val emptyHint = if (isRtl) "أدخل عنصراً بالأسفل للبدء في كتابة قائمتك ✍️" else "Tapez un article ci-dessous pour commencer votre liste ✍️"
-                        Text(
-                            text = emptyHint,
-                            fontFamily = resolveJournalFont(emptyHint, isRtl),
-                            fontSize = if (isRtl) 14.5.sp else 15.sp,
-                            color = JournalMutedInk.copy(alpha = 0.50f),
-                            style = TextStyle(platformStyle = NoFontPadding),
-                            modifier = Modifier.journalBaselineOnRule()
-                        )
+                    item(key = "empty_hint") {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(JournalRuleSpacing)
+                                .padding(horizontal = 14.dp),
+                            verticalAlignment = Alignment.Bottom
+                        ) {
+                            val emptyHint = if (isRtl) "أدخل عنصراً بالأسفل للبدء في كتابة قائمتك ✍️" else "Tapez un article ci-dessous pour commencer votre liste ✍️"
+                            Text(
+                                text = emptyHint,
+                                fontFamily = resolveJournalFont(emptyHint, isRtl),
+                                fontSize = if (isRtl) 14.5.sp else 15.sp,
+                                color = JournalMutedInk.copy(alpha = 0.50f),
+                                style = TextStyle(platformStyle = NoFontPadding),
+                                modifier = Modifier.journalBaselineOnRule()
+                            )
+                        }
                     }
                 }
 
-                items.forEachIndexed { index, item ->
+                itemsIndexed(
+                    items = items,
+                    key = { _, item -> item.id }
+                ) { index, item ->
                     val rowNumber = index + 1
                     val dotColor = rowDotColors[index % rowDotColors.size]
 
@@ -641,31 +658,37 @@ fun ChecklistScreen(
 
                 // Delete list action at the bottom of the list
                 if (items.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(JournalRuleSpacing))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(JournalRuleSpacing)
-                            .padding(horizontal = 14.dp),
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        val deleteListText = if (isRtl) "حذف هذه القائمة" else "Supprimer cette liste"
-                        Text(
-                            text = deleteListText,
-                            fontFamily = resolveJournalFont(deleteListText, isRtl),
-                            fontSize = if (isRtl) 13.sp else 13.5.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = ColorCoral.copy(alpha = 0.75f),
-                            style = TextStyle(platformStyle = NoFontPadding),
-                            modifier = Modifier
-                                .journalBaselineOnRule()
-                                .clickable { showDeleteConfirmDialog = true }
-                        )
+                    item(key = "delete_list_action") {
+                        Column {
+                            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(JournalRuleSpacing)
+                                    .padding(horizontal = 14.dp),
+                                verticalAlignment = Alignment.Bottom,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                val deleteListText = if (isRtl) "حذف هذه القائمة" else "Supprimer cette liste"
+                                Text(
+                                    text = deleteListText,
+                                    fontFamily = resolveJournalFont(deleteListText, isRtl),
+                                    fontSize = if (isRtl) 13.sp else 13.5.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = ColorCoral.copy(alpha = 0.75f),
+                                    style = TextStyle(platformStyle = NoFontPadding),
+                                    modifier = Modifier
+                                        .journalBaselineOnRule()
+                                        .clickable { showDeleteConfirmDialog = true }
+                                )
+                            }
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(JournalRuleSpacing * 3))
+                item(key = "bottom_spacer") {
+                    Spacer(modifier = Modifier.height(JournalRuleSpacing * 3))
+                }
             }
 
             AiVoiceRowContainer(

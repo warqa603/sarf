@@ -42,4 +42,23 @@ interface NoteDao {
 
     @Query("UPDATE notes SET groupId = :groupId, updatedAtEpochMs = :now WHERE id = :noteId")
     suspend fun assignNoteToGroup(noteId: String, groupId: String?, now: Long)
+
+    @Query("SELECT * FROM notes")
+    suspend fun getAllNotes(): List<NoteEntity>
+
+    @Query("DELETE FROM notes")
+    suspend fun deleteAllNotes()
+
+    @androidx.room.Transaction
+    suspend fun restoreNotes(
+        notes: List<NoteEntity>,
+        replaceExisting: Boolean
+    ) {
+        if (replaceExisting) {
+            deleteAllNotes()
+        }
+        for (note in notes) {
+            insertNote(note)
+        }
+    }
 }

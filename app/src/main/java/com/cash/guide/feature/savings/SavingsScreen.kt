@@ -4,6 +4,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -72,8 +74,10 @@ import com.cash.guide.ui.notebook.JournalWritingInk
 import com.cash.guide.ui.notebook.NoFontPadding
 import com.cash.guide.ui.notebook.PatrickHandFamily
 import com.cash.guide.ui.notebook.TajawalFamily
+import com.cash.guide.ui.notebook.arabicWritingStyle
 import com.cash.guide.ui.notebook.journalBaselineOnRule
 import com.cash.guide.ui.notebook.journalVisualOnRule
+import com.cash.guide.ui.notebook.snapHeightToRule
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -119,7 +123,7 @@ fun SavingsScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
             ) {
-                // 1. Centered 2 Tabs (Mes objectifs | Conseils) fitting between 2 lines (29dp)
+                // 1. Centered 3 Tabs (أهدافي | التحليل | المقالات) fitting between 2 lines (29dp)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -157,7 +161,7 @@ fun SavingsScreen(
                             )
                         }
 
-                        // Divider line (شلطة واحدة بين التابين)
+                        // Divider line 1
                         Box(
                             modifier = Modifier
                                 .width(1.dp)
@@ -165,23 +169,51 @@ fun SavingsScreen(
                                 .background(JournalRule.copy(alpha = 0.60f))
                         )
 
-                        // Tab 2: المقالات / Conseils
-                        val isTab2 = uiState.selectedTab == SavingsTab.TIPS
+                        // Tab 2: التحليل / Diagnostic
+                        val isTab2 = uiState.selectedTab == SavingsTab.DIAGNOSTIC
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .background(if (isTab2) HighlighterYellow.copy(alpha = 0.55f) else Color.Transparent)
+                                .clickable { viewModel.selectTab(SavingsTab.DIAGNOSTIC) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = if (isRtl) "التحليل" else "Diagnostic",
+                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                fontWeight = if (isTab2) FontWeight.Bold else FontWeight.Medium,
+                                fontSize = 13.sp,
+                                color = if (isTab2) JournalWritingInk else JournalMutedInk,
+                                style = TextStyle(platformStyle = NoFontPadding)
+                            )
+                        }
+
+                        // Divider line 2
+                        Box(
+                            modifier = Modifier
+                                .width(1.dp)
+                                .height(16.dp)
+                                .background(JournalRule.copy(alpha = 0.60f))
+                        )
+
+                        // Tab 3: المقالات / Conseils
+                        val isTab3 = uiState.selectedTab == SavingsTab.TIPS
                         Box(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
                                 .clip(RoundedCornerShape(topEnd = 5.dp, bottomEnd = 5.dp))
-                                .background(if (isTab2) HighlighterYellow.copy(alpha = 0.55f) else Color.Transparent)
+                                .background(if (isTab3) HighlighterYellow.copy(alpha = 0.55f) else Color.Transparent)
                                 .clickable { viewModel.selectTab(SavingsTab.TIPS) },
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
                                 text = if (isRtl) "المقالات" else "Conseils",
                                 fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                                fontWeight = if (isTab2) FontWeight.Bold else FontWeight.Medium,
+                                fontWeight = if (isTab3) FontWeight.Bold else FontWeight.Medium,
                                 fontSize = 13.sp,
-                                color = if (isTab2) JournalWritingInk else JournalMutedInk,
+                                color = if (isTab3) JournalWritingInk else JournalMutedInk,
                                 style = TextStyle(platformStyle = NoFontPadding)
                             )
                         }
@@ -224,6 +256,43 @@ fun SavingsScreen(
                                 onApplySuggestedDuration = { newMonths ->
                                     viewModel.applySuggestedDuration(activeGoal.id, newMonths)
                                 }
+                            )
+                        }
+                    }
+                    SavingsTab.DIAGNOSTIC -> {
+                        val activeGoal = uiState.activeGoal ?: uiState.goals.firstOrNull()
+                        if (activeGoal == null || uiState.goals.isEmpty()) {
+                            SavingsDiagnosticEmptyState(
+                                isRtl = isRtl,
+                                onStartWizard = { viewModel.openQuestionnaire(null) }
+                            )
+                        } else {
+                            if (uiState.goals.size > 1) {
+                                GoalSwitcherChips(
+                                    goals = uiState.goals,
+                                    activeGoalId = activeGoal.id,
+                                    onSelectGoal = { viewModel.selectGoal(it) },
+                                    onNewPlan = { viewModel.openQuestionnaire(null) },
+                                    isRtl = isRtl
+                                )
+                                Spacer(modifier = Modifier.height(JournalRuleSpacing))
+                            }
+
+                            SavingsDiagnosticFullSection(
+                                goal = activeGoal,
+                                diagnosis = uiState.diagnosis,
+                                fullDiagnostic = uiState.fullDiagnosticResult,
+                                aiCoachAdvice = uiState.aiCoachAdvice,
+                                isAiCoachLoading = uiState.isAiCoachLoading,
+                                isRtl = isRtl,
+                                onRequestAiCoachAdvice = { viewModel.requestAiCoachAdvice(activeGoal, isRtl) },
+                                onClearAiCoachAdvice = { viewModel.clearAiCoachAdvice() },
+                                onApplySuggestedDuration = { newMonths ->
+                                    viewModel.applySuggestedDuration(activeGoal.id, newMonths)
+                                },
+                                onOpenQuestionnaire = { viewModel.openQuestionnaire(activeGoal) },
+                                onOpenSimulator = { viewModel.openSimulator() },
+                                onOpenCheckIn = { viewModel.openMonthlyCheckIn() }
                             )
                         }
                     }
@@ -577,59 +646,58 @@ private fun HeroGoalSection(
         Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
         // --- 2. PROGRESS BAR (Rule 2) ---
-        // Progress bar sits directly on the blue line: dynamic % on left, 100% on right, bar in middle
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(JournalRuleSpacing),
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                // Left: Dynamic percentage (starts at 0%, updates to 5%, 10%, 15%, etc.)
-                Text(
-                    text = "$progressPercent%",
-                    fontFamily = PatrickHandFamily,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (progressPercent > 0) categoryColor else JournalWritingInk,
-                    modifier = Modifier.journalBaselineOnRule(),
-                    style = TextStyle(platformStyle = NoFontPadding)
-                )
+        // Progress bar sits directly on the blue line: dynamic % on start, 100% on end, bar in middle
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(JournalRuleSpacing),
+            verticalAlignment = Alignment.Bottom,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Dynamic percentage (starts at 0%, updates to 5%, 10%, 15%, etc.)
+            Text(
+                text = "$progressPercent%",
+                fontFamily = PatrickHandFamily,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (progressPercent > 0) categoryColor else JournalWritingInk,
+                modifier = Modifier.journalBaselineOnRule(),
+                style = TextStyle(platformStyle = NoFontPadding)
+            )
 
-                // Middle: Progress bar track resting on the blue line
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(8.dp)
-                        .offset(y = (-1).dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(JournalRule.copy(alpha = 0.35f))
-                ) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val barWidth = size.width * progressRatio
-                        if (barWidth > 0) {
-                            drawRoundRect(
-                                color = categoryColor,
-                                topLeft = Offset(0f, 0f),
-                                size = Size(barWidth, size.height),
-                                cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
-                            )
-                        }
+            // Middle: Progress bar track resting on the blue line
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(8.dp)
+                    .offset(y = (-1).dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(JournalRule.copy(alpha = 0.35f))
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val barWidth = size.width * progressRatio
+                    if (barWidth > 0) {
+                        val startX = if (isRtl) size.width - barWidth else 0f
+                        drawRoundRect(
+                            color = categoryColor,
+                            topLeft = Offset(startX, 0f),
+                            size = Size(barWidth, size.height),
+                            cornerRadius = CornerRadius(4.dp.toPx(), 4.dp.toPx())
+                        )
                     }
                 }
-
-                // Right: 100%
-                Text(
-                    text = "100%",
-                    fontFamily = PatrickHandFamily,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = JournalWritingInk,
-                    modifier = Modifier.journalBaselineOnRule(),
-                    style = TextStyle(platformStyle = NoFontPadding)
-                )
             }
+
+            // 100%
+            Text(
+                text = "100%",
+                fontFamily = PatrickHandFamily,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = JournalWritingInk,
+                modifier = Modifier.journalBaselineOnRule(),
+                style = TextStyle(platformStyle = NoFontPadding)
+            )
         }
 
         // na9ez star (Skip 1 blue line)
@@ -818,74 +886,72 @@ private fun HeroGoalSection(
         Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
         // --- 5. ACTION BUTTONS ROW: + Ajouter épargne & Red Delete icon ---
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            Row(
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(JournalRuleSpacing),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Button: + Ajouter épargne 💰
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(JournalRuleSpacing),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+                    .height(JournalRuleSpacing)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(HighlighterGreen.copy(alpha = 0.40f))
+                    .border(1.dp, JournalRule.copy(alpha = 0.50f), RoundedCornerShape(6.dp))
+                    .clickable(role = Role.Button, onClick = onAddDeposit)
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                // Button: + Ajouter épargne 💰
-                Box(
-                    modifier = Modifier
-                        .height(JournalRuleSpacing)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(HighlighterGreen.copy(alpha = 0.40f))
-                        .border(1.dp, JournalRule.copy(alpha = 0.50f), RoundedCornerShape(6.dp))
-                        .clickable(role = Role.Button, onClick = onAddDeposit)
-                        .padding(horizontal = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (isRtl) "+ زيد مبلغ توفير 💰" else "+ Ajouter épargne 💰",
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.5.sp,
-                        color = JournalWritingInk,
-                        style = TextStyle(platformStyle = NoFontPadding)
-                    )
-                }
+                Text(
+                    text = if (isRtl) "+ زيد مبلغ توفير 💰" else "+ Ajouter épargne 💰",
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.5.sp,
+                    color = JournalWritingInk,
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+            }
 
-                Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
-                // Edit Goal / Plan Icon button
-                Box(
-                    modifier = Modifier
-                        .size(JournalRuleSpacing)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(HighlighterYellow.copy(alpha = 0.35f))
-                        .border(1.dp, JournalRule.copy(alpha = 0.50f), RoundedCornerShape(6.dp))
-                        .clickable(role = Role.Button, onClick = onEditGoal),
-                    contentAlignment = Alignment.Center
-                ) {
-                    HisabiSketchIcon(
-                        symbol = HisabiSymbol.Pencil,
-                        contentDescription = "Edit Goal",
-                        tint = JournalWritingInk,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+            // Edit Goal / Plan Icon button
+            Box(
+                modifier = Modifier
+                    .size(JournalRuleSpacing)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(HighlighterYellow.copy(alpha = 0.35f))
+                    .border(1.dp, JournalRule.copy(alpha = 0.50f), RoundedCornerShape(6.dp))
+                    .clickable(role = Role.Button, onClick = onEditGoal),
+                contentAlignment = Alignment.Center
+            ) {
+                HisabiSketchIcon(
+                    symbol = HisabiSymbol.Pencil,
+                    contentDescription = "Edit Goal",
+                    tint = JournalWritingInk,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
 
-                Spacer(modifier = Modifier.width(8.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
-                // Delete Goal Icon button (RED icon & red tint)
-                Box(
-                    modifier = Modifier
-                        .size(JournalRuleSpacing)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(Color(0xFFE53935).copy(alpha = 0.12f))
-                        .border(1.dp, Color(0xFFE53935).copy(alpha = 0.45f), RoundedCornerShape(6.dp))
-                        .clickable(role = Role.Button, onClick = onDeleteGoal),
-                    contentAlignment = Alignment.Center
-                ) {
-                    HisabiSketchIcon(
-                        symbol = HisabiSymbol.Trash,
-                        contentDescription = "Delete Goal",
-                        tint = Color(0xFFD32F2F),
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+            // Delete Goal Icon button (RED icon & red tint)
+            Box(
+                modifier = Modifier
+                    .size(JournalRuleSpacing)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color(0xFFE53935).copy(alpha = 0.12f))
+                    .border(1.dp, Color(0xFFE53935).copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+                    .clickable(role = Role.Button, onClick = onDeleteGoal),
+                contentAlignment = Alignment.Center
+            ) {
+                HisabiSketchIcon(
+                    symbol = HisabiSymbol.Trash,
+                    contentDescription = "Delete Goal",
+                    tint = Color(0xFFD32F2F),
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
 
@@ -944,39 +1010,57 @@ private fun LivingDepositHistory(
     onDeleteDeposit: (SavingsDepositEntity) -> Unit
 ) {
     val dateFormatter = remember(isRtl) {
-        SimpleDateFormat("d MMMM yyyy", if (isRtl) Locale("ar") else Locale.FRENCH)
+        SimpleDateFormat("d MMMM yyyy", if (isRtl) Locale.forLanguageTag("ar") else Locale.FRENCH)
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        // Section Badge (height = JournalRuleSpacing = 29.dp)
-        JournalSectionBadge(
-            title = if (isRtl) "سجل التوفير" else "Historique des versements",
-            badgeColor = HighlighterGreen.copy(alpha = 0.30f),
-            trailingContent = {
-                val countText = if (isRtl) {
-                    if (deposits.size == 1) "دفعة واحدة" else "${deposits.size} دفعات"
-                } else {
-                    "${deposits.size} versement(s)"
-                }
-                Box(
-                    modifier = Modifier
-                        .height(JournalRuleSpacing)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(HighlighterGreen.copy(alpha = 0.20f))
-                        .padding(horizontal = 8.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = countText,
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 11.5.sp,
-                        color = Color(0xFF00796B),
-                        style = TextStyle(platformStyle = NoFontPadding)
-                    )
-                }
+        // Full-width Header Bar spanning edge-to-edge (chadda men jenb 7tal jenb) with green background
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(JournalRuleSpacing)
+                .clip(RoundedCornerShape(6.dp))
+                .background(HighlighterGreen.copy(alpha = 0.40f))
+                .border(1.dp, JournalRule.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Title on start (right in RTL)
+            Text(
+                text = if (isRtl) "سجل التوفير" else "Historique des versements",
+                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.5.sp,
+                color = JournalWritingInk,
+                style = TextStyle(platformStyle = NoFontPadding)
+            )
+
+            // Trailing badge: count of deposits
+            val countText = if (isRtl) {
+                if (deposits.size == 1) "دفعة واحدة" else "${deposits.size} دفعات"
+            } else {
+                "${deposits.size} versement(s)"
             }
-        )
+            Box(
+                modifier = Modifier
+                    .height(20.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(JournalPaper.copy(alpha = 0.75f))
+                    .border(0.8.dp, JournalRule.copy(alpha = 0.35f), RoundedCornerShape(4.dp))
+                    .padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = countText,
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp,
+                    color = Color(0xFF00796B),
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+            }
+        }
 
         if (deposits.isEmpty()) {
             Row(
@@ -1225,9 +1309,390 @@ private fun SavingsDiagnosticEmptyState(
 }
 
 /**
- * Full Diagnostic Section reflecting user choices, spending leaks (café, shopping, etc.),
- * budget feasibility, and a dedicated Austerity Mode (خطة التقشف).
- * 100% of text lines sit directly on the 29dp blue notebook ruled lines.
+ * Actionable Personalized Advice Card ("Ordonnance Financière")
+ * Calm, elegant notebook note styling with natural paper background, subtle ruled border,
+ * clear step numbering, and clean impact badge.
+ * Snapped to notebook blue rules via snapHeightToRule.
+ */
+@Composable
+private fun DiagnosticAdviceCardItem(
+    stepIndex: Int,
+    card: DiagnosticAdviceCard,
+    isRtl: Boolean
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .snapHeightToRule()
+            .clip(RoundedCornerShape(8.dp))
+            .background(JournalPaper)
+            .border(1.dp, JournalRule.copy(alpha = 0.45f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp)
+    ) {
+        // Top header: Step number badge + Emoji + Title
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier.weight(1f, fill = false),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Step badge [ 1 ], [ 2 ], etc.
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(JournalMutedInk.copy(alpha = 0.08f))
+                        .border(0.8.dp, JournalRule.copy(alpha = 0.50f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "$stepIndex",
+                        fontFamily = PatrickHandFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                        color = JournalWritingInk,
+                        style = TextStyle(platformStyle = NoFontPadding)
+                    )
+                }
+
+                Text(
+                    text = "${card.iconEmoji} " + (if (isRtl) card.titleAr else card.titleFr),
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = JournalWritingInk,
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // Detailed action advice in clear, readable Darija/French
+        Text(
+            text = if (isRtl) card.detailedAdviceAr else card.detailedAdviceFr,
+            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+            fontWeight = FontWeight.Normal,
+            fontSize = 13.sp,
+            lineHeight = 19.5.sp,
+            color = JournalWritingInk.copy(alpha = 0.88f),
+            style = TextStyle(platformStyle = NoFontPadding)
+        )
+
+        // Concrete impact tag at bottom (quiet and clean)
+        val impactText = if (isRtl) card.concreteImpactAr else card.concreteImpactFr
+        if (impactText.isNotBlank()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(HighlighterGreen.copy(alpha = 0.15f))
+                        .border(0.8.dp, HighlighterGreen.copy(alpha = 0.40f), RoundedCornerShape(4.dp))
+                        .padding(horizontal = 8.dp, vertical = 3.dp)
+                ) {
+                    Text(
+                        text = "🎯 " + (if (isRtl) "الأثر: " else "Impact : ") + impactText,
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.5.sp,
+                        color = JournalWritingInk,
+                        style = TextStyle(platformStyle = NoFontPadding)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Pillar 3: "Hdi Rassek" — Default Psychological Traps (حضي راسك)
+ * 4 fundamental financial traps in Morocco: 24h impulse rule, micro-expenses, card vs cash pain, fake promos.
+ */
+@Composable
+private fun HdiRassekSection(isRtl: Boolean) {
+    val traps = listOf(
+        Triple(
+            "🪤 " + (if (isRtl) "فخ النزوة والشراء اللحظي (قاعدة 24 ساعة)" else "Piège de l'achat impulsif (Règle des 24h)"),
+            if (isRtl) "أي رغبة شراء فايتة 150 DH وما كانتش مبرمجة: تسنى يوماً كاملاً (24 ساعة) قبل ما تخلص. 80% من النزوات كتبرد وتتلاشى ثاني يوم."
+            else "Tout achat coup de cœur imprévu > 150 DH : imposez-vous 24h d'attente. 80% des envies disparaissent le lendemain.",
+            HighlighterYellow
+        ),
+        Triple(
+            "🪤 " + (if (isRtl) "فخ المصاريف المجهرية (\"راها غير 20 درهم\")" else "Piège des micro-dépenses (\"C'est juste 20 DH\")"),
+            if (isRtl) "20 درهم كل نهار ف كماليات عشوائية كتعطي 600 DH فالشهر و 7 200 DH فالعام! تقطيرة ب تقطيرة كيحمل الواد أو كيتثقب الصندوق."
+            else "20 DH par jour en extras anodins font 600 DH/mois et 7 200 DH/an ! Ce sont les petits trous qui coulent les grands navires.",
+            HighlighterPink
+        ),
+        Triple(
+            "🪤 " + (if (isRtl) "فخ الأداء بالبطاقة البنكية (غياب ألم الكاش)" else "Piège de la carte bancaire (Absence de douleur du cash)"),
+            if (isRtl) "الدفع بالبطاقة كيخلي الدماغ ما كيحسش بخروج الفلوس. سحب ميزانية المصروف الأسبوعي نقداً (Cash) ف أظرفة وخلي الكارط ف الدار."
+            else "Payer par carte masque la douleur de dépenser. Retirez votre argent de poche en espèces chaque semaine et laissez la carte chez vous.",
+            HighlighterBlue
+        ),
+        Triple(
+            "🪤 " + (if (isRtl) "فخ التخفيضات والصولد الوهمي (Promo Trap)" else "Piège des fausses promos (Promo Trap)"),
+            if (isRtl) "إلى شريتي حاجة بـ 300 DH عوض 500 DH بلا ما تكون محتاجها، راك ما وفرتيش 200 DH.. راك ضيعتي 300 DH! شري بالورقة والستيلو فقط."
+            else "Acheter à 300 DH un article remisé de 500 DH dont vous n'avez pas besoin, ce n'est pas 200 DH d'économisés, c'est 300 DH de perdus.",
+            HighlighterGreen
+        )
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .snapHeightToRule()
+            .clip(RoundedCornerShape(8.dp))
+            .background(JournalPaper)
+            .border(1.dp, Color(0xFFC62828).copy(alpha = 0.25f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        traps.forEach { (title, desc, _) ->
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = title,
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 13.5.sp,
+                    color = JournalWritingInk,
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = desc,
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontSize = 12.5.sp,
+                    lineHeight = 18.sp,
+                    color = JournalWritingInk.copy(alpha = 0.85f),
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Pillar 4: Inline Interactive Diagnostic Calculator (حاسبة السيناريوهات التفاعلية)
+ * Direct on-page scenario testing for leaks, timeline extension, and extra contributions.
+ */
+@Composable
+private fun InlineDiagnosticCalculator(
+    fullDiagnostic: FullDiagnosticResult,
+    goal: SavingsGoalEntity,
+    isRtl: Boolean,
+    onOpenFullSimulator: () -> Unit
+) {
+    var selectedScenario by remember { mutableStateOf(0) }
+    val m = fullDiagnostic.metrics
+    val targetDh = goal.targetAmountCentimes / 100.0
+    val currentDh = goal.currentAmountCentimes / 100.0
+    val remainingDh = (targetDh - currentDh).coerceAtLeast(0.0)
+    val currentMonths = goal.targetMonths.coerceAtLeast(1)
+    val reqMonthlyDh = (m.requiredMonthlyCentimes / 100.0).coerceAtLeast(1.0)
+
+    val totalLeaksMonthly = fullDiagnostic.topLeaks.sumOf { it.monthlyDrainDh }
+    val leakSavingsMonthly = (totalLeaksMonthly * 0.50).toInt()
+    val leakSavingsAnnual = leakSavingsMonthly * 12
+
+    val extendedMonths = currentMonths + 3
+    val extendedMonthlyReq = if (extendedMonths > 0) (remainingDh / extendedMonths).toLong() else 0L
+    val extendedDrop = (reqMonthlyDh - extendedMonthlyReq).toInt().coerceAtLeast(0)
+
+    val boostSavingsDh = 200
+    val boostedMonthly = (reqMonthlyDh + boostSavingsDh).toInt()
+    val boostedMonths = if (boostedMonthly > 0) Math.ceil(remainingDh / boostedMonthly).toInt().coerceAtLeast(1) else currentMonths
+    val monthsGained = (currentMonths - boostedMonths).coerceAtLeast(1)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .snapHeightToRule()
+            .clip(RoundedCornerShape(8.dp))
+            .background(JournalPaper)
+            .border(1.dp, JournalRule.copy(alpha = 0.50f), RoundedCornerShape(8.dp))
+            .padding(horizontal = 14.dp, vertical = 12.dp)
+    ) {
+        // Scenario Switcher Chips
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            val scenarios = listOf(
+                "✂️ " + (if (isRtl) "نقص التسربات" else "Moins de fuites"),
+                "📅 " + (if (isRtl) "تمديد المدة" else "+3 mois"),
+                "📈 " + (if (isRtl) "زيادة التوفير" else "+200 DH")
+            )
+            scenarios.forEachIndexed { idx, label ->
+                val isSelected = selectedScenario == idx
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(34.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(if (isSelected) HighlighterYellow.copy(alpha = 0.55f) else JournalMutedInk.copy(alpha = 0.08f))
+                        .border(
+                            1.dp,
+                            if (isSelected) JournalWritingInk.copy(alpha = 0.40f) else JournalRule.copy(alpha = 0.35f),
+                            RoundedCornerShape(6.dp)
+                        )
+                        .clickable { selectedScenario = idx },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = label,
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 11.5.sp,
+                        color = JournalWritingInk,
+                        style = TextStyle(platformStyle = NoFontPadding),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Live calculation result box
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(6.dp))
+                .background(
+                    when (selectedScenario) {
+                        0 -> HighlighterGreen.copy(alpha = 0.18f)
+                        1 -> HighlighterYellow.copy(alpha = 0.22f)
+                        else -> HighlighterBlue.copy(alpha = 0.18f)
+                    }
+                )
+                .border(
+                    0.8.dp,
+                    when (selectedScenario) {
+                        0 -> HighlighterGreen.copy(alpha = 0.45f)
+                        1 -> HighlighterYellow.copy(alpha = 0.50f)
+                        else -> HighlighterBlue.copy(alpha = 0.45f)
+                    },
+                    RoundedCornerShape(6.dp)
+                )
+                .padding(horizontal = 12.dp, vertical = 10.dp)
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                when (selectedScenario) {
+                    0 -> {
+                        Text(
+                            text = if (isRtl) "✨ توفير فوري: +$leakSavingsMonthly DH/شهر (+$leakSavingsAnnual DH فالعام)"
+                            else "✨ Économie : +$leakSavingsMonthly DH/mois (+$leakSavingsAnnual DH/an)",
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.5.sp,
+                            color = JournalWritingInk,
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isRtl) {
+                                if (totalLeaksMonthly > 0) {
+                                    val coverage = ((leakSavingsMonthly.toDouble() / reqMonthlyDh) * 100).toInt().coerceAtMost(100)
+                                    "تقليص مصاريف القهوة والخرجات للنصف كيغطي $coverage% من القسط المطلوب لهدفك بلا ما تزيد سنتيم من مدخولك!"
+                                } else {
+                                    "تقليص المصاريف المرنة كيوفر هامش أمان إضافي كيحميك من أي طارئ."
+                                }
+                            } else {
+                                "Réduire vos fuites de moitié couvre une grande partie de la mensualité sans effort supplémentaire."
+                            },
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontSize = 12.5.sp,
+                            lineHeight = 18.sp,
+                            color = JournalWritingInk.copy(alpha = 0.88f),
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                    }
+                    1 -> {
+                        Text(
+                            text = if (isRtl) "✨ القسط الجديد: $extendedMonthlyReq DH/شهر (-$extendedDrop DH/شهر)"
+                            else "✨ Nouvelle mensualité : $extendedMonthlyReq DH/mois (-$extendedDrop DH/mois)",
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.5.sp,
+                            color = JournalWritingInk,
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isRtl) "تمديد الأجل من $currentMonths أشهر إلى $extendedMonths أشهر كيخفف الضغط الشهري ويخلي الخطة واقعية ومريحة 100% بدون أي تضييق على مصاريفك الأساسية."
+                            else "Allonger de $currentMonths à $extendedMonths mois réduit la pression mensuelle et garantit un effort soutenable.",
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontSize = 12.5.sp,
+                            lineHeight = 18.sp,
+                            color = JournalWritingInk.copy(alpha = 0.88f),
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                    }
+                    else -> {
+                        Text(
+                            text = if (isRtl) "✨ ربح الوقت: غتوصل لهدفك فـ $boostedMonths أشهر (ربح $monthsGained أشهر!)"
+                            else "✨ Gain de temps : objectif atteint en $boostedMonths mois (gain de $monthsGained mois !)",
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.5.sp,
+                            color = JournalWritingInk,
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (isRtl) "بزيادة 200 درهم شهرياً من التسربات المسترجعة، كتسرّع وتيرة التوفير وكتوصل لـ ${formatSavingsMoney(goal.targetAmountCentimes / 100, isRtl)} قبل الوقت المحدد."
+                            else "En ajoutant 200 DH/mois récupérés sur les dépenses superflues, vous atteignez votre objectif beaucoup plus vite.",
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontSize = 12.5.sp,
+                            lineHeight = 18.sp,
+                            color = JournalWritingInk.copy(alpha = 0.88f),
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        // Button to open full advanced sheet
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(34.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(JournalPaper)
+                .border(1.dp, JournalRule.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+                .clickable { onOpenFullSimulator() },
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = if (isRtl) "🔮 فتح الحاسبة المتقدمة بـ 7 أوضاع ↗" else "🔮 Ouvrir le simulateur complet 7 modes ↗",
+                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                color = JournalWritingInk,
+                style = TextStyle(platformStyle = NoFontPadding)
+            )
+        }
+    }
+}
+
+/**
+ * Standardized 4-Pillar Diagnostic Section reflecting:
+ * 1. Diagnostic & Declared Data (فين كيمشيو الفلوس؟) on 100% blue notebook lines.
+ * 2. Practical Tailored Solutions (حلول عملية مخصصة).
+ * 3. Hdi Rassek (حضي راسك - الفخاخ النفسية ومصائد النزوة).
+ * 4. Inline Interactive Calculator (حاسبة السيناريوهات التفاعلية).
  */
 @Composable
 private fun SavingsDiagnosticFullSection(
@@ -1245,12 +1710,14 @@ private fun SavingsDiagnosticFullSection(
     onOpenCheckIn: () -> Unit
 ) {
     if (fullDiagnostic != null) {
-        // ══════════════════════════════════════════════════════════════════════
-        // FULL OFFLINE DIAGNOSTIC VIEW (Spec §22 — from 12-section Questionnaire)
-        // ══════════════════════════════════════════════════════════════════════
         val m = fullDiagnostic.metrics
         Column(modifier = Modifier.fillMaxWidth()) {
-            // ── 1. HEADER ROW with Feasibility Badge ──────────────────────────
+
+            // ══════════════════════════════════════════════════════════════════
+            // PILLAR 1: DIAGNOSTIC & DECLARED DATA (فين كيمشيو الفلوس؟)
+            // ══════════════════════════════════════════════════════════════════
+
+            // 1. Status & Feasibility line on blue rule
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1259,7 +1726,7 @@ private fun SavingsDiagnosticFullSection(
                 verticalAlignment = Alignment.Bottom
             ) {
                 Text(
-                    text = if (isRtl) "📊 تشخيص البروفايل المالي" else "📊 Diagnostic Financier Personnalisé",
+                    text = if (isRtl) "📊 تشخيص وضعك المالي" else "📊 Diagnostic Financier",
                     fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
@@ -1278,17 +1745,17 @@ private fun SavingsDiagnosticFullSection(
 
                 Box(
                     modifier = Modifier
-                        .height(20.dp)
+                        .height(24.dp)
                         .clip(RoundedCornerShape(4.dp))
-                        .background(badgeColor.copy(alpha = 0.40f))
-                        .padding(horizontal = 6.dp),
+                        .background(badgeColor.copy(alpha = 0.35f))
+                        .padding(horizontal = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = badgeText,
                         fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 11.5.sp,
+                        fontSize = 12.sp,
                         color = JournalWritingInk,
                         style = TextStyle(platformStyle = NoFontPadding)
                     )
@@ -1297,7 +1764,7 @@ private fun SavingsDiagnosticFullSection(
 
             Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-            // ── 2. SECTION 0: الخلاصة والبروفايل (Profile & Narrative Summary) ──
+            // 2. Profile and Verdict Summary (Lines sitting on blue rules)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1305,185 +1772,37 @@ private fun SavingsDiagnosticFullSection(
                 verticalAlignment = Alignment.Bottom
             ) {
                 Text(
-                    text = if (isRtl) "🎯 الخلاصة ديالك:" else "🎯 Votre synthèse :",
+                    text = if (isRtl) "• بروفايلك: ${fullDiagnostic.profileLabelAr}" else "• Profil : ${fullDiagnostic.profileLabelFr}",
                     fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
+                    fontSize = 14.sp,
                     color = JournalWritingInk,
                     modifier = Modifier.journalBaselineOnRule(),
                     style = TextStyle(platformStyle = NoFontPadding)
                 )
             }
 
-            Column(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .drawBehind {
-                        val strokeW = 1.4.dp.toPx()
-                        val dotRadiusPx = 3.5.dp.toPx()
-                        val guideX = if (isRtl) size.width - dotRadiusPx else dotRadiusPx
-                        val rowHeightPx = JournalRuleSpacing.toPx()
-                        val startY = rowHeightPx - dotRadiusPx
-                        val endY = 2 * rowHeightPx + (rowHeightPx - dotRadiusPx)
-                        drawLine(
-                            color = JournalRule.copy(alpha = 0.60f),
-                            start = Offset(guideX, startY),
-                            end = Offset(guideX, endY),
-                            strokeWidth = strokeW,
-                            cap = StrokeCap.Round
-                        )
-                    }
+                    .height(JournalRuleSpacing),
+                verticalAlignment = Alignment.Bottom
             ) {
-                // Line 1: Profile classification
-                NotebookRuledRow(
-                    text = if (isRtl) "البروفايل: ${fullDiagnostic.profileLabelAr}" else "Profil : ${fullDiagnostic.profileLabelFr}",
-                    dotColor = HighlighterYellow,
-                    isRtl = isRtl
-                )
-
-                // Line 2: Goal summary
-                NotebookRuledRow(
-                    text = if (isRtl) {
-                        "الهدف: ${goal.title} (${m.requiredStr}/شهر على ${goal.targetMonths} شهر)"
-                    } else {
-                        "Objectif : ${goal.title} (${m.requiredStr}/mois sur ${goal.targetMonths} mois)"
-                    },
-                    dotColor = HighlighterBlue,
-                    isRtl = isRtl
-                )
-
-                // Line 3: Diagnostic verdict
                 val summaryText = if (isRtl) fullDiagnostic.summaryAr else fullDiagnostic.summaryFr
-                NotebookRuledRow(
-                    text = summaryText,
-                    dotColor = if (m.feasibility == GoalFeasibility.UNSAFE_NOW) HighlighterPink else HighlighterGreen,
-                    isRtl = isRtl
-                )
-            }
-
-            // Warnings if any
-            if (fullDiagnostic.warnings.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(JournalRuleSpacing))
-                fullDiagnostic.warnings.forEach { warning ->
-                    NotebookRuledRow(
-                        text = "⚠️ " + (if (isRtl) warning.messageAr else warning.messageFr),
-                        dotColor = if (warning.isCritical) HighlighterPink else HighlighterYellow,
-                        isRtl = isRtl
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(JournalRuleSpacing))
-
-            // ── 3. SECTION 1: الأرقام المفاتيح (Key Figures) ───────────────────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(JournalRuleSpacing),
-                verticalAlignment = Alignment.Bottom
-            ) {
                 Text(
-                    text = if (isRtl) "📊 الأرقام المفاتيح الشهرية:" else "📊 Chiffres clés mensuels :",
+                    text = "• $summaryText",
                     fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = JournalWritingInk,
+                    fontSize = 13.sp,
+                    color = JournalWritingInk.copy(alpha = 0.90f),
                     modifier = Modifier.journalBaselineOnRule(),
-                    style = TextStyle(platformStyle = NoFontPadding)
+                    style = TextStyle(platformStyle = NoFontPadding),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
-            val keyFigures = listOf(
-                (if (isRtl) "• الدخل الشهري الصافي:" else "• Revenu net mensuel :") to m.incomeStr to HighlighterGreen,
-                (if (isRtl) "• الأساسيات المحمية (كراء، فواتير، تقضية...):" else "• Charges protégées (loyer, factures...) :") to m.essentialsStr to Color(0xFF00796B),
-                (if (isRtl) "• الأداءات والديون والالتزامات:" else "• Mensualités dettes & obligations :") to m.debtsStr to Color(0xFFE65100),
-                (if (isRtl) "• المصاريف المرنة (الكماليات والتسربات):" else "• Dépenses flexibles (extras, fuites) :") to m.flexibleStr to Color(0xFFD32F2F),
-                (if (isRtl) "• الهامش الحر الحقيقي المتوفر:" else "• Marge réelle libre disponible :") to m.marginStr to (if (m.freeCashFlowCentimes >= 0) HighlighterGreen else HighlighterPink),
-                (if (isRtl) "• القسط الشهري المطلوب للهدف:" else "• Mensualité requise pour l'objectif :") to m.requiredStr to HighlighterBlue
-            )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .drawBehind {
-                        val strokeW = 1.4.dp.toPx()
-                        val dotRadiusPx = 3.5.dp.toPx()
-                        val guideX = if (isRtl) size.width - dotRadiusPx else dotRadiusPx
-                        val rowHeightPx = JournalRuleSpacing.toPx()
-                        val startY = rowHeightPx - dotRadiusPx
-                        val endY = (keyFigures.size - 1) * rowHeightPx + (rowHeightPx - dotRadiusPx)
-                        drawLine(
-                            color = JournalRule.copy(alpha = 0.60f),
-                            start = Offset(guideX, startY),
-                            end = Offset(guideX, endY),
-                            strokeWidth = strokeW,
-                            cap = StrokeCap.Round
-                        )
-                    }
-            ) {
-                keyFigures.forEach { (pair, dotCol) ->
-                    val (label, value) = pair
-                    NotebookRuledRow(
-                        text = "$label $value",
-                        dotColor = dotCol,
-                        isRtl = isRtl
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(JournalRuleSpacing))
-
-            // ── 4. SECTION 2: شنو ما خاصناش نمسو (Piliers Protégés) ───────────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(JournalRuleSpacing),
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Text(
-                    text = if (isRtl) "🛡️ ثوابت لا تمس (خط أحمر):" else "🛡️ Piliers protégés (lignes rouges) :",
-                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = Color(0xFF00796B),
-                    modifier = Modifier.journalBaselineOnRule(),
-                    style = TextStyle(platformStyle = NoFontPadding)
-                )
-            }
-
-            val protectedList = if (isRtl) fullDiagnostic.protectedAreasAr else fullDiagnostic.protectedAreasFr
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .drawBehind {
-                        val strokeW = 1.4.dp.toPx()
-                        val dotRadiusPx = 3.5.dp.toPx()
-                        val guideX = if (isRtl) size.width - dotRadiusPx else dotRadiusPx
-                        val rowHeightPx = JournalRuleSpacing.toPx()
-                        val startY = rowHeightPx - dotRadiusPx
-                        val endY = (protectedList.size - 1) * rowHeightPx + (rowHeightPx - dotRadiusPx)
-                        drawLine(
-                            color = Color(0xFF00796B).copy(alpha = 0.40f),
-                            start = Offset(guideX, startY),
-                            end = Offset(guideX, endY),
-                            strokeWidth = strokeW,
-                            cap = StrokeCap.Round
-                        )
-                    }
-            ) {
-                protectedList.forEach { item ->
-                    NotebookRuledRow(
-                        text = item,
-                        dotColor = Color(0xFF00796B),
-                        isRtl = isRtl
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(JournalRuleSpacing))
-
-            // ── 5. SECTION 3: فين كاينة الفرصة (Top Leak Opportunities) ─────────
-            if (fullDiagnostic.topLeaks.isNotEmpty()) {
+            val criticalWarning = fullDiagnostic.warnings.firstOrNull()
+            if (criticalWarning != null) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1491,79 +1810,124 @@ private fun SavingsDiagnosticFullSection(
                     verticalAlignment = Alignment.Bottom
                 ) {
                     Text(
-                        text = if (isRtl) "💥 فين كاينة الفرصة (حساب التسرب):" else "💥 Où est l'opportunité (calcul de fuite) :",
+                        text = "⚠️ " + (if (isRtl) criticalWarning.messageAr else criticalWarning.messageFr),
                         fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 12.5.sp,
+                        color = HighlighterPink.copy(alpha = 0.95f),
+                        modifier = Modifier.journalBaselineOnRule(),
+                        style = TextStyle(platformStyle = NoFontPadding),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            // 3. Declared Figures: فين كيمشيو الفلوس والأولويات
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(JournalRuleSpacing),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = if (isRtl) "📌 أهم المعطيات المصرح بها (فين كيمشيو الفلوس):" else "📌 Vos chiffres déclarés (Où va l'argent) :",
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.5.sp,
+                    color = JournalWritingInk,
+                    modifier = Modifier.journalBaselineOnRule(),
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+            }
+
+            // Notebook Ledger Rows connected with margin vertical guide line (Identical to "أهدافي" tab)
+            val declaredLeaks = fullDiagnostic.topLeaks
+            val totalLedgerRows = 4 + declaredLeaks.size
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .drawBehind {
+                        val strokeW = 1.4.dp.toPx()
+                        val dotRadiusPx = 3.5.dp.toPx()
+                        val guideX = if (isRtl) size.width - dotRadiusPx else dotRadiusPx
+                        val rowHeightPx = JournalRuleSpacing.toPx()
+                        val startY = rowHeightPx - dotRadiusPx
+                        val endY = (totalLedgerRows - 1) * rowHeightPx + (rowHeightPx - dotRadiusPx)
+
+                        drawLine(
+                            color = JournalRule.copy(alpha = 0.60f),
+                            start = Offset(guideX, startY),
+                            end = Offset(guideX, endY),
+                            strokeWidth = strokeW,
+                            cap = StrokeCap.Round
+                        )
+                    }
+            ) {
+                // Row 1: Income
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(JournalRuleSpacing),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        modifier = Modifier.journalBaselineOnRule(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Canvas(modifier = Modifier.size(7.dp)) { drawCircle(color = JournalWritingInk) }
+                        Text(
+                            text = if (isRtl) "الدخل الشهري الصافي:" else "Revenu net mensuel :",
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontSize = 13.5.sp,
+                            color = JournalWritingInk,
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                    }
+                    Text(
+                        text = m.incomeStr,
+                        fontFamily = PatrickHandFamily,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
-                        color = Color(0xFFD32F2F),
+                        color = JournalWritingInk,
                         modifier = Modifier.journalBaselineOnRule(),
                         style = TextStyle(platformStyle = NoFontPadding)
                     )
                 }
 
-                fullDiagnostic.topLeaks.forEach { leak ->
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .drawBehind {
-                                val strokeW = 1.4.dp.toPx()
-                                val dotRadiusPx = 3.5.dp.toPx()
-                                val guideX = if (isRtl) size.width - dotRadiusPx else dotRadiusPx
-                                val rowHeightPx = JournalRuleSpacing.toPx()
-                                val startY = rowHeightPx - dotRadiusPx
-                                val endY = 2 * rowHeightPx + (rowHeightPx - dotRadiusPx)
-                                drawLine(
-                                    color = Color(0xFFD32F2F).copy(alpha = 0.40f),
-                                    start = Offset(guideX, startY),
-                                    end = Offset(guideX, endY),
-                                    strokeWidth = strokeW,
-                                    cap = StrokeCap.Round
-                                )
-                            }
-                    ) {
-                        NotebookRuledRow(
-                            text = if (isRtl) {
-                                "${leak.titleAr}: ${leak.costPerUseDh.toInt()} DH × ${leak.timesPerWeek.toInt()} مرات/سيمانة"
-                            } else {
-                                "${leak.titleFr} : ${leak.costPerUseDh.toInt()} DH × ${leak.timesPerWeek.toInt()}x/semaine"
-                            },
-                            dotColor = Color(0xFFE65100),
-                            isRtl = isRtl
-                        )
-                        NotebookRuledRow(
-                            text = if (isRtl) {
-                                "الاستنزاف: ~${leak.monthStr} DH/شهر (${leak.annualStr} DH/عام كتسلت!)"
-                            } else {
-                                "Drain : ~${leak.monthStr} DH/mois (${leak.annualStr} DH/an volatilisés !)"
-                            },
-                            dotColor = Color(0xFFD32F2F),
-                            isRtl = isRtl
-                        )
-                        NotebookRuledRow(
-                            text = if (isRtl) {
-                                "إلى نقصتي 50%: غاتوفر +${leak.save50Str} DH/عام لصالح هدفك!"
-                            } else {
-                                "Réduire de 50% = récupérer +${leak.save50Str} DH/an pour votre objectif !"
-                            },
-                            dotColor = HighlighterGreen,
-                            isRtl = isRtl
-                        )
-                    }
-                    Spacer(modifier = Modifier.height(JournalRuleSpacing))
-                }
-            }
-
-            // ── 6. SECTION 4: الخطة اللي نقترحو (Plans A, B, C) ────────────────
-            if (fullDiagnostic.planOptions.isNotEmpty()) {
+                // Row 2: Essentials (Red lines)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(JournalRuleSpacing),
-                    verticalAlignment = Alignment.Bottom
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    Row(
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .journalBaselineOnRule(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Canvas(modifier = Modifier.size(7.dp)) { drawCircle(color = Color(0xFF00796B)) }
+                        Text(
+                            text = if (isRtl) "المصاريف الأساسية والديون:" else "Charges fixes & dettes :",
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontSize = 13.5.sp,
+                            color = JournalWritingInk,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                    }
                     Text(
-                        text = if (isRtl) "🌿 الخطة المقترحة لتحقيق الهدف:" else "🌿 Plans d'action proposés :",
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        text = m.essentialsStr,
+                        fontFamily = PatrickHandFamily,
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp,
                         color = Color(0xFF00796B),
@@ -1572,177 +1936,117 @@ private fun SavingsDiagnosticFullSection(
                     )
                 }
 
-                fullDiagnostic.planOptions.forEach { plan ->
-                    val planTitle = when (plan.label) {
-                        "A" -> if (isRtl) "خطة مريحة (Plan A)" else "Plan A (Confort)"
-                        "B" -> if (isRtl) "خطة متوازنة (Plan B)" else "Plan B (Équilibré)"
-                        else -> if (isRtl) "خطة سريعة (Plan C)" else "Plan C (Accéléré)"
+                // Breakdown of declared leaks (concise, 100% fits on single blue line)
+                declaredLeaks.forEach { leak ->
+                    val leakShortTitle = when {
+                        leak.key.contains("CAFE", true) || leak.titleAr.contains("قهو") || leak.titleAr.contains("قهاو") -> if (isRtl) "تسرب القهوة والزنقة" else "Cafés & restos"
+                        leak.key.contains("OUTING", true) || leak.titleAr.contains("خرجات") || leak.titleAr.contains("كازوال") -> if (isRtl) "تسرب الخرجات والكازوال" else "Sorties & essence"
+                        leak.key.contains("SHOP", true) || leak.titleAr.contains("شوبينغ") || leak.titleAr.contains("تسوق") -> if (isRtl) "تسرب المشتريات والنزوات" else "Shopping imprévu"
+                        leak.key.contains("SUB", true) || leak.titleAr.contains("اشتراك") || leak.titleAr.contains("فورفي") -> if (isRtl) "تسرب الاشتراكات والفورفيات" else "Abonnements inutiles"
+                        else -> if (isRtl) "تسرب " + leak.titleAr.take(18) else "Fuite " + leak.titleFr.take(18)
                     }
-                    NotebookRuledRow(
-                        text = "$planTitle: ${plan.monthlyStr} DH/شهر على ${plan.months} شهر",
-                        dotColor = if (plan.label == "A") HighlighterGreen else if (plan.label == "B") HighlighterYellow else HighlighterPink,
-                        isRtl = isRtl
-                    )
-                    NotebookRuledRow(
-                        text = if (isRtl) plan.descAr else plan.descFr,
-                        dotColor = JournalMutedInk,
-                        isRtl = isRtl
-                    )
-                }
-                Spacer(modifier = Modifier.height(JournalRuleSpacing))
-            }
 
-            // ── 7. SECTION 5: دير هاد 3 حوايج هاد الأسبوع (Top 3 Actions) ──────
-            if (fullDiagnostic.topActions.isNotEmpty()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(JournalRuleSpacing),
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .weight(1f, fill = false)
+                                .journalBaselineOnRule(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Canvas(modifier = Modifier.size(7.dp)) { drawCircle(color = Color(0xFFC62828)) }
+                            Text(
+                                text = "$leakShortTitle:",
+                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                fontSize = 13.sp,
+                                color = Color(0xFFC62828),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = TextStyle(platformStyle = NoFontPadding)
+                            )
+                        }
+                        Text(
+                            text = "${leak.monthStr} DH/شهر",
+                            fontFamily = PatrickHandFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.5.sp,
+                            color = Color(0xFFC62828),
+                            modifier = Modifier.journalBaselineOnRule(),
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                    }
+                }
+
+                // Row: Available Free Margin (Green)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(JournalRuleSpacing),
-                    verticalAlignment = Alignment.Bottom
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    Row(
+                        modifier = Modifier.journalBaselineOnRule(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Canvas(modifier = Modifier.size(7.dp)) { drawCircle(color = Color(0xFF1B5E20)) }
+                        Text(
+                            text = if (isRtl) "الهامش الحر المتوفر للتوفير:" else "Marge réelle disponible :",
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.5.sp,
+                            color = Color(0xFF1B5E20),
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                    }
                     Text(
-                        text = if (isRtl) "⚡ دير هاد 3 حوايج هاد الأسبوع:" else "⚡ 3 actions prioritaires cette semaine :",
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        text = m.marginStr,
+                        fontFamily = PatrickHandFamily,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 15.sp,
-                        color = JournalWritingInk,
+                        fontSize = 16.sp,
+                        color = Color(0xFF1B5E20),
                         modifier = Modifier.journalBaselineOnRule(),
                         style = TextStyle(platformStyle = NoFontPadding)
                     )
                 }
 
-                Column(
+                // Row: Required Monthly Installment (Blue)
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .drawBehind {
-                            val strokeW = 1.4.dp.toPx()
-                            val dotRadiusPx = 3.5.dp.toPx()
-                            val guideX = if (isRtl) size.width - dotRadiusPx else dotRadiusPx
-                            val rowHeightPx = JournalRuleSpacing.toPx()
-                            val startY = rowHeightPx - dotRadiusPx
-                            val endY = (fullDiagnostic.topActions.size - 1) * rowHeightPx + (rowHeightPx - dotRadiusPx)
-                            drawLine(
-                                color = HighlighterGreen.copy(alpha = 0.60f),
-                                start = Offset(guideX, startY),
-                                end = Offset(guideX, endY),
-                                strokeWidth = strokeW,
-                                cap = StrokeCap.Round
-                            )
-                        }
+                        .height(JournalRuleSpacing),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    fullDiagnostic.topActions.forEachIndexed { idx, action ->
-                        val dotCol = when (idx) {
-                            0 -> HighlighterGreen
-                            1 -> HighlighterYellow
-                            else -> HighlighterBlue
-                        }
-                        NotebookRuledRow(
-                            text = "${idx + 1}. " + (if (isRtl) action.textAr else action.textFr),
-                            dotColor = dotCol,
-                            isRtl = isRtl
+                    Row(
+                        modifier = Modifier.journalBaselineOnRule(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Canvas(modifier = Modifier.size(7.dp)) { drawCircle(color = Color(0xFF0D47A1)) }
+                        Text(
+                            text = if (isRtl) "القسط الشهري المطلوب للهدف:" else "Mensualité requise objectif :",
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.5.sp,
+                            color = Color(0xFF0D47A1),
+                            style = TextStyle(platformStyle = NoFontPadding)
                         )
                     }
-                }
-                Spacer(modifier = Modifier.height(JournalRuleSpacing))
-            }
-
-            // ── 8. SECTION 6: أدوات التخطيط والمحاكاة (Action Buttons) ──────────
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(JournalRuleSpacing),
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Text(
-                    text = if (isRtl) "🛠️ أدوات التخطيط والمحاكاة:" else "🛠️ Outils & Simulation :",
-                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = JournalWritingInk,
-                    modifier = Modifier.journalBaselineOnRule(),
-                    style = TextStyle(platformStyle = NoFontPadding)
-                )
-            }
-
-            // Button 1: Simulator (7 modes)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(JournalRuleSpacing),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(26.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(HighlighterYellow.copy(alpha = 0.50f))
-                        .border(1.dp, JournalWritingInk.copy(alpha = 0.25f), RoundedCornerShape(6.dp))
-                        .clickable { onOpenSimulator() },
-                    contentAlignment = Alignment.Center
-                ) {
                     Text(
-                        text = if (isRtl) "🔮 جرب السيناريو (حاسبة التشخيص التفاعلية)" else "🔮 Simuler des scénarios (calculatrice interactive)",
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        text = "${m.requiredStr}/شهر",
+                        fontFamily = PatrickHandFamily,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 12.5.sp,
-                        color = JournalWritingInk,
-                        style = TextStyle(platformStyle = NoFontPadding)
-                    )
-                }
-            }
-
-            // Button 2: Monthly Check-in
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(JournalRuleSpacing),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(26.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(HighlighterBlue.copy(alpha = 0.35f))
-                        .border(1.dp, JournalWritingInk.copy(alpha = 0.25f), RoundedCornerShape(6.dp))
-                        .clickable { onOpenCheckIn() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (isRtl) "📅 فحص الشهر (Bilan mensuel سريع)" else "📅 Check-in du mois (bilan rapide)",
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.5.sp,
-                        color = JournalWritingInk,
-                        style = TextStyle(platformStyle = NoFontPadding)
-                    )
-                }
-            }
-
-            // Button 3: Re-take Questionnaire
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(JournalRuleSpacing),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(26.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(JournalPaper)
-                        .border(1.dp, JournalMutedInk.copy(alpha = 0.35f), RoundedCornerShape(6.dp))
-                        .clickable { onOpenQuestionnaire() },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (isRtl) "↻ تعديل بيانات الاستبيان المالي" else "↻ Modifier les réponses du questionnaire",
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 12.sp,
-                        color = JournalMutedInk,
+                        fontSize = 16.sp,
+                        color = Color(0xFF0D47A1),
+                        modifier = Modifier.journalBaselineOnRule(),
                         style = TextStyle(platformStyle = NoFontPadding)
                     )
                 }
@@ -1750,16 +2054,17 @@ private fun SavingsDiagnosticFullSection(
 
             Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-            // ── 9. SECTION 7: استشارة كوتش الذكاء الاصطناعي (AI Coach) ───────────
+            // ══════════════════════════════════════════════════════════════════
+            // PILLAR 2: PRACTICAL TAILORED SOLUTIONS (حلول عملية مخصصة)
+            // ══════════════════════════════════════════════════════════════════
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(JournalRuleSpacing),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Bottom
             ) {
                 Text(
-                    text = if (isRtl) "✨ استشارة كوتش الذكاء الاصطناعي:" else "✨ Conseil du Coach Financier IA :",
+                    text = if (isRtl) "💡 حلول عملية ومخصصة لمشاكلك:" else "💡 Solutions pratiques adaptées :",
                     fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
@@ -1767,88 +2072,203 @@ private fun SavingsDiagnosticFullSection(
                     modifier = Modifier.journalBaselineOnRule(),
                     style = TextStyle(platformStyle = NoFontPadding)
                 )
+            }
 
-                if (aiCoachAdvice != null) {
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            val cardsToShow = fullDiagnostic.adviceCards.take(4)
+            cardsToShow.forEachIndexed { index, card ->
+                DiagnosticAdviceCardItem(
+                    stepIndex = index + 1,
+                    card = card,
+                    isRtl = isRtl
+                )
+                Spacer(modifier = Modifier.height(JournalRuleSpacing))
+            }
+
+            // ══════════════════════════════════════════════════════════════════
+            // PILLAR 3: "Hdi Rassek" - DEFAULT PSYCHOLOGICAL TRAPS (حضي راسك)
+            // ══════════════════════════════════════════════════════════════════
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(JournalRuleSpacing),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = if (isRtl) "⚠️ حضي راسك (الفخاخ النفسية ومصائد النزوة):" else "⚠️ Attention aux pièges financiers (Par défaut) :",
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = Color(0xFFC62828),
+                    modifier = Modifier.journalBaselineOnRule(),
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            HdiRassekSection(isRtl = isRtl)
+
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            // ══════════════════════════════════════════════════════════════════
+            // PILLAR 4: INLINE INTERACTIVE CALCULATOR (الحاسبة التفاعلية)
+            // ══════════════════════════════════════════════════════════════════
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(JournalRuleSpacing),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = if (isRtl) "🔮 حاسبة السيناريوهات التفاعلية:" else "🔮 Simulateur interactif de scénarios :",
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = JournalWritingInk,
+                    modifier = Modifier.journalBaselineOnRule(),
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            InlineDiagnosticCalculator(
+                fullDiagnostic = fullDiagnostic,
+                goal = goal,
+                isRtl = isRtl,
+                onOpenFullSimulator = onOpenSimulator
+            )
+
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            // ══════════════════════════════════════════════════════════════════
+            // FOOTER ACTIONS & AI COACH
+            // ══════════════════════════════════════════════════════════════════
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(JournalRuleSpacing),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = if (isRtl) "🛠️ أدوات إضافية:" else "🛠️ Outils complémentaires :",
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.5.sp,
+                    color = JournalWritingInk.copy(alpha = 0.85f),
+                    modifier = Modifier.journalBaselineOnRule(),
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            // Edit Questionnaire button (snapped to rule)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(36.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(JournalPaper)
+                    .border(1.dp, JournalRule.copy(alpha = 0.50f), RoundedCornerShape(6.dp))
+                    .clickable { onOpenQuestionnaire() },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = if (isRtl) "↻ تعديل بيانات الاستبيان المالي" else "↻ Modifier les réponses du questionnaire",
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 12.5.sp,
+                    color = JournalMutedInk,
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+            }
+
+            // Optional AI Coach
+            Spacer(modifier = Modifier.height(10.dp))
+            if (aiCoachAdvice == null) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(36.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(HighlighterBlue.copy(alpha = 0.20f))
+                        .border(1.dp, JournalRule.copy(alpha = 0.50f), RoundedCornerShape(6.dp))
+                        .clickable(enabled = !isAiCoachLoading) { onRequestAiCoachAdvice() },
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        text = if (isRtl) "إعادة التحليل ↻" else "Actualiser ↻",
+                        text = if (isAiCoachLoading) {
+                            if (isRtl) "⏳ جاري إعداد التشخيص من الكوتش..." else "⏳ Analyse par le Coach IA..."
+                        } else {
+                            if (isRtl) "✨ استشارة إضافية من كوتش الذكاء الاصطناعي" else "✨ Demander conseil au Coach IA"
+                        },
                         fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                         fontWeight = FontWeight.Medium,
-                        fontSize = 12.sp,
-                        color = JournalMutedInk,
-                        modifier = Modifier
-                            .clickable { onRequestAiCoachAdvice() }
-                            .padding(horizontal = 4.dp)
+                        fontSize = 12.5.sp,
+                        color = JournalWritingInk,
+                        style = TextStyle(platformStyle = NoFontPadding)
+                    )
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .snapHeightToRule()
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(JournalPaper)
+                        .border(1.dp, JournalRule.copy(alpha = 0.45f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 14.dp, vertical = 12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isRtl) "✨ نصيحة كوتش AI:" else "✨ Conseil du Coach IA :",
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.5.sp,
+                            color = JournalWritingInk,
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                        Text(
+                            text = if (isRtl) "تحديث ↻" else "Actualiser ↻",
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontSize = 12.sp,
+                            color = JournalMutedInk,
+                            modifier = Modifier.clickable { onRequestAiCoachAdvice() }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = aiCoachAdvice,
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontSize = 13.sp,
+                        lineHeight = 19.sp,
+                        color = JournalWritingInk.copy(alpha = 0.90f),
+                        style = TextStyle(platformStyle = NoFontPadding)
                     )
                 }
             }
 
-            if (aiCoachAdvice == null) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(JournalRuleSpacing),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(26.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(if (isAiCoachLoading) HighlighterBlue.copy(alpha = 0.35f) else HighlighterYellow.copy(alpha = 0.50f))
-                            .border(1.dp, JournalWritingInk.copy(alpha = 0.25f), RoundedCornerShape(6.dp))
-                            .clickable(enabled = !isAiCoachLoading) { onRequestAiCoachAdvice() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = if (isAiCoachLoading) {
-                                if (isRtl) "⏳ جاري إعداد التشخيص من الكوتش..." else "⏳ Analyse par le Coach IA en cours..."
-                            } else {
-                                if (isRtl) "✨ طلب تشخيص مخصص من كوتش AI 🚀" else "✨ Demander diagnostic au Coach IA 🚀"
-                            },
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.5.sp,
-                            color = JournalWritingInk,
-                            style = TextStyle(platformStyle = NoFontPadding)
-                        )
-                    }
-                }
-            } else {
-                val coachLines = aiCoachAdvice.lines().filter { it.isNotBlank() }
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .drawBehind {
-                            val strokeW = 1.4.dp.toPx()
-                            val dotRadiusPx = 3.5.dp.toPx()
-                            val guideX = if (isRtl) size.width - dotRadiusPx else dotRadiusPx
-                            val rowHeightPx = JournalRuleSpacing.toPx()
-                            val startY = rowHeightPx - dotRadiusPx
-                            val endY = (coachLines.size - 1) * rowHeightPx + (rowHeightPx - dotRadiusPx)
-                            drawLine(
-                                color = HighlighterYellow.copy(alpha = 0.85f),
-                                start = Offset(guideX, startY),
-                                end = Offset(guideX, endY),
-                                strokeWidth = strokeW,
-                                cap = StrokeCap.Round
-                            )
-                        }
-                ) {
-                    coachLines.forEach { lineText ->
-                        NotebookRuledRow(
-                            text = lineText,
-                            dotColor = HighlighterYellow,
-                            isRtl = isRtl
-                        )
-                    }
-                }
-            }
+            Spacer(modifier = Modifier.height(JournalRuleSpacing * 3))
         }
     } else {
         // ══════════════════════════════════════════════════════════════════════
         // BASELINE ESTIMATE VIEW (before full questionnaire is completed)
         // ══════════════════════════════════════════════════════════════════════
-        val diag = diagnosis ?: return
+        val diag = diagnosis
+        if (diag == null) {
+            SavingsDiagnosticEmptyState(
+                isRtl = isRtl,
+                onStartWizard = onOpenQuestionnaire
+            )
+            return
+        }
         val leak = diag.leakInfo
         val shock = diag.shockNumbers
         val trap = diag.goalTrap
@@ -2490,21 +2910,12 @@ private fun NotebookRuledRow(
     }
 }
 
-private data class SavingsArticleItem(
-    val id: String,
-    val category: String,
-    val tagColor: Color,
-    val readTime: String,
-    val title: String,
-    val summary: String,
-    val points: List<String>,
-    val takeaway: String
-)
-
 /**
- * Moroccan Personal Finance Articles Section:
- * Interactive library of practical financial management guides, expandable directly on notebook paper lines.
- * 100% of text lines sit directly on the 29dp blue notebook ruled lines.
+ * Moroccan Personal Finance Knowledge & Tips Section:
+ * Rich, structured library of Moroccan-focused personal finance guides and behavioral insights.
+ * Categorized by: All, Psychology of Spending, Smart Savings, Financial Safety, Household Economics, Income & Growth.
+ * Features Daily Golden Tip + Horizontal Filter Chips + Expandable Ruled Notebook Cards.
+ * 100% of text lines sit directly on the 29dp blue notebook ruled lines (Star Zra9).
  */
 @Composable
 private fun SavingsArticlesLibrarySection(
@@ -2512,198 +2923,36 @@ private fun SavingsArticlesLibrarySection(
     recommendedArticleIds: List<String> = emptyList(),
     isRtl: Boolean
 ) {
+    var selectedCategory by remember { mutableStateOf(ArticleCategoryGroup.ALL) }
+    var currentTipIndex by remember { mutableStateOf(0) }
+
     val fallbackRecommendedId = when (activeGoal?.leisureCategory) {
-        "CAFE" -> "art_cafe"
-        "SHOPPING" -> "art_24h"
+        "CAFE" -> "art_house_cafe_lunch"
+        "SHOPPING" -> "art_psych_24h_promo"
         else -> when {
-            activeGoal?.title?.contains("طوارئ", true) == true || activeGoal?.title?.contains("urgence", true) == true -> "art_emergency"
-            else -> "art_budget"
+            activeGoal?.title?.contains("طوارئ", true) == true || activeGoal?.title?.contains("urgence", true) == true -> "art_sec_emergency_fund"
+            else -> "art_strat_50_30_20"
         }
     }
     val primaryRecommendedId = recommendedArticleIds.firstOrNull() ?: fallbackRecommendedId
     var expandedArticleId by remember(primaryRecommendedId) { mutableStateOf<String?>(primaryRecommendedId) }
 
-    val rawArticles = remember(isRtl) {
-        listOf(
-            SavingsArticleItem(
-                id = "art_budget",
-                category = if (isRtl) "الميزانية" else "Budget",
-                tagColor = HighlighterGreen,
-                readTime = if (isRtl) "⏱️ 3 دقائق" else "⏱️ 3 min",
-                title = if (isRtl) "كيفاش تبني أول ميزانية فـ 15 دقيقة؟" else "Créer son premier budget en 15 minutes",
-                summary = if (isRtl) {
-                    "قاعدة 50/30/20 وطريقة توزيع الصالير المغربي بذكاء بلا حرمان."
-                } else {
-                    "La méthode 50/30/20 adaptée au Maroc sans privation."
-                },
-                points = if (isRtl) listOf(
-                    "• قاعدة 50/30/20: 50% للضروريات، 30% كماليات، و20% للتوفير",
-                    "• طريقة الأظرفة: قسم كاش الأسبوع فـ أظرفة وتفادى أداء البطاقة",
-                    "• مراجعة الأحد: 5 دقائق فـ نهاية الأسبوع لضبط المصاريف"
-                ) else listOf(
-                    "• Règle 50/30/20 : 50% vital, 30% loisirs, 20% épargne",
-                    "• Méthode des enveloppes : Allouer le cash de la semaine en liquide",
-                    "• Revue du dimanche : 5 minutes pour faire le point sur ses dépenses"
-                ),
-                takeaway = if (isRtl) {
-                    "💡 الخلاصة: الميزانية ماشي سجن، بل خريطة فين كيمشيو فلوسك."
-                } else {
-                    "💡 En résumé : Le budget n'est pas une contrainte, c'est une carte."
-                }
-            ),
-            SavingsArticleItem(
-                id = "art_cafe",
-                category = if (isRtl) "المصاريف" else "Dépenses",
-                tagColor = HighlighterYellow,
-                readTime = if (isRtl) "⏱️ 2 دقائق" else "⏱️ 2 min",
-                title = if (isRtl) "القهاوي والماكلة برا: نقص بلا ما تحرم راسك" else "Café et Restos : Réduire sans se priver",
-                summary = if (isRtl) {
-                    "الدرهم الصغير فـ القهوة كيتجمع.. ها كيفاش توفر حتى لـ 800 DH."
-                } else {
-                    "Le piège des petites dépenses et comment garder jusqu'à 800 DH."
-                },
-                points = if (isRtl) listOf(
-                    "• الحسبة الصادمة: 20 DH يومياً = 600 DH/شهر = 7 200 DH فالعام!",
-                    "• قهوة واحدة برا: شرب وحيدة مع صحابك، والباقي فالمكتب أو الدار",
-                    "• وجبات الدار: وجد غداك فالدار 2 أو 3 مرات فـ السيمانة"
-                ) else listOf(
-                    "• Le calcul réel : 20 DH/jour = 600 DH/mois = 7 200 DH/an !",
-                    "• 1 café extérieur max : Le reste au bureau ou à la maison",
-                    "• Déjeuners maison : Préparer ses repas 2 à 3 fois par semaine"
-                ),
-                takeaway = if (isRtl) {
-                    "💡 الخلاصة: ما تقطعش القهوة نهائياً؛ نقص التردد واستمتع بيها."
-                } else {
-                    "💡 En résumé : Ne supprimez pas le café, réduisez la fréquence."
-                }
-            ),
-            SavingsArticleItem(
-                id = "art_emergency",
-                category = if (isRtl) "الأمان المالي" else "Sécurité",
-                tagColor = HighlighterBlue,
-                readTime = if (isRtl) "⏱️ 3 دقائق" else "⏱️ 3 min",
-                title = if (isRtl) "صندوق الطوارئ: الدرع الحقيقي قبل أي استثمار" else "Le fonds d'urgence : Votre premier bouclier",
-                summary = if (isRtl) {
-                    "علاش هو أول خطوة قبل الدار أو الطوموبيل وفين تخليه."
-                } else {
-                    "La priorité absolue avant tout achat important ou investissement."
-                },
-                points = if (isRtl) listOf(
-                    "• شنو هو: فلوس محطوطة للطوارئ فقط (مرض، عطب، انقطاع)",
-                    "• الخطوة الأولى: جمع 1 000 درهم كدرع أولي كيحميك من الكريدي",
-                    "• الهدف الكامل: جمع مصاريف شهر إلى 3 أشهر أساسية فالأمان"
-                ) else listOf(
-                    "• Définition : Liquidités réservées aux seuls imprévus graves",
-                    "• Premier palier : 1 000 DH pour bloquer les petites dettes",
-                    "• Objectif complet : 1 à 3 mois de charges vitales au chaud"
-                ),
-                takeaway = if (isRtl) {
-                    "💡 الخلاصة: صندوق الطوارئ هو بوليصة تأمين ضد فخ الكريدي."
-                } else {
-                    "💡 En résumé : Le fonds d'urgence est votre bouclier anti-dettes."
-                }
-            ),
-            SavingsArticleItem(
-                id = "art_24h",
-                category = if (isRtl) "العادات" else "Habitudes",
-                tagColor = HighlighterPink,
-                readTime = if (isRtl) "⏱️ 2 دقائق" else "⏱️ 2 min",
-                title = if (isRtl) "قاعدة 24 ساعة: السلاح ضد الشوبينغ ونزوات الشراء" else "La règle des 24h contre les achats impulsifs",
-                summary = if (isRtl) {
-                    "كيفاش تفرق بين الرغبة اللحظية والحاجة الحقيقية وتحمي جيبك."
-                } else {
-                    "Différencier une envie passagère d'un besoin réel et utile."
-                },
-                points = if (isRtl) listOf(
-                    "• المبدأ: تسنى 24 ساعة قبل أي شراء كمالي فايت 200 درهم",
-                    "• قائمة الرغبات: قيد الحاجة فورقة؛ 70% من النزوات كتنسى",
-                    "• فخ التخفيضات: شراء كماليات بـ -50% ماشي ربح بل استنزاف"
-                ) else listOf(
-                    "• Le principe : Attendre 24h pour tout achat plaisir > 200 DH",
-                    "• Wishlist : Noter l'article ; 70% des envies passent seules",
-                    "• Piège des promos : Acheter à -50% un extra reste une dépense"
-                ),
-                takeaway = if (isRtl) {
-                    "💡 الخلاصة: مهلة 24 ساعة أكبر حليف لجيبك ضد فخ التسويق."
-                } else {
-                    "💡 En résumé : La patience de 24h est le meilleur filtre d'achats."
-                }
-            ),
-            SavingsArticleItem(
-                id = "art_income",
-                category = if (isRtl) "الدخل" else "Revenus",
-                tagColor = HighlighterYellow,
-                readTime = if (isRtl) "⏱️ 3 دقائق" else "⏱️ 3 min",
-                title = if (isRtl) "كيفاش تدبر دخل متغير (تجارة، فريلانس)؟" else "Gérer un revenu irrégulier ou variable",
-                summary = if (isRtl) {
-                    "كيفاش تضبط ميزانيتك وتوفر واخا المدخول ماشي قار كل شهر."
-                } else {
-                    "Stabiliser son budget et épargner quand les revenus varient."
-                },
-                points = if (isRtl) listOf(
-                    "• الصالير الأدنى: اعتمد معدل أضعف 3 أشهر كأساس لمصاريفك",
-                    "• التوفير بالنسبة: 30% فالشهور القوية و10% فالشهور الضعيفة",
-                    "• حساب المخزون: خبي الفائض فالشهور المزيانة لتعويض النقص"
-                ) else listOf(
-                    "• Salaire plancher : Se baser sur ses 3 mois les plus faibles",
-                    "• Épargne en % : 30% les bons mois, 10% les mois calmes",
-                    "• Compte tampon : Stocker les surplus pour lisser les creux"
-                ),
-                takeaway = if (isRtl) {
-                    "💡 الخلاصة: المرونة والنسبة المئوية هما سر الاستمرار والنجاح."
-                } else {
-                    "💡 En résumé : Avec des revenus variables, la flexibilité gagne."
-                }
-            ),
-            SavingsArticleItem(
-                id = "art_annual",
-                category = if (isRtl) "التخطيط" else "Anticipation",
-                tagColor = HighlighterGreen,
-                readTime = if (isRtl) "⏱️ 3 دقائق" else "⏱️ 3 min",
-                title = if (isRtl) "المصاريف السنوية: العيد، الدخول المدرسي، والعطلة" else "Anticiper les dépenses annuelles",
-                summary = if (isRtl) {
-                    "كيفاش المناسبات السنوية ما تبقاش مفاجأة تضطرك للكريدي."
-                } else {
-                    "Provisionner chaque mois pour ne jamais subir de choc financier."
-                },
-                points = if (isRtl) listOf(
-                    "• مواعيد قارة: العيد والدخول المدرسي عندهم تاريخ معروف",
-                    "• الاقتطاع المسبق: قسم المبلغ على 12 شهر (300 DH/شهر)",
-                    "• تفادى الكريدي: ما تمولش مناسبة بدين تبقى تخلص فيه شهور"
-                ) else listOf(
-                    "• Dates fixes : L'Aïd et la rentrée arrivent le même mois",
-                    "• Sinking Funds : Diviser par 12 (ex: 300 DH/mois = 3 600 DH)",
-                    "• Zéro crédit : Ne jamais financer un événement par une dette"
-                ),
-                takeaway = if (isRtl) {
-                    "💡 الخلاصة: التخطيط كيحول المصاريف الكبيرة لمبالغ شهرية صغيرة."
-                } else {
-                    "💡 En résumé : Provisionner transforme les grosses dépenses en miettes."
-                }
-            )
+    val allArticles = remember(recommendedArticleIds, primaryRecommendedId) {
+        SavingsKnowledgeBase.getRecommendedArticles(
+            if (recommendedArticleIds.isNotEmpty()) recommendedArticleIds else listOf(primaryRecommendedId)
         )
     }
 
-    val articles = remember(rawArticles, primaryRecommendedId, recommendedArticleIds, activeGoal) {
-        if (recommendedArticleIds.isNotEmpty()) {
-            rawArticles.sortedBy { item ->
-                val idx = recommendedArticleIds.indexOf(item.id)
-                if (idx >= 0) idx else 999
-            }.map { item ->
-                if (item.id == primaryRecommendedId) {
-                    item.copy(category = if (isRtl) "⭐ موصى به لك" else "⭐ Recommandé pour vous")
-                } else item
-            }
-        } else if (activeGoal != null) {
-            rawArticles.sortedByDescending { it.id == primaryRecommendedId }.map { item ->
-                if (item.id == primaryRecommendedId) {
-                    item.copy(category = if (isRtl) "⭐ موصى به" else "⭐ Recommandé")
-                } else item
-            }
+    val filteredArticles = remember(selectedCategory, allArticles) {
+        if (selectedCategory == ArticleCategoryGroup.ALL) {
+            allArticles
         } else {
-            rawArticles
+            allArticles.filter { it.categoryGroup == selectedCategory }
         }
     }
+
+    val dailyTips = SavingsKnowledgeBase.DAILY_TIPS
+    val activeTip = dailyTips[currentTipIndex % dailyTips.size]
 
     Column(modifier = Modifier.fillMaxWidth()) {
         // --- 1. SECTION TITLE on Rule 1 ---
@@ -2714,7 +2963,7 @@ private fun SavingsArticlesLibrarySection(
             verticalAlignment = Alignment.Bottom
         ) {
             Text(
-                text = if (isRtl) "📚 مكتبة المقالات المالية وتدبير الميزانية" else "📚 Guides pratiques & Gestion financière",
+                text = if (isRtl) "📚 دليل المستشار المالي ومكتبة المقالات" else "📚 Guides Pratiques & Conseils Financiers",
                 fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
@@ -2727,19 +2976,150 @@ private fun SavingsArticlesLibrarySection(
         // na9ez star (Skip 1 blue line)
         Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-        // --- 2. ARTICLES LIST ---
-        articles.forEach { article ->
+        // --- 2. DAILY GOLDEN TIP CARD (قاعدة اليوم الذهبية) ---
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .snapHeightToRule()
+                .clip(RoundedCornerShape(8.dp))
+                .background(JournalPaper)
+                .border(1.dp, JournalRule.copy(alpha = 0.55f), RoundedCornerShape(8.dp))
+                .padding(horizontal = 14.dp, vertical = 10.dp)
+        ) {
+            // Header Row: Title + Rotate button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = activeTip.iconEmoji,
+                        fontSize = 16.sp
+                    )
+                    Text(
+                        text = if (isRtl) "✨ قاعدة اليوم: " + activeTip.titleAr else "✨ Règle du jour : " + activeTip.titleFr,
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.5.sp,
+                        color = JournalWritingInk,
+                        style = TextStyle(platformStyle = NoFontPadding)
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(HighlighterYellow.copy(alpha = 0.40f))
+                        .clickable { currentTipIndex++ }
+                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = if (isRtl) "فكرة أخرى ↻" else "Suivant ↻",
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = JournalWritingInk,
+                        style = TextStyle(platformStyle = NoFontPadding)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Body
+            Text(
+                text = if (isRtl) activeTip.tipAr else activeTip.tipFr,
+                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                fontSize = 12.5.sp,
+                lineHeight = 18.sp,
+                color = JournalWritingInk.copy(alpha = 0.90f),
+                style = TextStyle(platformStyle = NoFontPadding)
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Action Tag
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(HighlighterGreen.copy(alpha = 0.25f))
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = (if (isRtl) "🎯 خطوة عملية: " else "🎯 Action : ") + (if (isRtl) activeTip.actionAr else activeTip.actionFr),
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.5.sp,
+                    color = Color(0xFF00796B),
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+        // --- 3. HORIZONTAL CATEGORY FILTER CHIPS ---
+        val categories = ArticleCategoryGroup.values()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            categories.forEach { cat ->
+                val isSelected = selectedCategory == cat
+                val count = if (cat == ArticleCategoryGroup.ALL) allArticles.size else allArticles.count { it.categoryGroup == cat }
+                val label = "${cat.iconEmoji} " + (if (isRtl) cat.titleAr else cat.titleFr) + " ($count)"
+
+                Box(
+                    modifier = Modifier
+                        .height(32.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(if (isSelected) HighlighterYellow.copy(alpha = 0.60f) else JournalPaper)
+                        .border(
+                            1.dp,
+                            if (isSelected) JournalWritingInk.copy(alpha = 0.50f) else JournalRule.copy(alpha = 0.40f),
+                            RoundedCornerShape(6.dp)
+                        )
+                        .clickable { selectedCategory = cat }
+                        .padding(horizontal = 10.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = label,
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                        fontSize = 12.sp,
+                        color = JournalWritingInk,
+                        style = TextStyle(platformStyle = NoFontPadding)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+        // --- 4. FILTERED ARTICLES LIST (100% Star Zra9) ---
+        filteredArticles.forEach { article ->
             val isExpanded = expandedArticleId == article.id
+            val isRecommended = article.id == primaryRecommendedId
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clickable {
+                        expandedArticleId = if (isExpanded) null else article.id
+                    }
                     .drawBehind {
                         if (isExpanded) {
                             val barW = 2.5.dp.toPx()
                             val barX = if (isRtl) size.width - barW / 2 else barW / 2
                             drawLine(
-                                color = article.tagColor.copy(alpha = 0.65f),
+                                color = article.tagColor.copy(alpha = 0.75f),
                                 start = Offset(barX, 0f),
                                 end = Offset(barX, size.height),
                                 strokeWidth = barW,
@@ -2748,14 +3128,11 @@ private fun SavingsArticlesLibrarySection(
                         }
                     }
             ) {
-                // Line 1: Header Row (Badge + Title + Time + Toggle)
+                // ── Line 1: Meta header (Category Badge + Read Time + Expand Indicator) ──
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(JournalRuleSpacing)
-                        .clickable {
-                            expandedArticleId = if (isExpanded) null else article.id
-                        },
+                        .height(JournalRuleSpacing),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Bottom
                 ) {
@@ -2768,12 +3145,12 @@ private fun SavingsArticlesLibrarySection(
                             modifier = Modifier
                                 .height(18.dp)
                                 .clip(RoundedCornerShape(3.dp))
-                                .background(article.tagColor.copy(alpha = 0.45f))
-                                .padding(horizontal = 5.dp),
+                                .background(if (isRecommended) HighlighterGreen.copy(alpha = 0.45f) else article.tagColor.copy(alpha = 0.40f))
+                                .padding(horizontal = 6.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                text = article.category,
+                                text = if (isRecommended) (if (isRtl) "⭐ موصى به لهدفك" else "⭐ Recommandé") else "${article.iconEmoji} " + (if (isRtl) article.categoryLabelAr else article.categoryLabelFr),
                                 fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 11.sp,
@@ -2781,18 +3158,6 @@ private fun SavingsArticlesLibrarySection(
                                 style = TextStyle(platformStyle = NoFontPadding)
                             )
                         }
-
-                        Text(
-                            text = article.title,
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.5.sp,
-                            color = JournalWritingInk,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = TextStyle(platformStyle = NoFontPadding),
-                            modifier = Modifier.journalBaselineOnRule()
-                        )
                     }
 
                     Row(
@@ -2800,9 +3165,9 @@ private fun SavingsArticlesLibrarySection(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = article.readTime,
+                            text = if (isRtl) article.readTimeAr else article.readTimeFr,
                             fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontSize = 11.sp,
+                            fontSize = 11.5.sp,
                             color = JournalMutedInk,
                             style = TextStyle(platformStyle = NoFontPadding),
                             modifier = Modifier.journalBaselineOnRule()
@@ -2810,7 +3175,7 @@ private fun SavingsArticlesLibrarySection(
                         Text(
                             text = if (isExpanded) "▲" else "▼",
                             fontFamily = PatrickHandFamily,
-                            fontSize = 11.sp,
+                            fontSize = 12.sp,
                             color = JournalMutedInk,
                             style = TextStyle(platformStyle = NoFontPadding),
                             modifier = Modifier.journalBaselineOnRule()
@@ -2818,68 +3183,123 @@ private fun SavingsArticlesLibrarySection(
                     }
                 }
 
-                // Line 2: Summary Row
-                Row(
+                // ── Line 2: Full Title (Up to 2 lines, 100% on blue lines) ──
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(JournalRuleSpacing)
-                        .clickable {
-                            expandedArticleId = if (isExpanded) null else article.id
-                        },
-                    verticalAlignment = Alignment.Bottom
+                        .snapHeightToRule()
                 ) {
                     Text(
-                        text = article.summary,
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                        fontSize = 12.5.sp,
-                        color = JournalMutedInk,
-                        maxLines = 1,
+                        text = if (isRtl) article.titleAr else article.titleFr,
+                        style = arabicWritingStyle(
+                            color = JournalWritingInk,
+                            sizeSp = 13.5f,
+                            weight = FontWeight.Bold
+                        ),
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        style = TextStyle(platformStyle = NoFontPadding),
-                        modifier = Modifier.journalBaselineOnRule()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 2.dp)
                     )
                 }
 
-                // Expanded full article content sitting on rules
+                // ── Line 3: Summary Subtitle ──
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .snapHeightToRule()
+                ) {
+                    Text(
+                        text = if (isRtl) article.summaryAr else article.summaryFr,
+                        style = arabicWritingStyle(
+                            color = JournalMutedInk,
+                            sizeSp = 12f,
+                            weight = FontWeight.Normal
+                        ),
+                        maxLines = if (isExpanded) 3 else 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 2.dp)
+                    )
+                }
+
+                // ── Expanded Content sitting on blue rules ──
                 if (isExpanded) {
-                    article.points.forEach { point ->
-                        Row(
+                    val points = if (isRtl) article.actionPointsAr else article.actionPointsFr
+                    points.forEach { point ->
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(JournalRuleSpacing),
-                            verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                .snapHeightToRule()
                         ) {
                             Text(
                                 text = point,
-                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                                fontSize = 12.sp,
-                                color = JournalWritingInk,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                style = TextStyle(platformStyle = NoFontPadding),
-                                modifier = Modifier.journalBaselineOnRule()
+                                style = arabicWritingStyle(
+                                    color = JournalWritingInk,
+                                    sizeSp = 12.5f,
+                                    weight = FontWeight.Normal
+                                ),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 2.dp)
                             )
                         }
                     }
 
-                    // Takeaway row
-                    Row(
+                    // Moroccan Numerical Case Study
+                    val caseStudy = if (isRtl) article.caseStudyAr else article.caseStudyFr
+                    if (caseStudy != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .snapHeightToRule()
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(article.tagColor.copy(alpha = 0.16f))
+                                .border(0.8.dp, article.tagColor.copy(alpha = 0.45f), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
+                        ) {
+                            Column {
+                                Text(
+                                    text = if (isRtl) "📊 حسبة واقعية بالأرقام:" else "📊 Chiffres concrets au Maroc :",
+                                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp,
+                                    color = JournalWritingInk,
+                                    style = TextStyle(platformStyle = NoFontPadding)
+                                )
+                                Spacer(modifier = Modifier.height(3.dp))
+                                Text(
+                                    text = caseStudy,
+                                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                    fontSize = 12.sp,
+                                    lineHeight = 17.sp,
+                                    color = JournalWritingInk.copy(alpha = 0.92f),
+                                    style = TextStyle(platformStyle = NoFontPadding)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+
+                    // Golden Takeaway Row on Rule
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(JournalRuleSpacing),
-                            verticalAlignment = Alignment.Bottom
-                        ) {
+                            .snapHeightToRule()
+                    ) {
                         Text(
-                            text = article.takeaway,
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            color = Color(0xFF00796B),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            style = TextStyle(platformStyle = NoFontPadding),
-                            modifier = Modifier.journalBaselineOnRule()
+                            text = if (isRtl) article.takeawayAr else article.takeawayFr,
+                            style = arabicWritingStyle(
+                                color = Color(0xFF00796B),
+                                sizeSp = 12.5f,
+                                weight = FontWeight.Bold
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 2.dp)
                         )
                     }
                 }

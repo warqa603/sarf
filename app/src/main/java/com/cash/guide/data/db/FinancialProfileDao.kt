@@ -24,4 +24,23 @@ interface FinancialProfileDao {
 
     @Query("DELETE FROM financial_profiles WHERE goalId = :goalId")
     suspend fun deleteProfileForGoal(goalId: String)
+
+    @Query("SELECT * FROM financial_profiles")
+    suspend fun getAllProfiles(): List<FinancialProfileEntity>
+
+    @Query("DELETE FROM financial_profiles")
+    suspend fun deleteAllProfiles()
+
+    @androidx.room.Transaction
+    suspend fun restoreProfiles(
+        profiles: List<FinancialProfileEntity>,
+        replaceExisting: Boolean
+    ) {
+        if (replaceExisting) {
+            deleteAllProfiles()
+        }
+        for (profile in profiles) {
+            insertProfile(profile)
+        }
+    }
 }

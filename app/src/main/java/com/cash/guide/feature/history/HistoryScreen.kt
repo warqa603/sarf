@@ -60,7 +60,9 @@ import com.cash.guide.ui.notebook.JournalDateRuleBand
 import com.cash.guide.ui.notebook.JournalInk
 import com.cash.guide.ui.notebook.JournalMutedInk
 import com.cash.guide.ui.notebook.JournalRuleSpacing
-import com.cash.guide.ui.notebook.JournalRuledDocument
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.cash.guide.ui.notebook.JournalLazyRuledDocument
 import com.cash.guide.ui.notebook.MonthPickerDialog
 import com.cash.guide.ui.notebook.NoFontPadding
 import com.cash.guide.ui.notebook.NotebookCalculationRow
@@ -113,102 +115,115 @@ fun HistoryScreen(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        JournalRuledDocument(modifier = Modifier.fillMaxSize(), clearFocusOnTap = true) {
+        JournalLazyRuledDocument(modifier = Modifier.fillMaxSize(), clearFocusOnTap = true) {
             // Line 1: Header Band (Compact "Historique" / "السجل" + Month Year sitting directly on the ruled line)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(JournalRuleSpacing)
-                    .padding(horizontal = 14.dp),
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = stringResource(R.string.history_title),
-                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                    fontSize = if (isRtl) 16.5.sp else 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = JournalInk,
-                    style = TextStyle(platformStyle = NoFontPadding),
-                    modifier = Modifier.journalBaselineOnRule()
-                )
-
-                Text(
-                    text = currentMonthYear,
-                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                    fontSize = if (isRtl) 13.5.sp else 14.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = JournalMutedInk.copy(alpha = 0.85f),
-                    style = TextStyle(platformStyle = NoFontPadding),
-                    modifier = Modifier.journalBaselineOnRule()
-                )
-            }
-
-            // Line 2: 1 rule spacer
-            Spacer(modifier = Modifier.height(JournalRuleSpacing))
-
-            // Line 3: Ruled-Line Search Row with Calendar icon popup
-            NotebookSearchField(
-                query = state.searchQuery,
-                onQueryChange = { query -> viewModel.updateSearchQuery(query) },
-                onOpenCalendar = { showMonthPicker = true }
-            )
-
-            // Line 4: 1 rule spacer
-            Spacer(modifier = Modifier.height(JournalRuleSpacing))
-
-            // Line 5: Section Header & Filter: "Tous les calculs" on Start, "Tout / Ce mois" on End (sitting directly on the blue line)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(JournalRuleSpacing)
-                    .padding(horizontal = 14.dp),
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Box(
+            item(key = "history_header_band") {
+                Row(
                     modifier = Modifier
-                        .padding(start = 2.dp)
-                        .drawBehind {
-                            val h = size.height
-                            val w = size.width
-                            val washHeight = 21.dp.toPx()
-                            val washCenterY = h - 6.5.dp.toPx()
-                            val washY = washCenterY - (washHeight / 2f)
-                            val padH = 8.dp.toPx()
-                            drawRoundRect(
-                                color = HighlighterBlue.copy(alpha = 0.55f),
-                                topLeft = Offset(-padH, washY),
-                                size = Size(w + padH * 2, washHeight),
-                                cornerRadius = CornerRadius(4.dp.toPx())
-                            )
-                        }
+                        .fillMaxWidth()
+                        .height(JournalRuleSpacing)
+                        .padding(horizontal = 14.dp),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = stringResource(R.string.history_section_title),
+                        text = stringResource(R.string.history_title),
                         fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                        fontSize = if (isRtl) 14.sp else 14.5.sp,
+                        fontSize = if (isRtl) 16.5.sp else 17.sp,
                         fontWeight = FontWeight.Bold,
                         color = JournalInk,
                         style = TextStyle(platformStyle = NoFontPadding),
                         modifier = Modifier.journalBaselineOnRule()
                     )
-                }
 
-                NotebookSegmentedControl(
-                    options = listOf(
-                        HistoryFilter.ALL to stringResource(R.string.history_filter_all),
-                        HistoryFilter.THIS_MONTH to stringResource(R.string.history_filter_month)
-                    ),
-                    selectedOption = state.selectedFilter,
-                    onSelectOption = { viewModel.setFilter(it) }
+                    Text(
+                        text = currentMonthYear,
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontSize = if (isRtl) 13.5.sp else 14.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = JournalMutedInk.copy(alpha = 0.85f),
+                        style = TextStyle(platformStyle = NoFontPadding),
+                        modifier = Modifier.journalBaselineOnRule()
+                    )
+                }
+            }
+
+            // Line 2: 1 rule spacer
+            item(key = "history_spacer_1") {
+                Spacer(modifier = Modifier.height(JournalRuleSpacing))
+            }
+
+            // Line 3: Ruled-Line Search Row with Calendar icon popup
+            item(key = "history_search_field") {
+                NotebookSearchField(
+                    query = state.searchQuery,
+                    onQueryChange = { query -> viewModel.updateSearchQuery(query) },
+                    onOpenCalendar = { showMonthPicker = true }
                 )
+            }
+
+            // Line 4: 1 rule spacer
+            item(key = "history_spacer_2") {
+                Spacer(modifier = Modifier.height(JournalRuleSpacing))
+            }
+
+            // Line 5: Section Header & Filter: "Tous les calculs" on Start, "Tout / Ce mois" on End (sitting directly on the blue line)
+            item(key = "history_filter_bar") {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(JournalRuleSpacing)
+                        .padding(horizontal = 14.dp),
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 2.dp)
+                            .drawBehind {
+                                val h = size.height
+                                val w = size.width
+                                val washHeight = 21.dp.toPx()
+                                val washCenterY = h - 6.5.dp.toPx()
+                                val washY = washCenterY - (washHeight / 2f)
+                                val padH = 8.dp.toPx()
+                                drawRoundRect(
+                                    color = HighlighterBlue.copy(alpha = 0.55f),
+                                    topLeft = Offset(-padH, washY),
+                                    size = Size(w + padH * 2, washHeight),
+                                    cornerRadius = CornerRadius(4.dp.toPx())
+                                )
+                            }
+                    ) {
+                        Text(
+                            text = stringResource(R.string.history_section_title),
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontSize = if (isRtl) 14.sp else 14.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = JournalInk,
+                            style = TextStyle(platformStyle = NoFontPadding),
+                            modifier = Modifier.journalBaselineOnRule()
+                        )
+                    }
+
+                    NotebookSegmentedControl(
+                        options = listOf(
+                            HistoryFilter.ALL to stringResource(R.string.history_filter_all),
+                            HistoryFilter.THIS_MONTH to stringResource(R.string.history_filter_month)
+                        ),
+                        selectedOption = state.selectedFilter,
+                        onSelectOption = { viewModel.setFilter(it) }
+                    )
+                }
             }
 
             // Line 8+: Results or Date Groups
             if (state.isSearching) {
                 if (state.searchResults.isNotEmpty()) {
-                    state.searchResults.forEachIndexed { idx, calc ->
+                    itemsIndexed(
+                        items = state.searchResults,
+                        key = { _, calc -> calc.calculation.id }
+                    ) { idx, calc ->
                         val currency = runCatching { MoneyUnit.valueOf(calc.calculation.currency) }.getOrDefault(MoneyUnit.DIRHAM)
                         val totalFormatted = JournalLedgerManager.formatTotal(calc.totalCentimes, currency)
                         val currencySuffix = if (currency == MoneyUnit.DIRHAM) {
@@ -232,27 +247,32 @@ fun HistoryScreen(
                     }
                 } else {
                     // Empty search result on 1 notebook line
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(JournalRuleSpacing),
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = stringResource(R.string.history_no_results_title),
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontSize = if (isRtl) 14.5.sp else 15.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = JournalMutedInk,
-                            style = TextStyle(platformStyle = NoFontPadding),
-                            modifier = Modifier.journalBaselineOnRule()
-                        )
+                    item(key = "history_empty_search") {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(JournalRuleSpacing),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.history_no_results_title),
+                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                fontSize = if (isRtl) 14.5.sp else 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = JournalMutedInk,
+                                style = TextStyle(platformStyle = NoFontPadding),
+                                modifier = Modifier.journalBaselineOnRule()
+                            )
+                        }
                     }
                 }
             } else {
                 if (state.allDateGroups.isNotEmpty()) {
-                    state.allDateGroups.forEachIndexed { groupIndex, group ->
+                    itemsIndexed(
+                        items = state.allDateGroups,
+                        key = { _, group -> group.header }
+                    ) { groupIndex, group ->
                         NotebookDateGroupBlock(
                             header = group.header,
                             calculations = group.calculations,
@@ -268,28 +288,32 @@ fun HistoryScreen(
                     }
                 } else if (!state.isLoading) {
                     // Empty history on 1 notebook line
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(JournalRuleSpacing),
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = stringResource(R.string.home_empty_title),
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontSize = if (isRtl) 14.5.sp else 15.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = JournalMutedInk,
-                            style = TextStyle(platformStyle = NoFontPadding),
-                            modifier = Modifier.journalBaselineOnRule()
-                        )
+                    item(key = "history_empty_state") {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(JournalRuleSpacing),
+                            verticalAlignment = Alignment.Bottom,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = stringResource(R.string.home_empty_title),
+                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                fontSize = if (isRtl) 14.5.sp else 15.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = JournalMutedInk,
+                                style = TextStyle(platformStyle = NoFontPadding),
+                                modifier = Modifier.journalBaselineOnRule()
+                            )
+                        }
                     }
                 }
             }
 
             // Bottom Spacers: 5 notebook lines for full scrolling clearance above dock
-            Spacer(modifier = Modifier.height(JournalRuleSpacing * 5))
+            item(key = "history_bottom_spacer") {
+                Spacer(modifier = Modifier.height(JournalRuleSpacing * 5))
+            }
         }
 
         // Action Sheet

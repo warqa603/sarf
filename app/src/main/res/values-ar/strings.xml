@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Brand and navigation -->
-    <string name="app_name">حسابي</string>
+    <string name="app_name">ورقة</string>
     <string name="app_tagline">دفتر الحسابات</string>
     <string name="nav_home">الرئيسية</string>
     <string name="nav_history">السجل</string>
@@ -132,7 +132,7 @@
     <string name="action_duplicate">نسخ الحساب</string>
     <string name="action_share_image">مشاركة كصورة</string>
     <string name="share_chooser_title">مشاركة الحساب</string>
-    <string name="share_footer_watermark">صُنع بواسطة حسابي</string>
+    <string name="share_footer_watermark">صُنع بواسطة ورقة</string>
     <string name="share_total_label">المجموع</string>
     <string name="share_empty_items">لا توجد بنود</string>
     <string name="share_article_prefix">بند</string>
@@ -263,7 +263,7 @@
     <string name="backup_toast_export_success">تم حفظ ملف النسخة .calc بنجاح!</string>
     <string name="backup_toast_restore_success">تم استرجاع البيانات بنجاح!</string>
     <string name="backup_toast_error">حدث خطأ أثناء العملية. يرجى التحقق من ملف .calc.</string>
-    <string name="backup_toast_share_title">مشاركة نسخة حسابي الاحتياطية</string>
+    <string name="backup_toast_share_title">مشاركة نسخة ورقة الاحتياطية</string>
     <string name="home_greeting_prefix">مرحباً </string>
     <string name="home_greeting_morning">صباح الخير</string>
     <string name="home_greeting_evening">مساء الخير</string>
@@ -272,8 +272,8 @@
     <string name="edit_profile_placeholder">اكتب اسمك الشخصي...</string>
     <string name="edit_profile_save">حفظ</string>
     <string name="edit_profile_cancel">إلغاء</string>
-    <string name="share_watermark">صُنع بواسطة حسابي</string>
-    <string name="share_brand">دفتر حسابي</string>
+    <string name="share_watermark">صُنع بواسطة تطبيق ورقة</string>
+    <string name="share_brand">ورقة • دفتر الحسابات</string>
     <string name="history_month_empty">لا توجد حسابات مسجلة في %1$s</string>
 
     <!-- Export options and formats -->
@@ -451,4 +451,31 @@
     <string name="note_voice_hint">🎙️ إملاء صوتي سريع</string>
     <string name="note_title_hint">عنوان الملاحظة...</string>
     <string name="note_body_hint">اكتب أفكارك، خواطرك، أو أي شيء تريد تذكره هنا... ✍️\nيمكنك أيضاً الضغط على الميكروفون للإملاء الصوتي !</string>
+    <string name="note_action_copy">نسخ</string>
+    <string name="note_action_paste">لصق</string>
+    <string name="note_action_cut">قص</string>
+    <string name="note_action_select_all">تحديد الكل</string>
+    <string name="note_action_undo">تراجع</string>
+    <string name="note_action_redo">إعادة</string>
+    <string name="note_action_checkbox">خانة اختيار</string>
+    <string name="note_action_bullet">نقطة</string>
+    <string name="note_action_number">ترقيم</string>
+    <string name="note_action_divider">خط فاصل</string>
+    <string name="note_action_timestamp">الوقت الحالي</string>
+    <string name="note_toast_copied">تم النسخ إلى الحافظة</string>
+    <string name="note_toast_pasted">تم اللصق من الحافظة</string>
+    <string name="note_toast_cut">تم القص إلى الحافظة</string>
+    <string name="note_toast_duplicated">تم تكرار الملاحظة بنجاح</string>
+    <string name="note_toast_empty_clipboard">الحافظة فارغة</string>
+    <string name="note_share_as_image">مشاركة كصورة دفتر</string>
+    <string name="note_share_as_text">مشاركة كنص</string>
+    <string name="note_copy_all">نسخ الملاحظة كاملة</string>
+    <string name="note_duplicate">تكرار الملاحظة</string>
+    <string name="note_clear_content">مسح النص</string>
+    <string name="note_stats_format">%1$d كلمة • %2$d حرف</string>
+    <string name="note_share_error">تعذر مشاركة الملاحظة</string>
+    <string name="note_action_highlight">تمييز النص</string>
+    <string name="note_voice_dictation_insert">إدراج ✓</string>
+    <string name="note_voice_dictation_cancel">إلغاء ✕</string>
+    <string name="permission_mic_rationale">صلاحية الميكروفون مطلوبة لاستخدام التسجيل الصوتي.</string>
 </resources>

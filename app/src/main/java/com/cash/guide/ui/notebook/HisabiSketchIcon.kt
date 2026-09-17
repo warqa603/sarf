@@ -53,7 +53,13 @@ enum class HisabiSymbol {
     VolumeHigh,
     VolumeMute,
     Coin,
-    Banknote
+    Banknote,
+    Redo,
+    Paste,
+    Cut,
+    Microphone,
+    CheckBox,
+    Highlighter
 }
 
 @Composable
@@ -198,7 +204,7 @@ fun HisabiSketchIcon(
                 val door = Path().apply {
                     moveTo(u(9.5f), u(19f))
                     lineTo(u(9.5f), u(14.5f))
-                    quadraticBezierTo(u(12f), u(12.5f), u(14.5f), u(14.5f))
+                    quadraticTo(u(12f), u(12.5f), u(14.5f), u(14.5f))
                     lineTo(u(14.5f), u(19f))
                 }
                 drawPath(door, tint, style = fine)
@@ -436,27 +442,107 @@ fun HisabiSketchIcon(
                 drawLine(tint, point(xSource + dx * 1.9f, 13f), point(xBranch - dx * 1.9f, 17f), u(1.35f), StrokeCap.Round)
             }
             HisabiSymbol.Undo -> {
-                val isRtl = layoutDirection == androidx.compose.ui.unit.LayoutDirection.Rtl
-                fun mx(x: Float) = if (isRtl) 24f - x else x
-
-                // 1. Smooth arch tail curving from bottom-right over the top to the arrowhead
+                // 1. Counter-clockwise arch tail curving from bottom-right over the top to the arrowhead
                 val arch = Path().apply {
-                    moveTo(u(mx(18.5f)), u(17.5f))
+                    moveTo(u(18.5f), u(17.5f))
                     cubicTo(
-                        u(mx(18.5f)), u(10.5f),
-                        u(mx(14f)), u(5.5f),
-                        u(mx(7f)), u(9.5f)
+                        u(18.5f), u(10.5f),
+                        u(14f), u(5.5f),
+                        u(7f), u(9.5f)
                     )
                 }
                 drawPath(arch, tint, style = pen)
 
-                // 2. Crisp, prominent arrowhead pointing backward (left in LTR, right in RTL)
+                // 2. Crisp, prominent arrowhead pointing backward to the left (↶)
                 val arrowHead = Path().apply {
-                    moveTo(u(mx(10.5f)), u(5.5f))
-                    lineTo(u(mx(5.5f)), u(9.5f))
-                    lineTo(u(mx(10.5f)), u(13.5f))
+                    moveTo(u(10.5f), u(5.5f))
+                    lineTo(u(5.5f), u(9.5f))
+                    lineTo(u(10.5f), u(13.5f))
                 }
                 drawPath(arrowHead, tint, style = pen)
+            }
+            HisabiSymbol.Redo -> {
+                // 1. Clockwise arch tail curving from bottom-left over the top to the arrowhead
+                val arch = Path().apply {
+                    moveTo(u(5.5f), u(17.5f))
+                    cubicTo(
+                        u(5.5f), u(10.5f),
+                        u(10f), u(5.5f),
+                        u(17f), u(9.5f)
+                    )
+                }
+                drawPath(arch, tint, style = pen)
+
+                // 2. Crisp, prominent arrowhead pointing forward to the right (↷)
+                val arrowHead = Path().apply {
+                    moveTo(u(13.5f), u(5.5f))
+                    lineTo(u(18.5f), u(9.5f))
+                    lineTo(u(13.5f), u(13.5f))
+                }
+                drawPath(arrowHead, tint, style = pen)
+            }
+            HisabiSymbol.Paste -> {
+                drawRoundRect(
+                    tint,
+                    topLeft = point(4.5f, 5.5f),
+                    size = Size(u(15f), u(15.5f)),
+                    cornerRadius = CornerRadius(u(2f)),
+                    style = pen
+                )
+                val clipPath = Path().apply {
+                    moveTo(u(8.5f), u(5.5f))
+                    lineTo(u(8.5f), u(3.5f))
+                    quadraticTo(u(8.5f), u(2.5f), u(9.5f), u(2.5f))
+                    lineTo(u(14.5f), u(2.5f))
+                    quadraticTo(u(15.5f), u(2.5f), u(15.5f), u(3.5f))
+                    lineTo(u(15.5f), u(5.5f))
+                }
+                drawPath(clipPath, tint, style = pen)
+                drawLine(tint, point(7.5f, 10f), point(16.5f, 10f), u(1.2f), StrokeCap.Round)
+                drawLine(tint, point(7.5f, 13.5f), point(16.5f, 13.5f), u(1.2f), StrokeCap.Round)
+                drawLine(tint, point(7.5f, 17f), point(13.5f, 17f), u(1.2f), StrokeCap.Round)
+            }
+            HisabiSymbol.Cut -> {
+                drawCircle(tint, u(2.5f), point(7f, 17.5f), style = pen)
+                drawCircle(tint, u(2.5f), point(17f, 17.5f), style = pen)
+                drawLine(tint, point(8.5f, 15.5f), point(17.5f, 4.5f), u(1.4f), StrokeCap.Round)
+                drawLine(tint, point(15.5f, 15.5f), point(6.5f, 4.5f), u(1.4f), StrokeCap.Round)
+                drawCircle(tint, u(0.85f), point(12f, 10.8f))
+            }
+            HisabiSymbol.Microphone -> {
+                drawRoundRect(
+                    tint,
+                    topLeft = point(9f, 3.5f),
+                    size = Size(u(6f), u(10.5f)),
+                    cornerRadius = CornerRadius(u(3f)),
+                    style = pen
+                )
+                drawArc(
+                    color = tint,
+                    startAngle = 0f,
+                    sweepAngle = 180f,
+                    useCenter = false,
+                    topLeft = point(6f, 7.5f),
+                    size = Size(u(12f), u(9f)),
+                    style = pen
+                )
+                drawLine(tint, point(12f, 16.5f), point(12f, 20.5f), u(1.4f), StrokeCap.Round)
+                drawLine(tint, point(8.5f, 20.5f), point(15.5f, 20.5f), u(1.4f), StrokeCap.Round)
+            }
+            HisabiSymbol.CheckBox -> {
+                drawRoundRect(
+                    tint,
+                    topLeft = point(4.5f, 4.5f),
+                    size = Size(u(15f), u(15f)),
+                    cornerRadius = CornerRadius(u(2.5f)),
+                    style = pen
+                )
+                val checkPath = Path().apply {
+                    moveTo(u(7.5f), u(12f))
+                    lineTo(u(10.5f), u(15f))
+                    lineTo(u(16.5f), u(8.5f))
+                }
+                drawPath(checkPath, tint, style = pen)
             }
             HisabiSymbol.Table -> {
                 drawRoundRect(
@@ -630,6 +716,35 @@ fun HisabiSketchIcon(
                 // Side decorative hash strokes
                 drawLine(tint, point(5f, 9.5f), point(5f, 17f), u(1.1f), StrokeCap.Round)
                 drawLine(tint, point(19f, 9.5f), point(19f, 17f), u(1.1f), StrokeCap.Round)
+            }
+            HisabiSymbol.Highlighter -> {
+                // 1. Chisel marker barrel (angled rectangular body)
+                val body = Path().apply {
+                    moveTo(u(8.5f), u(13.5f))
+                    lineTo(u(14f), u(8f))
+                    lineTo(u(18f), u(12f))
+                    lineTo(u(12.5f), u(17.5f))
+                    close()
+                }
+                drawPath(body, tint, style = pen)
+
+                // 2. Collar divider line
+                drawLine(tint, point(8.5f, 13.5f), point(12.5f, 17.5f), u(1.2f), StrokeCap.Round)
+
+                // 3. Characteristic slanted chisel tip
+                val tip = Path().apply {
+                    moveTo(u(8.5f), u(13.5f))
+                    lineTo(u(4.5f), u(17.5f))
+                    lineTo(u(7f), u(20f))
+                    lineTo(u(12.5f), u(17.5f))
+                }
+                drawPath(tip, tint, style = pen)
+
+                // 4. Marker cap end detail
+                drawLine(tint, point(15.5f, 6.5f), point(19.5f, 10.5f), u(1.3f), StrokeCap.Round)
+
+                // 5. Highlighter fluorescent ink stroke at bottom
+                drawLine(tint, point(3f, 21.5f), point(11.5f, 21.5f), u(2.4f), StrokeCap.Round)
             }
         }
     }

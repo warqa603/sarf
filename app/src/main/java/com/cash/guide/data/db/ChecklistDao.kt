@@ -86,4 +86,20 @@ interface ChecklistDao {
 
     @Query("UPDATE checklists SET groupId = :groupId, updatedAtEpochMs = :now WHERE id = :checklistId")
     suspend fun assignChecklistToGroup(checklistId: String, groupId: String?, now: Long)
+
+    @Query("DELETE FROM checklists")
+    suspend fun deleteAllChecklists()
+
+    @Transaction
+    suspend fun restoreChecklists(
+        items: List<ChecklistWithItems>,
+        replaceExisting: Boolean
+    ) {
+        if (replaceExisting) {
+            deleteAllChecklists()
+        }
+        for (item in items) {
+            insertChecklistWithItems(item.checklist, item.items)
+        }
+    }
 }

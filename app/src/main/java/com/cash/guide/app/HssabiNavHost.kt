@@ -2,7 +2,9 @@ package com.cash.guide.app
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -66,6 +68,20 @@ fun HssabiNavHost(
 ) {
     val coroutineScope = rememberCoroutineScope()
 
+    val context = LocalContext.current
+    val activity = com.cash.guide.MainActivity.currentActivity ?: (context as? android.app.Activity)
+    val adMobManager = remember { com.cash.guide.domain.ads.AdMobManager.getInstance(context) }
+
+    val popBackStackWithAd: () -> Unit = {
+        if (activity != null) {
+            adMobManager.showInterstitialIfThresholdMet(activity) {
+                navController.popBackStack()
+            }
+        } else {
+            navController.popBackStack()
+        }
+    }
+
     NavHost(
         navController = navController,
         startDestination = AppDestination.Home.route,
@@ -104,7 +120,7 @@ fun HssabiNavHost(
                     navController.navigate(AppDestination.NoteDetail.createRoute(id))
                 },
                 onNewChecklist = {
-                    navController.navigate(AppDestination.Checklist.route)
+                    navController.navigate(AppDestination.Checklists.createRoute(openCreate = true))
                 },
                 onNewNote = {
                     navController.navigate(AppDestination.NoteDetail.createRoute(java.util.UUID.randomUUID().toString()))
@@ -229,11 +245,23 @@ fun HssabiNavHost(
             )
         }
 
-        composable(AppDestination.Checklists.route) { backStackEntry ->
+        composable(
+            route = AppDestination.Checklists.ROUTE_PATTERN,
+            arguments = listOf(navArgument("openCreate") {
+                type = NavType.BoolType
+                defaultValue = false
+            })
+        ) { backStackEntry ->
+            val openCreate = backStackEntry.arguments?.getBoolean("openCreate") ?: false
             val overviewViewModel: ChecklistsOverviewViewModel = viewModel(
                 viewModelStoreOwner = backStackEntry
             ) {
                 ChecklistsOverviewViewModel(checklistRepository)
+            }
+            LaunchedEffect(openCreate) {
+                if (openCreate) {
+                    overviewViewModel.openCreateDialog()
+                }
             }
             ChecklistsOverviewScreen(
                 viewModel = overviewViewModel,
@@ -263,7 +291,7 @@ fun HssabiNavHost(
             ChecklistScreen(
                 viewModel = checklistViewModel,
                 calculationRepository = calculationRepository,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = popBackStackWithAd
             )
         }
 
@@ -279,7 +307,7 @@ fun HssabiNavHost(
                 onOpenNote = { noteId ->
                     navController.navigate(AppDestination.NoteDetail.createRoute(noteId))
                 },
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = popBackStackWithAd
             )
         }
 
@@ -303,7 +331,7 @@ fun HssabiNavHost(
             }
             RemindersOverviewScreen(
                 viewModel = remindersViewModel,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = popBackStackWithAd
             )
         }
 
@@ -324,7 +352,7 @@ fun HssabiNavHost(
             NoteEditorScreen(
                 viewModel = noteViewModel,
                 calculationRepository = calculationRepository,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = popBackStackWithAd
             )
         }
 
@@ -379,7 +407,7 @@ fun HssabiNavHost(
                 initialCurrency = initialCurrency,
                 initialTitle = initialTitle,
                 templateId = templateId,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = popBackStackWithAd,
                 onOpenCalculation = { id -> navController.navigate("calculation/$id") }
             )
         }
@@ -398,7 +426,7 @@ fun HssabiNavHost(
             CalculationEditorScreen(
                 viewModel = editorViewModel,
                 calculationId = calcId,
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = popBackStackWithAd,
                 onOpenCalculation = { id -> navController.navigate("calculation/$id") }
             )
         }

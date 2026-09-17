@@ -99,7 +99,7 @@ fun AiVoiceRowContainer(
     content: @Composable RowScope.() -> Unit
 ) {
     val context = LocalContext.current
-    val activity = context as? Activity
+    val activity = com.cash.guide.MainActivity.currentActivity ?: context.findActivity()
     val scope = rememberCoroutineScope()
 
     val creditManager = remember { AiCreditManager.getInstance(context) }
@@ -160,6 +160,12 @@ fun AiVoiceRowContainer(
                     buttonState = AiVoiceButtonState.IDLE
                 }
             }
+        }
+    }
+
+    DisposableEffect(speechHelper) {
+        onDispose {
+            speechHelper.destroy()
         }
     }
 
@@ -314,6 +320,7 @@ fun AiVoiceRowContainer(
 
     // Dialogs
     RenderAiDialogs(
+        activity = activity,
         showOnboardingDialog = showOnboardingDialog,
         onDismissOnboarding = {
             onboardingManager.markSeen()
@@ -332,7 +339,7 @@ fun AiVoiceRowContainer(
         showRewardedAdDialog = showRewardedAdDialog,
         onDismissRewardedAd = { showRewardedAdDialog = false },
         onRewardSuccess = {
-            creditManager.addRewardCredits(5)
+            creditManager.addRewardCredits(3)
             showRewardedAdDialog = false
             buttonState = AiVoiceButtonState.RECORDING
             speechHelper.startListening(currentScript)
@@ -368,7 +375,7 @@ fun AiVoiceDockedBottomButton(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val activity = context as? Activity
+    val activity = com.cash.guide.MainActivity.currentActivity ?: context.findActivity()
     val scope = rememberCoroutineScope()
 
     val creditManager = remember { AiCreditManager.getInstance(context) }
@@ -429,6 +436,12 @@ fun AiVoiceDockedBottomButton(
                     buttonState = AiVoiceButtonState.IDLE
                 }
             }
+        }
+    }
+
+    DisposableEffect(speechHelper) {
+        onDispose {
+            speechHelper.destroy()
         }
     }
 
@@ -584,6 +597,7 @@ fun AiVoiceDockedBottomButton(
 
     // Dialogs
     RenderAiDialogs(
+        activity = activity,
         showOnboardingDialog = showOnboardingDialog,
         onDismissOnboarding = {
             onboardingManager.markSeen()
@@ -602,7 +616,7 @@ fun AiVoiceDockedBottomButton(
         showRewardedAdDialog = showRewardedAdDialog,
         onDismissRewardedAd = { showRewardedAdDialog = false },
         onRewardSuccess = {
-            creditManager.addRewardCredits(5)
+            creditManager.addRewardCredits(3)
             showRewardedAdDialog = false
             buttonState = AiVoiceButtonState.RECORDING
             speechHelper.startListening(currentScript)
@@ -627,6 +641,7 @@ fun AiVoiceDockedBottomButton(
 
 @Composable
 private fun RenderAiDialogs(
+    activity: Activity?,
     showOnboardingDialog: Boolean,
     onDismissOnboarding: () -> Unit,
     showRewardedAdDialog: Boolean,
@@ -641,7 +656,6 @@ private fun RenderAiDialogs(
     recordedTranscript: String
 ) {
     val context = LocalContext.current
-    val activity = context as? Activity
     val adMobManager = remember { AdMobManager.getInstance(context) }
 
     // 1. Educational Onboarding Dialog
@@ -676,7 +690,7 @@ private fun RenderAiDialogs(
                     }
 
                     Text(
-                        text = "سلاو ليك المحاولات اليومية (5/5) ⏳",
+                        text = "سلاو ليك المحاولات اليومية (3/3) ⏳",
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = Color(0xFFF57F17),
@@ -686,7 +700,7 @@ private fun RenderAiDialogs(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = "تفرج فإشهار فيديو قصير (15-30 ثانية) وربح 5 محاولات إضافية فوراً لتسجيل السلعة والحسابات!",
+                        text = "تفرج فإشهار فيديو قصير (15-30 ثانية) وربح 3 محاولات إضافية فوراً لتسجيل السلعة والحسابات!",
                         fontSize = 13.5.sp,
                         color = JournalInk,
                         textAlign = TextAlign.Center,
@@ -696,23 +710,24 @@ private fun RenderAiDialogs(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Surface(
+                        onClick = {
+                            if (activity != null) {
+                                if (!adMobManager.isRewardedReady.value) {
+                                    Toast.makeText(context, "الإعلان غير جاهز بعد، المرجو المحاولة مرة أخرى", Toast.LENGTH_SHORT).show()
+                                    adMobManager.loadRewardedAd()
+                                } else {
+                                    adMobManager.showRewardedAd(
+                                        activity = activity,
+                                        onRewardEarned = onRewardSuccess
+                                    )
+                                }
+                            } else {
+                                Toast.makeText(context, "Erreur système: Activity introuvable", Toast.LENGTH_LONG).show()
+                            }
+                        },
                         shape = RoundedCornerShape(20.dp),
                         color = Color(0xFF1B7A4B),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                if (activity != null) {
-                                    if (!adMobManager.isReady.value) {
-                                        Toast.makeText(context, "جاري تجهيز الإعلان، يرجى المحاولة بعد لحظات...", Toast.LENGTH_SHORT).show()
-                                        adMobManager.loadRewardedAd()
-                                    } else {
-                                        adMobManager.showRewardedAd(
-                                            activity = activity,
-                                            onRewardEarned = onRewardSuccess
-                                        )
-                                    }
-                                }
-                            }
+                        modifier = Modifier.fillMaxWidth()
                     ) {
                         Row(
                             modifier = Modifier.padding(vertical = 12.dp),
@@ -727,7 +742,7 @@ private fun RenderAiDialogs(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "مشاهدة إعلان وربح 5 محاولات 🎁",
+                                text = "مشاهدة إعلان وربح 3 محاولات 🎁",
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.5.sp
@@ -780,4 +795,15 @@ fun AiVoiceAssistantButton(
         onCalculationResult = onCalculationResult,
         modifier = modifier
     )
+}
+
+internal fun Context.findActivity(): Activity? {
+    var context = this
+    while (context is android.content.ContextWrapper) {
+        if (context is Activity) {
+            return context
+        }
+        context = context.baseContext
+    }
+    return null
 }

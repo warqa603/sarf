@@ -8,7 +8,10 @@ sealed class AppDestination(val route: String) {
     data object Settings : AppDestination("settings")
     data object StyleShowcase : AppDestination("style_showcase")
     data object CashRegister : AppDestination("cash_register")
-    data object Checklists : AppDestination("checklists")
+    data object Checklists : AppDestination("checklists") {
+        const val ROUTE_PATTERN = "checklists?openCreate={openCreate}"
+        fun createRoute(openCreate: Boolean = false): String = "checklists?openCreate=$openCreate"
+    }
     data object ChecklistDetail : AppDestination("checklist_detail") {
         const val ROUTE_PATTERN = "checklist_detail/{checklistId}"
         fun createRoute(checklistId: String): String = "checklist_detail/$checklistId"
@@ -16,7 +19,7 @@ sealed class AppDestination(val route: String) {
     data object Checklist : AppDestination("checklists") {
         const val ROUTE_PATTERN = "checklist_detail/{checklistId}"
         fun createRoute(checklistId: String? = null): String {
-            return if (checklistId != null) "checklist_detail/$checklistId" else "checklists"
+            return if (checklistId != null) "checklist_detail/$checklistId" else "checklists?openCreate=false"
         }
     }
     data object Calculs : AppDestination("calculs")

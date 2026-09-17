@@ -39,7 +39,7 @@ class ChecklistLinkHelperTest {
         )
 
         val link = ChecklistLinkHelper.createDeepLink("تقضية الجمعة", items)
-        assertTrue("Link should start with HTTPS base", link.startsWith("https://amine603.github.io/sarf/checklist/?d="))
+        assertTrue("Link should start with HTTPS base", link.startsWith("https://warqa603.github.io/sarf/checklist/?d="))
 
         val parsed = ChecklistLinkHelper.parseDeepLink(link)
         assertNotNull(parsed)
@@ -78,7 +78,7 @@ class ChecklistLinkHelperTest {
         val b64 = java.util.Base64.getUrlEncoder().encodeToString(rawJson.toByteArray(Charsets.UTF_8))
         // Simulate browser encoding '=' as '%3D'
         val percentEncoded = b64.replace("=", "%3D")
-        val link = "https://amine603.github.io/sarf/checklist?d=$percentEncoded"
+        val link = "https://warqa603.github.io/sarf/checklist?d=$percentEncoded"
         
         val parsed = ChecklistLinkHelper.parseDeepLink(link)
         assertNotNull(parsed)

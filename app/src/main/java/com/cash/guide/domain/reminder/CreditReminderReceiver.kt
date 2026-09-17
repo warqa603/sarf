@@ -109,7 +109,7 @@ class CreditReminderReceiver : BroadcastReceiver() {
                     )
 
                     val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-                        .setSmallIcon(R.mipmap.ic_launcher)
+                        .setSmallIcon(R.drawable.ic_stat_sarf_notification)
                         .setContentTitle(context.getString(R.string.notification_credit_title, titleText))
                         .setContentText(context.getString(R.string.notification_credit_body, totalFormatted))
                         .setStyle(

@@ -510,7 +510,9 @@ private fun NoteRowItem(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     val displayTitle = note.title.ifBlank { if (isRtl) "ملاحظة بدون عنوان" else "Note sans titre" }
-    val previewContent = note.content.lines().firstOrNull { it.isNotBlank() } ?: ""
+    val previewContent = note.content.lines().firstOrNull { it.isNotBlank() }
+        ?.replace(Regex("==([a-zA-Z]:)?(.*?)== *"), "$2 ")
+        ?.trim() ?: ""
 
     val guideLineColor = HighlighterPink.copy(alpha = 0.55f)
 

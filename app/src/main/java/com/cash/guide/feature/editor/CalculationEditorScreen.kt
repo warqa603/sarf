@@ -205,7 +205,10 @@ fun CalculationEditorScreen(
                 canUndo = state.canUndo,
                 onUndoClick = { viewModel.undoDelete() },
                 onCalculatorClick = { viewModel.openCalculatorPopup(state.activeRowId) },
-                onSaveClick = { viewModel.saveCalculation(onSuccess = onNavigateBack) },
+                onSaveClick = { 
+                    com.cash.guide.domain.ads.AdMobManager.getInstance(context).reportModification()
+                    viewModel.saveCalculation(onSuccess = onNavigateBack) 
+                },
                 onShareClick = { showExportSheet = true },
                 onBackClick = { viewModel.handleBackPress(onNavigateBack) }
             )
@@ -445,7 +448,10 @@ fun CalculationEditorScreen(
         // Unsaved Changes Dialog
         if (state.showUnsavedDialog) {
             UnsavedChangesDialog(
-                onSave = { viewModel.saveCalculation(onSuccess = onNavigateBack) },
+                onSave = { 
+                    com.cash.guide.domain.ads.AdMobManager.getInstance(context).reportModification()
+                    viewModel.saveCalculation(onSuccess = onNavigateBack) 
+                },
                 onDiscard = { viewModel.discardChanges(onNavigateBack) },
                 onContinue = { viewModel.dismissUnsavedDialog() }
             )

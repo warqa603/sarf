@@ -2,6 +2,7 @@
 <paths>
     <cache-path name="shared_calculations" path="shared_calculations/" />
     <cache-path name="shared_checklists" path="shared_checklists/" />
+    <cache-path name="shared_notes" path="shared_notes/" />
     <cache-path name="backups" path="backups/" />
     <cache-path name="exports" path="exports/" />
 </paths>

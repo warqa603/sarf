@@ -1008,7 +1008,7 @@ private fun SettingsSectionBadge(
                     color = badgeColor
                 )
             },
-        contentAlignment = if (isRtl) Alignment.CenterEnd else Alignment.CenterStart
+        contentAlignment = Alignment.CenterStart
     ) {
         Box(
             modifier = Modifier

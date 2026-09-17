@@ -43,9 +43,37 @@ object NoteShareHelper {
                 launchImageShareIntent(context, uri, note.title.ifBlank { "Note" })
             } catch (e: Exception) {
                 e.printStackTrace()
-                Toast.makeText(context, R.string.share_error, Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, R.string.note_share_error, Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    fun shareAsText(context: Context, note: NoteEntity) {
+        val titleText = note.title.trim()
+        val rawBodyText = note.content.trim()
+        
+        // Clean highlight delimiters "==p:text==" -> "text"
+        val hlRegex = Regex("==((?:[pgboy]:)?)(.*?)==", RegexOption.DOT_MATCHES_ALL)
+        val bodyText = hlRegex.replace(rawBodyText) { match -> match.groupValues[2] }
+
+        val textToShare = buildString {
+            if (titleText.isNotBlank()) {
+                append("📌 ").append(titleText).append("\n\n")
+            }
+            append(bodyText)
+            append("\n\n───\nWarqa • ورقة")
+        }
+
+        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, textToShare)
+            putExtra(Intent.EXTRA_SUBJECT, titleText.ifBlank { "Note" })
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        val chooser = Intent.createChooser(sendIntent, "Partager la note via").apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(chooser)
     }
 
     private fun isArabicScript(text: String): Boolean {
@@ -165,7 +193,7 @@ object NoteShareHelper {
             typeface = if (contentIsRtl) tajawalMedium else patrickHand
             textAlign = Paint.Align.CENTER
         }
-        val dateFormatter = SimpleDateFormat("EEEE d MMMM yyyy • HH:mm", if (contentIsRtl) Locale("ar", "MA") else Locale.FRENCH)
+        val dateFormatter = SimpleDateFormat("EEEE d MMMM yyyy • HH:mm", if (contentIsRtl) Locale.forLanguageTag("ar-MA") else Locale.FRENCH)
         val dateStr = dateFormatter.format(Date(note.createdAtEpochMs))
         canvas.drawText(dateStr, width / 2f, 205f, datePaint)
 
@@ -177,6 +205,17 @@ object NoteShareHelper {
         }
         canvas.drawLine(50f, 245f, width - 50f, 245f, dividerPaint)
 
+        // Highlighter paints for notebook sharing
+        val defaultHlPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#90FFF176"); style = Paint.Style.FILL }
+        val hlColorMap = mapOf(
+            "p" to Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#90F3A7B9"); style = Paint.Style.FILL },
+            "g" to Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#90C9DDA0"); style = Paint.Style.FILL },
+            "b" to Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#90A8CFE3"); style = Paint.Style.FILL },
+            "o" to Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#90FFCC80"); style = Paint.Style.FILL },
+            "y" to defaultHlPaint
+        )
+        val hlRegex = Regex("==((?:[pgboy]:)?)(.*?)==")
+
         // Render body lines on notebook rules
         var lineY = ruleYStart
         bodyPaint.textAlign = if (contentIsRtl) Paint.Align.RIGHT else Paint.Align.LEFT
@@ -184,7 +223,43 @@ object NoteShareHelper {
 
         for (line in wrappedLines) {
             if (line.isNotEmpty()) {
-                canvas.drawText(line, textX, lineY - 14f, bodyPaint)
+                if (line.contains("==")) {
+                    // Extract highlight spans and compute clean text
+                    var cleanText = ""
+                    var lastIndex = 0
+                    val spans = mutableListOf<Triple<Int, Int, Paint>>() // start in cleanText, end in cleanText, paint
+
+                    for (m in hlRegex.findAll(line)) {
+                        cleanText += line.substring(lastIndex, m.range.first)
+                        val colorTag = m.groupValues[1].removeSuffix(":").lowercase()
+                        val hlContent = m.groupValues[2]
+                        val startInClean = cleanText.length
+                        cleanText += hlContent
+                        val endInClean = cleanText.length
+                        val paint = hlColorMap[colorTag] ?: defaultHlPaint
+                        spans.add(Triple(startInClean, endInClean, paint))
+                        lastIndex = m.range.last + 1
+                    }
+                    cleanText += line.substring(lastIndex)
+
+                    // Draw highlighter washes behind spans
+                    for ((s, e, paint) in spans) {
+                        val beforeText = cleanText.substring(0, s)
+                        val spanText = cleanText.substring(s, e)
+                        val beforeW = bodyPaint.measureText(beforeText)
+                        val spanW = bodyPaint.measureText(spanText)
+
+                        val left = if (contentIsRtl) textX - beforeW - spanW - 4f else textX + beforeW - 4f
+                        val right = if (contentIsRtl) textX - beforeW + 4f else textX + beforeW + spanW + 4f
+                        val top = lineY - 42f
+                        val bottom = lineY - 8f
+                        canvas.drawRoundRect(RectF(left, top, right, bottom), 8f, 8f, paint)
+                    }
+
+                    canvas.drawText(cleanText, textX, lineY - 14f, bodyPaint)
+                } else {
+                    canvas.drawText(line, textX, lineY - 14f, bodyPaint)
+                }
             }
             lineY += lineSpacing
         }
@@ -196,14 +271,14 @@ object NoteShareHelper {
             typeface = if (contentIsRtl) tajawalMedium else patrickHand
             textAlign = Paint.Align.CENTER
         }
-        val watermarkText = if (contentIsRtl) "📝 دُوّن في تطبيق الملاحظات والخواطر" else "📝 Écrit dans le Carnet de Notes"
+        val watermarkText = if (contentIsRtl) "Warqa • ورقة وستيلو فـ جيبك" else "Warqa • Carnet de Notes"
         canvas.drawText(watermarkText, width / 2f, height - 70f, watermarkPaint)
 
         return bitmap
     }
 
     private fun saveBitmapToCache(context: Context, bitmap: Bitmap, noteId: String): Uri {
-        val cachePath = File(context.cacheDir, "shared_images").apply { mkdirs() }
+        val cachePath = File(context.cacheDir, "shared_notes").apply { mkdirs() }
         val file = File(cachePath, "note_${noteId}_${System.currentTimeMillis()}.png")
         FileOutputStream(file).use { out ->
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)

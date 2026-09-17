@@ -166,7 +166,7 @@ fun EditProfileDialog(
                     if (nameText.isNotEmpty()) {
                         Box(
                             modifier = Modifier
-                                .align(if (isRtl) Alignment.CenterStart else Alignment.CenterEnd)
+                                .align(Alignment.CenterEnd)
                                 .size(36.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable(role = Role.Button, onClick = { nameText = "" }),

@@ -147,6 +147,23 @@ data class ActionStep(
 )
 
 // ══════════════════════════════════════════════════════════════════════════════
+// Diagnostic Actionable Advice Card (Real-life, tailored financial prescription)
+// ══════════════════════════════════════════════════════════════════════════════
+
+data class DiagnosticAdviceCard(
+    val id: String,
+    val priorityLevel: Int, // 1 = Critical / Safety, 2 = Leak recovery, 3 = Habits & Growth
+    val iconEmoji: String,
+    val titleAr: String,
+    val titleFr: String,
+    val detailedAdviceAr: String,
+    val detailedAdviceFr: String,
+    val concreteImpactAr: String = "",
+    val concreteImpactFr: String = "",
+    val categoryTag: String // DEBT | EMERGENCY | LEAK | TIMING | SEASONAL | BEHAVIOR | PACING
+)
+
+// ══════════════════════════════════════════════════════════════════════════════
 // Diagnostic warning
 // ══════════════════════════════════════════════════════════════════════════════
 
@@ -174,6 +191,7 @@ data class FullDiagnosticResult(
     val protectedAreasFr: List<String>,
     val planOptions: List<SavingsPlanOption>,  // Plans A, B, (C)
     val topActions: List<ActionStep>,          // max 3
+    val adviceCards: List<DiagnosticAdviceCard> = emptyList(), // Tailored real-world advice cards
     val recommendedContentIds: List<String>,   // ordered article IDs
     // legacy compatibility: keep PlanDiagnosis fields for Simulator
     val austerityStepsAr: List<String>,

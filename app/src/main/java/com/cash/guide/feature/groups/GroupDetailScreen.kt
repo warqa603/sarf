@@ -88,7 +88,9 @@ import com.cash.guide.ui.notebook.JournalMutedInk
 import com.cash.guide.ui.notebook.JournalPaper
 import com.cash.guide.ui.notebook.JournalRule
 import com.cash.guide.ui.notebook.JournalRuleSpacing
-import com.cash.guide.ui.notebook.JournalRuledDocument
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.cash.guide.ui.notebook.JournalLazyRuledDocument
 import com.cash.guide.ui.notebook.JournalWritingInk
 import com.cash.guide.ui.notebook.NoFontPadding
 import com.cash.guide.ui.notebook.NotebookCalculationRow
@@ -143,7 +145,7 @@ fun GroupDetailScreen(
 
     val totalFormatted = JournalLedgerManager.formatTotal(state.totalCentimes, defaultCurrency)
 
-    JournalRuledDocument(
+    JournalLazyRuledDocument(
         modifier = modifier
             .fillMaxSize()
             .statusBarsPadding()
@@ -151,7 +153,8 @@ fun GroupDetailScreen(
         clearFocusOnTap = true
     ) {
         // Line 1: Back arrow + Group Title with wash on Start, (Total or Count) on End
-        Row(
+        item(key = "group_header") {
+            Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(JournalRuleSpacing)
@@ -272,45 +275,57 @@ fun GroupDetailScreen(
                 }
             }
         }
+    }
 
         // Line 2: 1-rule spacer
-        Spacer(modifier = Modifier.height(JournalRuleSpacing))
+        item(key = "group_spacer_1") {
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+        }
 
         // Line 3: Action button adapted to category
-        Box(modifier = Modifier.padding(horizontal = 14.dp)) {
-            when (category) {
-                GroupCategory.CALCULATIONS -> {
-                    NotebookPrimaryActionButton(
-                        text = stringResource(R.string.group_detail_new_calc),
-                        onClick = { onNewCalculationInGroup(viewModel.groupId) }
-                    )
-                }
-                GroupCategory.NOTES -> {
-                    NotebookPrimaryActionButton(
-                        text = stringResource(R.string.group_detail_new_note),
-                        onClick = onNewNoteInGroup
-                    )
-                }
-                GroupCategory.CHECKLISTS -> {
-                    NotebookPrimaryActionButton(
-                        text = stringResource(R.string.group_detail_new_checklist),
-                        onClick = { viewModel.openCreateChecklistDialog() }
-                    )
+        item(key = "group_action_btn") {
+            Box(modifier = Modifier.padding(horizontal = 14.dp)) {
+                when (category) {
+                    GroupCategory.CALCULATIONS -> {
+                        NotebookPrimaryActionButton(
+                            text = stringResource(R.string.group_detail_new_calc),
+                            onClick = { onNewCalculationInGroup(viewModel.groupId) }
+                        )
+                    }
+                    GroupCategory.NOTES -> {
+                        NotebookPrimaryActionButton(
+                            text = stringResource(R.string.group_detail_new_note),
+                            onClick = onNewNoteInGroup
+                        )
+                    }
+                    GroupCategory.CHECKLISTS -> {
+                        NotebookPrimaryActionButton(
+                            text = stringResource(R.string.group_detail_new_checklist),
+                            onClick = { viewModel.openCreateChecklistDialog() }
+                        )
+                    }
                 }
             }
         }
 
         // Line 4: 1-rule spacer
-        Spacer(modifier = Modifier.height(JournalRuleSpacing))
+        item(key = "group_spacer_2") {
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+        }
 
         // Line 5+: Items list based on Category
         when (category) {
             GroupCategory.CALCULATIONS -> {
                 val calculations = state.calculations
                 if (calculations.isEmpty() && !state.isLoading) {
-                    EmptyCategoryRow(stringResource(R.string.group_detail_empty), isRtl)
+                    item(key = "empty_calcs") {
+                        EmptyCategoryRow(stringResource(R.string.group_detail_empty), isRtl)
+                    }
                 } else {
-                    calculations.forEachIndexed { index, calc ->
+                    itemsIndexed(
+                        items = calculations,
+                        key = { _, calc -> calc.calculation.id }
+                    ) { index, calc ->
                         val calcCurrency = runCatching { MoneyUnit.valueOf(calc.calculation.currency) }.getOrDefault(MoneyUnit.DIRHAM)
                         val calcTotalFormatted = JournalLedgerManager.formatTotal(calc.totalCentimes, calcCurrency)
                         val calcCurrencySuffix = if (calcCurrency == MoneyUnit.DIRHAM) {
@@ -358,10 +373,15 @@ fun GroupDetailScreen(
             GroupCategory.NOTES -> {
                 val notes = state.notes
                 if (notes.isEmpty() && !state.isLoading) {
-                    EmptyCategoryRow(stringResource(R.string.group_detail_empty_notes), isRtl)
+                    item(key = "empty_notes") {
+                        EmptyCategoryRow(stringResource(R.string.group_detail_empty_notes), isRtl)
+                    }
                 } else {
-                    val dateFormatter = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
-                    notes.forEach { note ->
+                    items(
+                        items = notes,
+                        key = { it.id }
+                    ) { note ->
+                        val dateFormatter = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
                         val shortDateStr = dateFormatter.format(Date(note.updatedAtEpochMs))
                         GroupNoteRowItem(
                             note = note,
@@ -377,10 +397,15 @@ fun GroupDetailScreen(
             GroupCategory.CHECKLISTS -> {
                 val checklists = state.checklists
                 if (checklists.isEmpty() && !state.isLoading) {
-                    EmptyCategoryRow(stringResource(R.string.group_detail_empty_checklists), isRtl)
+                    item(key = "empty_checklists") {
+                        EmptyCategoryRow(stringResource(R.string.group_detail_empty_checklists), isRtl)
+                    }
                 } else {
-                    val dateFormatter = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
-                    checklists.forEach { item ->
+                    items(
+                        items = checklists,
+                        key = { it.checklist.id }
+                    ) { item ->
+                        val dateFormatter = remember { SimpleDateFormat("d MMM", Locale.getDefault()) }
                         val shortDateStr = dateFormatter.format(Date(item.checklist.updatedAtEpochMs))
                         GroupChecklistRowItem(
                             item = item,
@@ -395,7 +420,9 @@ fun GroupDetailScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(JournalRuleSpacing * 5))
+        item(key = "group_bottom_spacer") {
+            Spacer(modifier = Modifier.height(JournalRuleSpacing * 5))
+        }
     }
 
     // Create Checklist Dialog
@@ -681,7 +708,9 @@ private fun GroupNoteRowItem(
     onMoreClick: () -> Unit
 ) {
     val displayTitle = note.title.ifBlank { if (isRtl) "ملاحظة بدون عنوان" else "Note sans titre" }
-    val previewContent = note.content.lines().firstOrNull { it.isNotBlank() } ?: ""
+    val previewContent = note.content.lines().firstOrNull { it.isNotBlank() }
+        ?.replace(Regex("==([a-zA-Z]:)?(.*?)== *"), "$2 ")
+        ?.trim() ?: ""
 
     Column(
         modifier = Modifier

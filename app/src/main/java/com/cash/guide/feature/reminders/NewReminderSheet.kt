@@ -36,7 +36,7 @@ import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ModalBottomSheetDefaults
+import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -184,7 +184,7 @@ fun NewReminderSheet(
     val titleFocusRequester = remember { FocusRequester() }
 
     val dateFormatter = remember(isRtl) {
-        SimpleDateFormat(if (isRtl) "EEEE d MMMM yyyy" else "EEEE d MMMM yyyy", if (isRtl) Locale("ar") else Locale.FRENCH)
+        SimpleDateFormat(if (isRtl) "EEEE d MMMM yyyy" else "EEEE d MMMM yyyy", if (isRtl) Locale.forLanguageTag("ar") else Locale.FRENCH)
     }
 
     val displayDate = remember(targetYear, targetMonth, targetDay) {
@@ -201,7 +201,7 @@ fun NewReminderSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        properties = ModalBottomSheetDefaults.properties(shouldDismissOnBackPress = false),
+        properties = ModalBottomSheetProperties(shouldDismissOnBackPress = false),
         containerColor = JournalPaper,
         tonalElevation = 2.dp,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),

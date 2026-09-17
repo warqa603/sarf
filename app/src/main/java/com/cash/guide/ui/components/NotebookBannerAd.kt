@@ -27,7 +27,7 @@ fun NotebookBannerAd(
         modifier = modifier
             .fillMaxWidth()
             .background(JournalPaper)
-            .padding(vertical = 4.dp),
+            .padding(top = 4.dp, bottom = 0.dp),
         contentAlignment = Alignment.Center
     ) {
         AndroidView(

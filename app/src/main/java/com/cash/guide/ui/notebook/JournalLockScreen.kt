@@ -103,7 +103,7 @@ fun JournalLockScreen(
             isPromptShowing = true
             BiometricHelper.showBiometricPrompt(
                 activity = activity,
-                title = "Sarf",
+                title = context.getString(R.string.app_name),
                 subtitle = context.getString(R.string.lock_screen_subtitle_bio),
                 negativeButtonText = "PIN",
                 onSuccess = {
@@ -237,7 +237,7 @@ fun JournalLockScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Sarf - Carnet de Compte",
+                text = "${stringResource(R.string.app_name)} - ${stringResource(R.string.app_tagline)}",
                 style = TextStyle(
                     fontFamily = JournalHandFamily,
                     fontSize = 24.sp,
