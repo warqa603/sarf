@@ -56,6 +56,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.cash.guide.R
 import com.cash.guide.domain.MoneyUnit
 import com.cash.guide.ui.notebook.HighlighterBlue
@@ -97,7 +102,10 @@ fun SettingsScreen(
     val layoutDirection = LocalLayoutDirection.current
     val isRtl = layoutDirection == LayoutDirection.Rtl
     var showExportOptions by remember { mutableStateOf(false) }
+    val currentActivity = com.cash.guide.MainActivity.currentActivity
+    val billingManager = remember(context) { com.cash.guide.domain.billing.BillingManager.getInstance(context) }
     var showSetupPinDialog by remember { mutableStateOf(false) }
+    var showPremiumDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.checkBiometricAvailability(context)
@@ -173,6 +181,78 @@ fun SettingsScreen(
                     modifier = Modifier.journalBaselineOnRule()
                 )
             }
+
+            // 1 empty notebook line spacer
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            // Section 5: A propos & Support (soft yellow band)
+            SettingsSectionBadge(
+                title = stringResource(R.string.settings_section_about),
+                badgeColor = HighlighterYellow.copy(alpha = 0.35f)
+            )
+
+            // Premium In-App Purchase
+            JournalActionRow(
+                title = stringResource(R.string.settings_premium_title),
+                description = stringResource(R.string.settings_premium_desc),
+                bulletColor = Color(0xFFEAB308),
+                badgeText = stringResource(R.string.settings_premium_badge),
+                onClick = { showPremiumDialog = true }
+            )
+
+            // Share App
+            JournalActionRow(
+                title = stringResource(R.string.settings_share_app_title),
+                description = stringResource(R.string.settings_share_app_desc),
+                bulletColor = Color(0xFF3B82F6),
+                badgeIcon = Icons.Rounded.Share,
+                onClick = {
+                    val sendIntent: android.content.Intent = android.content.Intent().apply {
+                        action = android.content.Intent.ACTION_SEND
+                        putExtra(android.content.Intent.EXTRA_TEXT, "Warqa: L\'application pour gérer vos dettes et calculs facilement ! https://play.google.com/store/apps/details?id=com.cash.guide")
+                        type = "text/plain"
+                    }
+                    val shareIntent = android.content.Intent.createChooser(sendIntent, null)
+                    shareIntent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(shareIntent)
+                }
+            )
+
+            // Rate App
+            JournalActionRow(
+                title = stringResource(R.string.settings_rate_app_title),
+                description = stringResource(R.string.settings_rate_app_desc),
+                bulletColor = Color(0xFFF59E0B),
+                badgeIcon = Icons.Rounded.Star,
+                onClick = {
+                    val uri = android.net.Uri.parse("market://details?id=" + context.packageName)
+                    val goToMarket = android.content.Intent(android.content.Intent.ACTION_VIEW, uri)
+                    goToMarket.addFlags(android.content.Intent.FLAG_ACTIVITY_NO_HISTORY or
+                            android.content.Intent.FLAG_ACTIVITY_NEW_DOCUMENT or
+                            android.content.Intent.FLAG_ACTIVITY_MULTIPLE_TASK or
+                            android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    try {
+                        context.startActivity(goToMarket)
+                    } catch (e: android.content.ActivityNotFoundException) {
+                        context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW,
+                            android.net.Uri.parse("http://play.google.com/store/apps/details?id=" + context.packageName)).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                    }
+                }
+            )
+
+            // Privacy Policy
+            JournalActionRow(
+                title = stringResource(R.string.settings_privacy_policy_title),
+                description = stringResource(R.string.settings_privacy_policy_desc),
+                bulletColor = Color(0xFF9CA3AF),
+                badgeText = "Privacy",
+                onClick = {
+                    val browserIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://warqa603.github.io/sarf/privacy"))
+                    browserIntent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    context.startActivity(browserIntent)
+                }
+            )
+
 
             // Line 2: 1 empty notebook line spacer
             Spacer(modifier = Modifier.height(JournalRuleSpacing))
@@ -935,6 +1015,25 @@ fun SettingsScreen(
                 }
             )
         }
+
+        // Premium Dialog
+        if (showPremiumDialog) {
+            PremiumOptionsDialog(
+                onYearlySelected = {
+                    showPremiumDialog = false
+                    currentActivity?.let {
+                        billingManager.launchBillingFlow(it, com.cash.guide.domain.billing.BillingManager.PREMIUM_YEARLY_ID)
+                    }
+                },
+                onLifetimeSelected = {
+                    showPremiumDialog = false
+                    currentActivity?.let {
+                        billingManager.launchBillingFlow(it, com.cash.guide.domain.billing.BillingManager.PREMIUM_LIFETIME_ID)
+                    }
+                },
+                onDismiss = { showPremiumDialog = false }
+            )
+        }
     }
 }
 
@@ -1033,7 +1132,8 @@ private fun JournalActionRow(
     title: String,
     description: String,
     bulletColor: Color,
-    badgeText: String,
+    badgeText: String? = null,
+    badgeIcon: ImageVector? = null,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -1109,15 +1209,26 @@ private fun JournalActionRow(
                     .padding(horizontal = 8.dp),
                 contentAlignment = Alignment.BottomCenter
             ) {
-                Text(
-                    text = badgeText,
-                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                    fontSize = if (isRtl) 11.5.sp else 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = bulletColor.copy(alpha = 0.95f),
-                    style = TextStyle(platformStyle = NoFontPadding),
-                    modifier = Modifier.journalBaselineOnRule()
-                )
+                if (badgeIcon != null) {
+                    Icon(
+                        imageVector = badgeIcon,
+                        contentDescription = null,
+                        tint = bulletColor.copy(alpha = 0.95f),
+                        modifier = Modifier
+                            .journalVisualOnRule(gapAboveRule = 4.dp)
+                            .size(14.dp)
+                    )
+                } else if (badgeText != null) {
+                    Text(
+                        text = badgeText,
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontSize = if (isRtl) 11.5.sp else 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = bulletColor.copy(alpha = 0.95f),
+                        style = TextStyle(platformStyle = NoFontPadding),
+                        modifier = Modifier.journalBaselineOnRule()
+                    )
+                }
             }
         }
 
@@ -1304,3 +1415,118 @@ private fun ThemePackCard(
         }
     }
 }
+
+@Composable
+private fun PremiumOptionsDialog(
+    onYearlySelected: () -> Unit,
+    onLifetimeSelected: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val layoutDirection = androidx.compose.ui.platform.LocalLayoutDirection.current
+    val isRtl = layoutDirection == androidx.compose.ui.unit.LayoutDirection.Rtl
+
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onDismiss
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.95f)
+                .background(com.cash.guide.ui.notebook.JournalPaper, RoundedCornerShape(20.dp))
+                .border(2.dp, Color(0xFFEAB308).copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Header Icon
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .background(Color(0xFFFEF08A), RoundedCornerShape(32.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Star,
+                    contentDescription = null,
+                    tint = Color(0xFFCA8A04),
+                    modifier = Modifier.size(36.dp)
+                )
+            }
+            
+            Text(
+                text = "Devenir Premium",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = com.cash.guide.ui.notebook.JournalInk
+            )
+            
+            Text(
+                text = "Soutenez l'application et profitez d'une expérience fluide et sans aucune interruption.",
+                fontSize = 15.sp,
+                color = com.cash.guide.ui.notebook.JournalMutedInk,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+
+            // Benefits
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+                PremiumBenefitRow("✓ Aucune publicité définitivement")
+                PremiumBenefitRow("✓ Soutenez le développeur indépendant")
+                PremiumBenefitRow("✓ Accès aux futures fonctionnalités VIP")
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                // Lifetime (Primary)
+                androidx.compose.material3.Button(
+                    onClick = onLifetimeSelected,
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(containerColor = Color(0xFFEAB308))
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Achat Définitif (300 DH)",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Text(
+                            text = "Paiement unique, accès à vie",
+                            fontSize = 11.sp,
+                            color = Color.White.copy(alpha = 0.9f)
+                        )
+                    }
+                }
+
+                // Yearly
+                androidx.compose.material3.OutlinedButton(
+                    onClick = onYearlySelected,
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color(0xFFEAB308).copy(alpha = 0.5f))
+                ) {
+                    Text(
+                        text = "Abonnement Annuel (65 DH / an)",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFFCA8A04)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PremiumBenefitRow(text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = text,
+            fontSize = 14.sp,
+            color = com.cash.guide.ui.notebook.JournalInk.copy(alpha = 0.8f),
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+

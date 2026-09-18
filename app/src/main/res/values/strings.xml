@@ -478,4 +478,16 @@
     <string name="note_voice_dictation_insert">Insérer ✓</string>
     <string name="note_voice_dictation_cancel">Annuler ✕</string>
     <string name="permission_mic_rationale">L\'accès au microphone est requis pour la dictée vocale.</string>
+
+    <string name="settings_section_about">À propos &amp; Support</string>
+    <string name="settings_premium_title">Premium (Sans Pubs)</string>
+    <string name="settings_premium_desc">Retirer toutes les publicités définitivement</string>
+    <string name="settings_premium_badge">VIP</string>
+    <string name="settings_share_app_title">Partager l\'application</string>
+    <string name="settings_share_app_desc">Inviter vos amis à utiliser Warqa</string>
+    <string name="settings_rate_app_title">Noter l\'application</string>
+    <string name="settings_rate_app_desc">Laissez un avis sur le Play Store</string>
+    <string name="settings_privacy_policy_title">Politique de confidentialité</string>
+    <string name="settings_privacy_policy_desc">Consulter notre charte de protection des données</string>
 </resources>
+
