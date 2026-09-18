@@ -3,29 +3,142 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Politique de confidentialité - Hssabi</title>
+    <title>Politique de confidentialité - Warqa</title>
     <style>
-        body { font-family: sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 20px; color: #333; }
-        h1, h2 { color: #1e3a8a; }
+        :root {
+            --primary: #ca8a04;
+            --primary-light: #fef08a;
+            --text-main: #1f2937;
+            --text-muted: #4b5563;
+            --bg: #fdfbf7;
+            --card-bg: #ffffff;
+            --border: #e5e7eb;
+        }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.7; 
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 760px;
+            margin: 40px auto;
+            padding: 40px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px dashed var(--border);
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: var(--primary-light);
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 40px;
+        }
+        h1 { 
+            color: var(--text-main);
+            font-size: 2.2rem;
+            margin: 0 0 10px 0;
+            font-weight: 800;
+        }
+        .date {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        h2 { 
+            color: var(--text-main);
+            font-size: 1.4rem;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        h2::before {
+            content: "";
+            display: block;
+            width: 24px;
+            height: 4px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+        p, ul {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        .highlight-box {
+            background: var(--primary-light);
+            border-left: 4px solid var(--primary);
+            padding: 15px 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 20px 0;
+        }
+        .highlight-box p {
+            margin: 0;
+            color: #854d0e;
+            font-weight: 500;
+        }
+        @media (max-width: 600px) {
+            .container { margin: 15px; padding: 25px; }
+            h1 { font-size: 1.8rem; }
+        }
     </style>
 </head>
 <body>
-    <h1>Politique de confidentialité (Privacy Policy)</h1>
-    <p>Dernière mise à jour : 17 Septembre 2026</p>
-    
-    <h2>1. Collecte des données</h2>
-    <p>Hssabi (Sarf) est une application fonctionnant principalement hors-ligne (Offline-first). Les données que vous saisissez (calculs, dettes, notes) sont stockées localement sur votre appareil. L'application ne collecte aucune donnée personnelle vous identifiant directement.</p>
+    <div class="container">
+        <div class="header">
+            <div class="logo">📝</div>
+            <h1>Politique de confidentialité</h1>
+            <div class="date">Dernière mise à jour : 18 Septembre 2026</div>
+        </div>
+        
+        <div class="highlight-box">
+            <p><strong>En résumé :</strong> Warqa est une application hors-ligne. Vos données restent sur votre téléphone. Nous ne vendons, ni ne partageons vos données personnelles.</p>
+        </div>
 
-    <h2>2. Utilisation du microphone et Assistant Vocal</h2>
-    <p>L'application utilise l'accès au microphone uniquement lorsque vous appuyez sur le bouton de l'Assistant Vocal (Micro) pour dicter vos listes de courses ou calculs. La conversion de la voix en texte se fait via le service de reconnaissance vocale de votre appareil, et le texte transcrit est envoyé à l'API Google Gemini (IA) de manière sécurisée pour structurer vos calculs. L'audio n'est jamais sauvegardé ni utilisé à d'autres fins.</p>
+        <h2>1. Collecte des données</h2>
+        <p>Warqa est une application fonctionnant principalement hors-ligne (Offline-first). Les données que vous saisissez (calculs, dettes, notes) sont stockées <strong>exclusivement localement</strong> sur votre appareil. L'application ne collecte aucune donnée personnelle vous identifiant directement (comme votre nom, email, ou numéro de téléphone).</p>
 
-    <h2>3. Publicités (AdMob)</h2>
-    <p>Nous utilisons Google AdMob pour afficher des publicités (bannières et vidéos). AdMob peut collecter et utiliser des identifiants publicitaires et d'autres informations pour afficher des publicités personnalisées. Vous pouvez consulter les règles de confidentialité de Google ici : <a href="https://policies.google.com/privacy">https://policies.google.com/privacy</a>.</p>
+        <h2>2. Utilisation du microphone et Assistant Vocal</h2>
+        <p>L'application requiert l'accès à votre microphone uniquement lorsque vous utilisez la fonctionnalité de dictée vocale. Le fonctionnement est le suivant :</p>
+        <ul>
+            <li>Le microphone n'est activé que lorsque vous appuyez explicitement sur le bouton d'enregistrement.</li>
+            <li>La voix est convertie en texte via le service de reconnaissance vocale intégré à votre appareil.</li>
+            <li>Ce texte transcrit est ensuite analysé par une intelligence artificielle (API Google Gemini) pour structurer automatiquement vos calculs.</li>
+            <li><strong>L'audio original n'est jamais sauvegardé</strong> ni sur votre appareil, ni sur nos serveurs.</li>
+        </ul>
 
-    <h2>4. Sécurité des données</h2>
-    <p>Vos données (calculs, budget, notes) sont stockées localement sur votre téléphone et peuvent être protégées par le système de sécurité de votre appareil (Code PIN ou Empreinte biométrique) directement depuis les paramètres de l'application.</p>
+        <h2>3. Publicités et Achats In-App</h2>
+        <p>Pour soutenir le développement de l'application, nous utilisons le réseau publicitaire Google AdMob. Ce service peut utiliser un identifiant publicitaire pour diffuser des annonces pertinentes. Si vous achetez la version "Premium" (via Google Play Billing), toutes les publicités sont définitivement désactivées.</p>
+        
+        <h2>4. Partage et Sauvegarde</h2>
+        <p>L'application vous permet de générer des fichiers de sauvegarde (.calc) ou de partager vos calculs sous forme d'image ou de texte. Ces actions sont entièrement déclenchées par vous, et transitent par les canaux de votre choix (WhatsApp, Email, etc.).</p>
 
-    <h2>5. Nous contacter</h2>
-    <p>Si vous avez des questions concernant cette politique de confidentialité, n'hésitez pas à nous contacter.</p>
+        <h2>5. Modifications de cette politique</h2>
+        <p>Nous nous réservons le droit de modifier cette politique de confidentialité à tout moment. Toute modification sera reflétée sur cette page avec la date de mise à jour appropriée.</p>
+
+        <h2>6. Contact</h2>
+        <p>Si vous avez des questions concernant cette politique de confidentialité, vous pouvez nous contacter via la section "Support" au sein de l'application.</p>
+    </div>
 </body>
 </html>
