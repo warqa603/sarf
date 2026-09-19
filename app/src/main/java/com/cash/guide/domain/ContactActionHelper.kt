@@ -60,6 +60,26 @@ object ContactActionHelper {
         }
     }
 
+    fun sendSms(context: Context, phoneNumber: String, message: String? = null) {
+        val clean = phoneNumber.filter { it.isDigit() || it == '+' }
+        if (clean.isBlank()) {
+            Toast.makeText(context, context.getString(R.string.contact_invalid_phone), Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        try {
+            val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:$clean")).apply {
+                if (!message.isNullOrBlank()) {
+                    putExtra("sms_body", message)
+                }
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(context, context.getString(R.string.contact_dialer_error), Toast.LENGTH_SHORT).show()
+        }
+    }
+
     fun shareContact(context: Context, contact: ContactEntity) {
         try {
             val content = buildString {

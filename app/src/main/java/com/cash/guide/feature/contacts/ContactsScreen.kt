@@ -52,124 +52,60 @@ fun ContactsScreen(
                 .fillMaxWidth()
                 .height(JournalRuleSpacing)
                 .padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.Bottom,
+            verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = stringResource(R.string.contacts_screen_title),
-                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                    fontSize = if (isRtl) 17.sp else 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = JournalInk,
-                    style = TextStyle(platformStyle = NoFontPadding),
-                    modifier = Modifier.journalBaselineOnRule()
-                )
-                Text(
-                    text = "",
-                    fontFamily = PatrickHandFamily,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = JournalMutedInk,
-                    style = TextStyle(platformStyle = NoFontPadding),
-                    modifier = Modifier.journalBaselineOnRule()
-                )
-            }
+            Text(
+                text = stringResource(R.string.contacts_screen_title),
+                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                fontSize = if (isRtl) 18.sp else 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = JournalInk,
+                style = TextStyle(platformStyle = NoFontPadding),
+                modifier = Modifier.journalBaselineOnRule()
+            )
 
-            // Button: Nouveau contact
-            Row(
+            // Button: + Nouveau contact
+            Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(HighlighterYellow.copy(alpha = 0.5f))
+                    .height(JournalRuleSpacing)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color(0xFFDBEAFE).copy(alpha = 0.55f))
                     .clickable(role = Role.Button) { viewModel.openAddContactSheet() }
-                    .padding(horizontal = 10.dp, vertical = 3.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    .padding(horizontal = 10.dp),
+                contentAlignment = Alignment.Center
             ) {
-                HisabiSketchIcon(
-                    symbol = HisabiSymbol.Plus,
-                    contentDescription = null,
-                    tint = JournalInk,
-                    size = 13.dp
-                )
-                Text(
-                    text = stringResource(R.string.contact_btn_new),
-                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                    fontSize = if (isRtl) 13.sp else 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = JournalInk,
-                    style = TextStyle(platformStyle = NoFontPadding)
-                )
-            }
-        }
-
-        // Line 2: 1 rule spacer
-        Spacer(modifier = Modifier.height(JournalRuleSpacing))
-
-        // Line 3: Ruled-Line Search Row
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(JournalRuleSpacing)
-                .padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            HisabiSketchIcon(
-                symbol = HisabiSymbol.Search,
-                contentDescription = null,
-                tint = JournalMutedInk.copy(alpha = 0.6f),
-                size = 15.dp,
-                modifier = Modifier.offset(y = (-4).dp)
-            )
-
-            BasicTextField(
-                value = state.searchQuery,
-                onValueChange = { viewModel.setSearchQuery(it) },
-                modifier = Modifier
-                    .weight(1f)
-                    .journalBaselineOnRule(),
-                textStyle = TextStyle(
-                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                    fontSize = if (isRtl) 15.sp else 16.sp,
-                    color = JournalInk,
-                    platformStyle = NoFontPadding
-                ),
-                singleLine = true,
-                decorationBox = { innerTextField ->
-                    if (state.searchQuery.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.contacts_search_hint),
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontSize = if (isRtl) 14.5.sp else 15.5.sp,
-                            color = JournalMutedInk.copy(alpha = 0.5f),
-                            style = TextStyle(platformStyle = NoFontPadding)
-                        )
-                    }
-                    innerTextField()
-                }
-            )
-
-            if (state.searchQuery.isNotEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .offset(y = (-4).dp)
-                        .clip(CircleShape)
-                        .clickable { viewModel.setSearchQuery("") }
-                        .padding(6.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     HisabiSketchIcon(
-                        symbol = HisabiSymbol.Close,
-                        contentDescription = "Effacer",
-                        tint = JournalMutedInk,
-                        size = 15.dp
+                        symbol = HisabiSymbol.Plus,
+                        contentDescription = null,
+                        tint = Color(0xFF1E40AF),
+                        size = 13.5.dp
+                    )
+                    Text(
+                        text = stringResource(R.string.contact_btn_new),
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontSize = if (isRtl) 13.5.sp else 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1E40AF),
+                        style = TextStyle(platformStyle = NoFontPadding)
                     )
                 }
             }
         }
+
+        // Line 2: Search Row (Exact match to Home page NotebookSearchField)
+        NotebookSearchField(
+            query = state.searchQuery,
+            onQueryChange = { viewModel.setSearchQuery(it) },
+            placeholder = stringResource(R.string.contacts_search_hint),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp)
+        )
 
         // Line 4: Group Filter Chips Row
         Row(
@@ -267,8 +203,13 @@ fun ContactsScreen(
                     .padding(horizontal = 14.dp),
                 contentAlignment = Alignment.Center
             ) {
+                val emptyText = when {
+                    state.searchQuery.isNotBlank() -> stringResource(R.string.contacts_empty_search)
+                    state.selectedGroupId != null -> stringResource(R.string.group_detail_empty_contacts)
+                    else -> stringResource(R.string.contacts_empty_list)
+                }
                 Text(
-                    text = if (state.searchQuery.isNotBlank()) stringResource(R.string.contacts_empty_search) else stringResource(R.string.contacts_empty_list),
+                    text = emptyText,
                     fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                     fontSize = 15.sp,
                     color = JournalMutedInk.copy(alpha = 0.65f),
@@ -282,6 +223,7 @@ fun ContactsScreen(
                     isRtl = isRtl,
                     onCall = { ContactActionHelper.dialPhone(context, contact.phoneNumber) },
                     onWhatsApp = { ContactActionHelper.openWhatsApp(context, contact.phoneNumber) },
+                    onSms = { ContactActionHelper.sendSms(context, contact.phoneNumber) },
                     onEdit = { viewModel.openAddContactSheet(contact) },
                     onTogglePin = { viewModel.togglePin(contact.id) },
                     onShare = { ContactActionHelper.shareContact(context, contact) },
@@ -337,6 +279,7 @@ fun ContactItemRow(
     isRtl: Boolean,
     onCall: () -> Unit,
     onWhatsApp: () -> Unit,
+    onSms: () -> Unit,
     onEdit: () -> Unit,
     onTogglePin: () -> Unit,
     onShare: () -> Unit,
@@ -353,29 +296,28 @@ fun ContactItemRow(
         else -> Color(0xFF3B82F6)
     }
 
-    val hasSubtitle = !contact.note.isNullOrBlank()
-    val rowHeight = if (hasSubtitle) JournalRuleSpacing * 2 else JournalRuleSpacing
-
+    // 2 Ruled Notebook Lines = JournalRuleSpacing * 2
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .height(rowHeight)
-            .clickable { onCall() }
+            .height(JournalRuleSpacing * 2)
     ) {
-        // Main Row (on blue ruled line)
+        // Line 1: [Pastille + (Pin) + Name] -------- [Phone Number]
+        // Clicking anywhere on this top contact line opens dialer/call directly
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(JournalRuleSpacing)
+                .clickable { onCall() }
                 .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Start: Bullet + Pin + Name
+            // Start: Color Pastille + Pin (if pinned) + Name
             Row(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
-                modifier = Modifier.weight(1.65f, fill = false)
+                modifier = Modifier.weight(2.5f, fill = false)
             ) {
                 Canvas(
                     modifier = Modifier
@@ -398,29 +340,27 @@ fun ContactItemRow(
                 Text(
                     text = contact.name,
                     fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                    fontSize = if (isRtl) 14.5.sp else 15.sp,
+                    fontSize = if (isRtl) 15.sp else 15.5.sp,
                     fontWeight = FontWeight.Bold,
                     color = JournalInk,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = TextStyle(platformStyle = NoFontPadding),
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .journalBaselineOnRule()
+                    modifier = Modifier.journalBaselineOnRule()
                 )
             }
 
-            // Connecting dotted line on the blue notebook rule
+            // Connecting dotted line on the blue notebook rule spanning up to the phone number
             Box(
                 modifier = Modifier
-                    .weight(0.35f)
+                    .weight(1f)
                     .height(JournalRuleSpacing)
                     .padding(horizontal = 4.dp)
                     .drawBehind {
                         val strokeW = 0.85.dp.toPx()
                         val y = size.height
                         drawLine(
-                            color = JournalWritingInk.copy(alpha = 0.28f),
+                            color = JournalWritingInk.copy(alpha = 0.32f),
                             start = Offset(0f, y),
                             end = Offset(size.width, y),
                             strokeWidth = strokeW,
@@ -429,135 +369,148 @@ fun ContactItemRow(
                     }
             )
 
-            // End: Phone number in distinctive ink + Action buttons (WhatsApp, Call, More)
-            Row(
-                verticalAlignment = Alignment.Bottom,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                // Distinctive Phone Number Ink (Rich Navy Ink)
-                Text(
-                    text = contact.phoneNumber,
-                    fontFamily = PatrickHandFamily,
-                    fontSize = 14.5.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E40AF),
-                    style = TextStyle(platformStyle = NoFontPadding),
-                    modifier = Modifier.journalBaselineOnRule()
-                )
+            // End: Phone number ONLY in bold navy ink
+            Text(
+                text = contact.phoneNumber,
+                fontFamily = PatrickHandFamily,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF1E40AF),
+                style = TextStyle(platformStyle = NoFontPadding),
+                modifier = Modifier.journalBaselineOnRule()
+            )
+        }
 
-                // WhatsApp Quick Action
+        // Line 2: Exactly on the blue ruled line below!
+        // Center: SMS, WhatsApp, Call
+        // End: 3-dots More options menu
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(JournalRuleSpacing)
+                .padding(horizontal = 14.dp)
+        ) {
+            // Action Icons centered directly on the bottom blue line
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .offset(y = (-1).dp),
+                horizontalArrangement = Arrangement.spacedBy(32.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                // SMS Icon
                 Box(
                     modifier = Modifier
-                        .offset(y = (-3).dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF25D366).copy(alpha = 0.15f))
+                        .clickable(role = Role.Button, onClick = onSms)
+                        .padding(3.dp),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
+                    HisabiSketchIcon(
+                        symbol = HisabiSymbol.Sms,
+                        contentDescription = "SMS",
+                        tint = Color(0xFF2563EB),
+                        size = 21.dp
+                    )
+                }
+
+                // WhatsApp Icon
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
                         .clickable(role = Role.Button, onClick = onWhatsApp)
-                        .padding(3.5.dp)
+                        .padding(3.dp),
+                    contentAlignment = Alignment.BottomCenter
                 ) {
                     HisabiSketchIcon(
                         symbol = HisabiSymbol.WhatsApp,
                         contentDescription = "WhatsApp",
-                        tint = Color(0xFF128C7E),
-                        size = 14.dp
+                        tint = Color(0xFF15803D),
+                        size = 21.dp
                     )
                 }
 
-                // Direct Call Quick Action
+                // Direct Call Icon
                 Box(
                     modifier = Modifier
-                        .offset(y = (-3).dp)
                         .clip(CircleShape)
-                        .background(Color(0xFF3B82F6).copy(alpha = 0.15f))
                         .clickable(role = Role.Button, onClick = onCall)
-                        .padding(3.5.dp)
+                        .padding(3.dp),
+                    contentAlignment = Alignment.BottomCenter
                 ) {
                     HisabiSketchIcon(
                         symbol = HisabiSymbol.Phone,
                         contentDescription = "Appel",
                         tint = Color(0xFF1D4ED8),
-                        size = 14.dp
+                        size = 21.dp
                     )
                 }
+            }
 
-                // 3-dots Menu
-                Box(modifier = Modifier.offset(y = (-3).dp)) {
+            // End: 3-dots Menu placed directly on the bottom blue line
+            Box(
+                modifier = Modifier
+                    .align(if (isRtl) Alignment.BottomStart else Alignment.BottomEnd)
+                    .offset(y = (-1).dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .clickable(role = Role.Button) { showMenu = true }
+                        .padding(3.dp),
+                    contentAlignment = Alignment.BottomCenter
+                ) {
                     HisabiSketchIcon(
                         symbol = HisabiSymbol.More,
                         contentDescription = "Options",
-                        tint = JournalMutedInk,
-                        size = 15.dp,
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .clickable { showMenu = true }
-                            .padding(2.5.dp)
+                        tint = JournalMutedInk.copy(alpha = 0.85f),
+                        size = 20.dp
                     )
+                }
 
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(if (contact.isPinned) stringResource(R.string.action_unpin) else stringResource(R.string.action_pin)) },
-                            onClick = {
-                                showMenu = false
-                                onTogglePin()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.common_edit)) },
-                            onClick = {
-                                showMenu = false
-                                onEdit()
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.common_share)) },
-                            onClick = {
-                                showMenu = false
-                                onShare()
-                            }
-                        )
-                        if (onRemoveFromGroup != null) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.action_remove_from_group)) },
-                                onClick = {
-                                    showMenu = false
-                                    onRemoveFromGroup()
-                                }
-                            )
+                DropdownMenu(
+                    expanded = showMenu,
+                    onDismissRequest = { showMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(if (contact.isPinned) stringResource(R.string.action_unpin) else stringResource(R.string.action_pin)) },
+                        onClick = {
+                            showMenu = false
+                            onTogglePin()
                         }
-                        HorizontalDivider()
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.common_edit)) },
+                        onClick = {
+                            showMenu = false
+                            onEdit()
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.common_share)) },
+                        onClick = {
+                            showMenu = false
+                            onShare()
+                        }
+                    )
+                    if (onRemoveFromGroup != null) {
                         DropdownMenuItem(
-                            text = { Text(stringResource(R.string.common_delete), color = Color(0xFFEF4444)) },
+                            text = { Text(stringResource(R.string.action_remove_from_group)) },
                             onClick = {
                                 showMenu = false
-                                onDelete()
+                                onRemoveFromGroup()
                             }
                         )
                     }
+                    HorizontalDivider()
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.common_delete), color = Color(0xFFEF4444)) },
+                        onClick = {
+                            showMenu = false
+                            onDelete()
+                        }
+                    )
                 }
-            }
-        }
-
-        // Subtitle line (if note / métier exists)
-        if (hasSubtitle) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(JournalRuleSpacing)
-                    .padding(horizontal = 28.dp),
-                verticalAlignment = Alignment.Bottom
-            ) {
-                Text(
-                    text = contact.note ?: "",
-                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                    fontSize = if (isRtl) 13.sp else 13.5.sp,
-                    color = JournalMutedInk.copy(alpha = 0.75f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = TextStyle(platformStyle = NoFontPadding),
-                    modifier = Modifier.journalBaselineOnRule()
-                )
             }
         }
     }

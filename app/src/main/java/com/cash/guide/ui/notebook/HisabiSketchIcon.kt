@@ -62,7 +62,8 @@ enum class HisabiSymbol {
     Highlighter,
     Contacts,
     Phone,
-    WhatsApp
+    WhatsApp,
+    Sms
 }
 
 @Composable
@@ -795,6 +796,23 @@ fun HisabiSketchIcon(
                     cubicTo(u(9f), u(11.5f), u(12.5f), u(15f), u(15.5f), u(15f))
                 }
                 drawPath(phoneCurve, tint, style = fine)
+            }
+            HisabiSymbol.Sms -> {
+                val bubblePath = Path().apply {
+                    moveTo(u(5f), u(4.5f))
+                    lineTo(u(19f), u(4.5f))
+                    cubicTo(u(21f), u(4.5f), u(21f), u(14f), u(19f), u(14f))
+                    lineTo(u(10f), u(14f))
+                    lineTo(u(6f), u(18.5f))
+                    lineTo(u(6.5f), u(14f))
+                    lineTo(u(5f), u(14f))
+                    cubicTo(u(3f), u(14f), u(3f), u(4.5f), u(5f), u(4.5f))
+                    close()
+                }
+                drawPath(bubblePath, tint, style = pen)
+                // Text lines inside message bubble
+                drawLine(tint, point(7.5f, 8.5f), point(16.5f, 8.5f), u(1.3f), StrokeCap.Round)
+                drawLine(tint, point(7.5f, 11f), point(13f, 11f), u(1.3f), StrokeCap.Round)
             }
         }
     }

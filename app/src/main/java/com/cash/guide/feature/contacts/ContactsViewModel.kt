@@ -61,10 +61,14 @@ class ContactsViewModel(
                 val contactGroups = allGroups.filter {
                     it.category.equals(GroupCategory.CONTACTS.storageKey, ignoreCase = true)
                 }
-                _uiState.update {
-                    it.copy(
+                _uiState.update { current ->
+                    val isGroupStillValid = current.selectedGroupId == null ||
+                        current.selectedGroupId == "UNGROUPED" ||
+                        contactGroups.any { g -> g.id == current.selectedGroupId }
+                    current.copy(
                         contacts = contacts,
                         groups = contactGroups,
+                        selectedGroupId = if (isGroupStillValid) current.selectedGroupId else null,
                         isLoading = false
                     )
                 }

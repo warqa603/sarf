@@ -460,6 +460,7 @@ fun GroupDetailScreen(
                             isRtl = isRtl,
                             onCall = { ContactActionHelper.dialPhone(context, contact.phoneNumber) },
                             onWhatsApp = { ContactActionHelper.openWhatsApp(context, contact.phoneNumber) },
+                            onSms = { ContactActionHelper.sendSms(context, contact.phoneNumber) },
                             onEdit = { viewModel.openEditContactSheet(contact) },
                             onTogglePin = { viewModel.toggleContactPin(contact.id) },
                             onShare = { ContactActionHelper.shareContact(context, contact) },
