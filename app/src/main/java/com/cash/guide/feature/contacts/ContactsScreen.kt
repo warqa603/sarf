@@ -16,7 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.platform.LocalContext
@@ -52,7 +54,7 @@ fun ContactsScreen(
                 .fillMaxWidth()
                 .height(JournalRuleSpacing)
                 .padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
@@ -65,67 +67,75 @@ fun ContactsScreen(
                 modifier = Modifier.journalBaselineOnRule()
             )
 
-            // Button: + Nouveau contact
-            Box(
+            // Button: + Nouveau contact with text sitting on the blue rule
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier
-                    .height(JournalRuleSpacing)
                     .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0xFFDBEAFE).copy(alpha = 0.55f))
                     .clickable(role = Role.Button) { viewModel.openAddContactSheet() }
-                    .padding(horizontal = 10.dp),
-                contentAlignment = Alignment.Center
+                    .drawBehind {
+                        val washHeight = 24.dp.toPx()
+                        val washY = size.height - washHeight + 1.dp.toPx()
+                        drawRoundRect(
+                            color = Color(0xFFDBEAFE).copy(alpha = 0.65f),
+                            topLeft = Offset(-6.dp.toPx(), washY),
+                            size = Size(size.width + 12.dp.toPx(), washHeight),
+                            cornerRadius = CornerRadius(6.dp.toPx(), 6.dp.toPx())
+                        )
+                    }
+                    .padding(horizontal = 6.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    HisabiSketchIcon(
-                        symbol = HisabiSymbol.Plus,
-                        contentDescription = null,
-                        tint = Color(0xFF1E40AF),
-                        size = 13.5.dp
-                    )
-                    Text(
-                        text = stringResource(R.string.contact_btn_new),
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                        fontSize = if (isRtl) 13.5.sp else 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1E40AF),
-                        style = TextStyle(platformStyle = NoFontPadding)
-                    )
-                }
+                HisabiSketchIcon(
+                    symbol = HisabiSymbol.Plus,
+                    contentDescription = null,
+                    tint = Color(0xFF1E40AF),
+                    size = 13.dp,
+                    modifier = Modifier.offset(y = (-4.5).dp)
+                )
+                Text(
+                    text = stringResource(R.string.contact_btn_new),
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontSize = if (isRtl) 13.5.sp else 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1E40AF),
+                    style = TextStyle(platformStyle = NoFontPadding),
+                    modifier = Modifier.journalBaselineOnRule()
+                )
             }
         }
 
-        // Line 2: Search Row (Exact match to Home page NotebookSearchField)
-        NotebookSearchField(
+        // Line 2: 1 rule spacer (نقز السطر - tna9ez star)
+        Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+        // Line 3: Ruled Search Row (Exact match to Home page JournalInlineSearchRow with grey capsule)
+        JournalInlineSearchRow(
             query = state.searchQuery,
             onQueryChange = { viewModel.setSearchQuery(it) },
-            placeholder = stringResource(R.string.contacts_search_hint),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp)
+            placeholder = stringResource(R.string.contacts_search_hint)
         )
 
-        // Line 4: Group Filter Chips Row
+        // Line 4: Group Filter Chips Row sitting on the blue rule
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(JournalRuleSpacing)
                 .padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Bottom
         ) {
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                verticalAlignment = Alignment.Bottom,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .offset(y = 2.5.dp)
             ) {
                 // "Tous"
                 item {
                     val isSelected = state.selectedGroupId == null
                     Surface(
                         onClick = { viewModel.selectGroup(null) },
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(10.dp),
                         color = if (isSelected) JournalInk else JournalDockBg,
                         border = androidx.compose.foundation.BorderStroke(
                             0.75.dp,
@@ -148,7 +158,7 @@ fun ContactsScreen(
                     val isSelected = state.selectedGroupId == "UNGROUPED"
                     Surface(
                         onClick = { viewModel.selectGroup("UNGROUPED") },
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(10.dp),
                         color = if (isSelected) JournalInk else JournalDockBg,
                         border = androidx.compose.foundation.BorderStroke(
                             0.75.dp,
@@ -171,7 +181,7 @@ fun ContactsScreen(
                     val isSelected = state.selectedGroupId == group.id
                     Surface(
                         onClick = { viewModel.selectGroup(group.id) },
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(10.dp),
                         color = if (isSelected) JournalInk else JournalDockBg,
                         border = androidx.compose.foundation.BorderStroke(
                             0.75.dp,
@@ -273,6 +283,24 @@ fun ContactsScreen(
     }
 }
 
+private fun formatDisplayPhone(rawPhone: String): String {
+    val digits = rawPhone.filter { it.isDigit() }
+    val startsWithPlus = rawPhone.trim().startsWith("+")
+    return when {
+        digits.length == 10 && digits.startsWith("0") -> {
+            "${digits.substring(0, 2)} ${digits.substring(2, 4)} ${digits.substring(4, 6)} ${digits.substring(6, 8)} ${digits.substring(8, 10)}"
+        }
+        digits.length == 12 && digits.startsWith("212") -> {
+            val prefix = if (startsWithPlus) "+212" else "212"
+            "$prefix ${digits.substring(3, 5)} ${digits.substring(5, 7)} ${digits.substring(7, 9)} ${digits.substring(9, 11)}"
+        }
+        digits.length == 9 -> {
+            "0${digits.substring(0, 1)} ${digits.substring(1, 3)} ${digits.substring(3, 5)} ${digits.substring(5, 7)} ${digits.substring(7, 9)}"
+        }
+        else -> rawPhone
+    }
+}
+
 @Composable
 fun ContactItemRow(
     contact: ContactEntity,
@@ -296,19 +324,22 @@ fun ContactItemRow(
         else -> Color(0xFF3B82F6)
     }
 
+    val displayPhone = remember(contact.phoneNumber) {
+        formatDisplayPhone(contact.phoneNumber)
+    }
+
     // 2 Ruled Notebook Lines = JournalRuleSpacing * 2
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .height(JournalRuleSpacing * 2)
     ) {
-        // Line 1: [Pastille + (Pin) + Name] -------- [Phone Number]
-        // Clicking anywhere on this top contact line opens dialer/call directly
+        // Line 1: [Pastille + (Pin) + Name] -------- [Phone Number] [3-dots Menu]
+        // Note: No clickable on this row! Calling only happens via the call icon.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(JournalRuleSpacing)
-                .clickable { onCall() }
                 .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.Bottom,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -369,33 +400,96 @@ fun ContactItemRow(
                     }
             )
 
-            // End: Phone number ONLY in bold navy ink
-            Text(
-                text = contact.phoneNumber,
-                fontFamily = PatrickHandFamily,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E40AF),
-                style = TextStyle(platformStyle = NoFontPadding),
-                modifier = Modifier.journalBaselineOnRule()
-            )
+            // End: Phone number in bold navy ink + 3-dots Menu
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = displayPhone,
+                    fontFamily = PatrickHandFamily,
+                    fontSize = 14.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1E40AF),
+                    style = TextStyle(platformStyle = NoFontPadding),
+                    modifier = Modifier.journalBaselineOnRule()
+                )
+
+                // 3-dots Menu button on Line 1 sitting right on the blue rule
+                Box(
+                    modifier = Modifier
+                        .offset(y = 4.5.dp)
+                        .clip(CircleShape)
+                        .clickable(role = Role.Button) { showMenu = true }
+                        .padding(2.dp)
+                ) {
+                    HisabiSketchIcon(
+                        symbol = HisabiSymbol.More,
+                        contentDescription = "Options",
+                        tint = JournalMutedInk.copy(alpha = 0.85f),
+                        size = 18.dp
+                    )
+
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(if (contact.isPinned) stringResource(R.string.action_unpin) else stringResource(R.string.action_pin)) },
+                            onClick = {
+                                showMenu = false
+                                onTogglePin()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.common_edit)) },
+                            onClick = {
+                                showMenu = false
+                                onEdit()
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.common_share)) },
+                            onClick = {
+                                showMenu = false
+                                onShare()
+                            }
+                        )
+                        if (onRemoveFromGroup != null) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.action_remove_from_group)) },
+                                onClick = {
+                                    showMenu = false
+                                    onRemoveFromGroup()
+                                }
+                            )
+                        }
+                        HorizontalDivider()
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.common_delete), color = Color(0xFFEF4444)) },
+                            onClick = {
+                                showMenu = false
+                                onDelete()
+                            }
+                        )
+                    }
+                }
+            }
         }
 
         // Line 2: Exactly on the blue ruled line below!
-        // Center: SMS, WhatsApp, Call
-        // End: 3-dots More options menu
+        // Center: SMS, WhatsApp, Call (closer together)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(JournalRuleSpacing)
                 .padding(horizontal = 14.dp)
         ) {
-            // Action Icons centered directly on the bottom blue line
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .offset(y = (-1).dp),
-                horizontalArrangement = Arrangement.spacedBy(32.dp),
+                    .offset(y = 5.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.Bottom
             ) {
                 // SMS Icon
@@ -443,72 +537,6 @@ fun ContactItemRow(
                         contentDescription = "Appel",
                         tint = Color(0xFF1D4ED8),
                         size = 21.dp
-                    )
-                }
-            }
-
-            // End: 3-dots Menu placed directly on the bottom blue line
-            Box(
-                modifier = Modifier
-                    .align(if (isRtl) Alignment.BottomStart else Alignment.BottomEnd)
-                    .offset(y = (-1).dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .clickable(role = Role.Button) { showMenu = true }
-                        .padding(3.dp),
-                    contentAlignment = Alignment.BottomCenter
-                ) {
-                    HisabiSketchIcon(
-                        symbol = HisabiSymbol.More,
-                        contentDescription = "Options",
-                        tint = JournalMutedInk.copy(alpha = 0.85f),
-                        size = 20.dp
-                    )
-                }
-
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(if (contact.isPinned) stringResource(R.string.action_unpin) else stringResource(R.string.action_pin)) },
-                        onClick = {
-                            showMenu = false
-                            onTogglePin()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.common_edit)) },
-                        onClick = {
-                            showMenu = false
-                            onEdit()
-                        }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.common_share)) },
-                        onClick = {
-                            showMenu = false
-                            onShare()
-                        }
-                    )
-                    if (onRemoveFromGroup != null) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.action_remove_from_group)) },
-                            onClick = {
-                                showMenu = false
-                                onRemoveFromGroup()
-                            }
-                        )
-                    }
-                    HorizontalDivider()
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.common_delete), color = Color(0xFFEF4444)) },
-                        onClick = {
-                            showMenu = false
-                            onDelete()
-                        }
                     )
                 }
             }
