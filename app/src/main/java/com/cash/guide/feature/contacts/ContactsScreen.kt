@@ -72,15 +72,14 @@ fun ContactsScreen(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
                     .clickable(role = Role.Button) { viewModel.openAddContactSheet() }
                     .drawBehind {
-                        val washHeight = 24.dp.toPx()
-                        val washY = size.height - washHeight + 5.dp.toPx()
+                        val washHeight = 22.dp.toPx()
+                        val washY = 13.dp.toPx()
                         drawRoundRect(
-                            color = Color(0xFFEDE9FE).copy(alpha = 0.80f),
-                            topLeft = Offset(-6.dp.toPx(), washY),
-                            size = Size(size.width + 12.dp.toPx(), washHeight),
+                            color = HighlighterPink.copy(alpha = 0.45f),
+                            topLeft = Offset(-7.dp.toPx(), washY),
+                            size = Size(size.width + 14.dp.toPx(), washHeight),
                             cornerRadius = CornerRadius(6.dp.toPx(), 6.dp.toPx())
                         )
                     }
@@ -89,7 +88,7 @@ fun ContactsScreen(
                 HisabiSketchIcon(
                     symbol = HisabiSymbol.Plus,
                     contentDescription = null,
-                    tint = Color(0xFF7C3AED),
+                    tint = Color(0xFFBE185D),
                     size = 13.dp,
                     modifier = Modifier.offset(y = 2.dp)
                 )
@@ -98,7 +97,7 @@ fun ContactsScreen(
                     fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                     fontSize = if (isRtl) 13.5.sp else 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF7C3AED),
+                    color = Color(0xFFBE185D),
                     style = TextStyle(platformStyle = NoFontPadding),
                     modifier = Modifier.journalBaselineOnRule()
                 )
@@ -348,7 +347,7 @@ fun ContactItemRow(
             Row(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.spacedBy(5.dp),
-                modifier = Modifier.weight(2.5f, fill = false)
+                modifier = Modifier.widthIn(max = 200.dp)
             ) {
                 Canvas(
                     modifier = Modifier
@@ -410,7 +409,7 @@ fun ContactItemRow(
                     fontFamily = PatrickHandFamily,
                     fontSize = 14.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF6D28D9),
+                    color = Color(0xFFBE185D),
                     style = TextStyle(platformStyle = NoFontPadding),
                     modifier = Modifier.journalBaselineOnRule()
                 )
@@ -492,7 +491,7 @@ fun ContactItemRow(
                 horizontalArrangement = Arrangement.spacedBy(11.dp),
                 verticalAlignment = Alignment.Bottom
             ) {
-                // SMS Icon (Amber / Orange message bubble, pushed down 2.2dp to touch the blue line)
+                // SMS Icon (Pale sky blue message bubble, sits on the blue line)
                 Box(
                     modifier = Modifier
                         .offset(y = 2.2.dp)
@@ -504,7 +503,7 @@ fun ContactItemRow(
                     HisabiSketchIcon(
                         symbol = HisabiSymbol.Sms,
                         contentDescription = "SMS",
-                        tint = Color(0xFFEA580C),
+                        tint = Color(0xFF0EA5E9),
                         size = 21.dp
                     )
                 }
@@ -525,10 +524,10 @@ fun ContactItemRow(
                     )
                 }
 
-                // Direct Call Icon (Phone Call Green, pushed down 2.2dp to touch the blue line)
+                // Direct Call Icon (Soft pale green phone, raised slightly to sit right on the blue line)
                 Box(
                     modifier = Modifier
-                        .offset(y = 2.2.dp)
+                        .offset(y = 1.0.dp)
                         .clip(CircleShape)
                         .clickable(role = Role.Button, onClick = onCall)
                         .padding(horizontal = 2.dp),
@@ -537,7 +536,7 @@ fun ContactItemRow(
                     HisabiSketchIcon(
                         symbol = HisabiSymbol.Phone,
                         contentDescription = "Appel",
-                        tint = Color(0xFF16A34A),
+                        tint = Color(0xFF22C55E),
                         size = 21.dp
                     )
                 }

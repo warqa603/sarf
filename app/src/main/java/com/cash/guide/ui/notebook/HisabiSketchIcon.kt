@@ -780,22 +780,30 @@ fun HisabiSketchIcon(
             HisabiSymbol.WhatsApp -> {
                 val waPath = Path().apply {
                     moveTo(u(12f), u(3.5f))
-                    cubicTo(u(17f), u(3.5f), u(20.5f), u(7.2f), u(20.5f), u(12f))
-                    cubicTo(u(20.5f), u(16.5f), u(17f), u(20.5f), u(12f), u(20.5f))
+                    cubicTo(u(16.8f), u(3.5f), u(20.5f), u(7.2f), u(20.5f), u(12f))
+                    cubicTo(u(20.5f), u(16.5f), u(16.8f), u(20.5f), u(12f), u(20.5f))
                     cubicTo(u(10.2f), u(20.5f), u(8.5f), u(19.8f), u(7.2f), u(18.8f))
                     lineTo(u(3.5f), u(20.5f))
                     lineTo(u(5.2f), u(16.8f))
                     cubicTo(u(4.2f), u(15.4f), u(3.5f), u(13.8f), u(3.5f), u(12f))
-                    cubicTo(u(3.5f), u(7.2f), u(7f), u(3.5f), u(12f), u(3.5f))
+                    cubicTo(u(3.5f), u(7.2f), u(7.2f), u(3.5f), u(12f), u(3.5f))
                     close()
                 }
                 drawPath(waPath, tint, style = pen)
-                // Handset curve inside
-                val phoneCurve = Path().apply {
-                    moveTo(u(9f), u(8.5f))
-                    cubicTo(u(9f), u(11.5f), u(12.5f), u(15f), u(15.5f), u(15f))
+                // Classic WhatsApp handset inside the bubble (filled silhouette)
+                val phoneHandset = Path().apply {
+                    moveTo(u(9.0f), u(7.5f))
+                    lineTo(u(11.2f), u(8.5f))
+                    lineTo(u(10.5f), u(10.2f))
+                    cubicTo(u(11.5f), u(12.0f), u(12.0f), u(12.5f), u(13.8f), u(13.5f))
+                    lineTo(u(15.5f), u(12.8f))
+                    lineTo(u(16.5f), u(15.0f))
+                    cubicTo(u(15.8f), u(16.2f), u(14.5f), u(16.3f), u(13.5f), u(16.0f))
+                    cubicTo(u(11.0f), u(15.2f), u(8.8f), u(13.0f), u(8.0f), u(10.5f))
+                    cubicTo(u(7.8f), u(9.2f), u(8.2f), u(8.0f), u(9.0f), u(7.5f))
+                    close()
                 }
-                drawPath(phoneCurve, tint, style = fine)
+                drawPath(phoneHandset, tint)
             }
             HisabiSymbol.Sms -> {
                 val bubblePath = Path().apply {
