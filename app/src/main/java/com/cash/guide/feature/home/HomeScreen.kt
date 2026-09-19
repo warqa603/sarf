@@ -1131,7 +1131,7 @@ private fun HomeWeekRemindersCarousel(
                     // Row 2 (Middle): Title
                     val itemTitle = when (item) {
                         is HomeWeekReminderItem.General -> item.reminder.title.ifBlank {
-                            if (isRtl) "تذكير" else "Rappel"
+                            stringResource(R.string.home_quick_reminder)
                         }
                         is HomeWeekReminderItem.Calculation -> item.calculationWithItems.calculation.title.ifBlank {
                             stringResource(R.string.home_quick_calculation)
@@ -1164,13 +1164,13 @@ private fun HomeWeekRemindersCarousel(
                             val isOverdue = item.reminder.targetEpochMs <= System.currentTimeMillis()
 
                             val recurrenceLabel = when (item.reminder.recurrenceType) {
-                                ReminderRecurrence.DAILY.name -> if (isRtl) "يومياً" else "Quotidien"
-                                ReminderRecurrence.WEEKLY.name -> if (isRtl) "أسبوعياً" else "Hebdo"
-                                ReminderRecurrence.MONTHLY.name -> if (isRtl) "شهرياً" else "Mensuel"
-                                ReminderRecurrence.EVERY_3_MONTHS.name -> if (isRtl) "كل 3 أشهر" else "3 mois"
-                                ReminderRecurrence.EVERY_6_MONTHS.name -> if (isRtl) "كل 6 أشهر" else "6 mois"
-                                ReminderRecurrence.YEARLY.name -> if (isRtl) "سنوياً" else "Annuel"
-                                else -> if (isRtl) "تذكير" else "Rappel"
+                                ReminderRecurrence.DAILY.name -> stringResource(R.string.reminders_rec_daily)
+                                ReminderRecurrence.WEEKLY.name -> stringResource(R.string.reminders_rec_weekly)
+                                ReminderRecurrence.MONTHLY.name -> stringResource(R.string.reminders_rec_monthly)
+                                ReminderRecurrence.EVERY_3_MONTHS.name -> stringResource(R.string.reminders_rec_3months)
+                                ReminderRecurrence.EVERY_6_MONTHS.name -> stringResource(R.string.reminders_rec_6months)
+                                ReminderRecurrence.YEARLY.name -> stringResource(R.string.reminders_rec_yearly)
+                                else -> stringResource(R.string.home_quick_reminder)
                             }
 
                             Row(

@@ -707,7 +707,7 @@ private fun GroupNoteRowItem(
     onClick: () -> Unit,
     onMoreClick: () -> Unit
 ) {
-    val displayTitle = note.title.ifBlank { if (isRtl) "ملاحظة بدون عنوان" else "Note sans titre" }
+    val displayTitle = note.title.ifBlank { stringResource(R.string.notes_untitled) }
     val previewContent = note.content.lines().firstOrNull { it.isNotBlank() }
         ?.replace(Regex("==([a-zA-Z]:)?(.*?)== *"), "$2 ")
         ?.trim() ?: ""
@@ -851,11 +851,11 @@ private fun GroupChecklistRowItem(
     onClick: () -> Unit,
     onMoreClick: () -> Unit
 ) {
-    val displayTitle = item.checklist.title.ifBlank { if (isRtl) "قائمة بدون عنوان" else "Checklist sans titre" }
+    val displayTitle = item.checklist.title.ifBlank { stringResource(R.string.checklist_untitled) }
     val total = item.totalCount
     val completed = item.completedCount
     val statusText = if (total > 0 && completed == total) {
-        if (isRtl) "مكتمل" else "Terminé"
+        stringResource(R.string.status_completed)
     } else if (total > 0) {
         "$completed/$total"
     } else {

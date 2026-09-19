@@ -61,16 +61,27 @@ fun FinancialQuestionnaireSheet(
 
     val totalSteps = allSteps.size
     val progress = if (totalSteps > 0) (currentStepIdx + 1).toFloat() / totalSteps.toFloat() else 0f
+    val scrollState = rememberScrollState()
+    val stepValidation = remember(currentStep, answers, isRtl) { validateStep(currentStep, answers, isRtl) }
+
+    LaunchedEffect(currentStepIdx) { scrollState.scrollTo(0) }
 
     BackHandler {
-        if (currentStepIdx > 0) currentStepIdx-- else onClose()
+        // Keep the interview open on the first step as well: cancellation is explicit
+        // through the visible "Annuler" action, so no answers are lost by accident.
+        if (currentStepIdx > 0) currentStepIdx--
     }
 
     ModalBottomSheet(
-        onDismissRequest = onClose,
+        // The interview is deliberately modal: do not let an accidental tap outside
+        // the sheet discard a partially completed questionnaire. "Annuler" is the
+        // explicit way back to the underlying screen.
+        onDismissRequest = { },
         sheetState = sheetState,
         containerColor = JournalPaper,
-        scrimColor = Color(0x66000000),
+        // Keep the notebook visible while the user works through a long interview.
+        // A dark scrim made the underlying typography look greyed out and disappear.
+        scrimColor = Color.Transparent,
         dragHandle = {
             Box(
                 modifier = Modifier
@@ -88,7 +99,7 @@ fun FinancialQuestionnaireSheet(
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .imePadding()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
             // ── Header ─────────────────────────────────────────────────────────
@@ -100,6 +111,8 @@ fun FinancialQuestionnaireSheet(
                 onClose = onClose,
                 isRtl = isRtl
             )
+
+            QuestionnaireStageLabel(currentStep, isRtl)
 
             Spacer(Modifier.height(14.dp))
 
@@ -131,14 +144,28 @@ fun FinancialQuestionnaireSheet(
 
             // ── Navigation button ──────────────────────────────────────────────
             val isLast = currentStep == QuestionnaireStepId.REVIEW
+            if (!stepValidation.first) {
+                Text(
+                    text = stepValidation.second,
+                    fontFamily = TajawalFamily,
+                    fontSize = 12.sp,
+                    color = Color(0xFFB23A48),
+                    style = TextStyle(platformStyle = NoFontPadding),
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
+                )
+            }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(52.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(if (isLast) HighlighterGreen.copy(alpha = 0.45f) else HighlighterYellow.copy(alpha = 0.50f))
+                    .background(
+                        if (!stepValidation.first) JournalMutedInk.copy(alpha = 0.10f)
+                        else if (isLast) HighlighterGreen.copy(alpha = 0.45f)
+                        else HighlighterYellow.copy(alpha = 0.50f)
+                    )
                     .border(1.dp, JournalMutedInk.copy(alpha = 0.25f), RoundedCornerShape(12.dp))
-                    .clickable(role = Role.Button) {
+                    .clickable(enabled = stepValidation.first, role = Role.Button) {
                         if (isLast) {
                             onSubmit()
                         } else {
@@ -156,7 +183,7 @@ fun FinancialQuestionnaireSheet(
                     fontFamily = TajawalFamily,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = JournalWritingInk,
+                    color = if (stepValidation.first) JournalWritingInk else JournalMutedInk.copy(alpha = 0.65f),
                     style = TextStyle(platformStyle = NoFontPadding)
                 )
             }
@@ -220,6 +247,60 @@ private fun buildVisibleSteps(answers: QuestionnaireAnswers): List<Questionnaire
     return steps
 }
 
+private fun validateStep(step: QuestionnaireStepId, a: QuestionnaireAnswers, isRtl: Boolean): Pair<Boolean, String> {
+    val message = when (step) {
+        QuestionnaireStepId.GOAL_SETUP -> when {
+            a.goalTitle.isBlank() -> if (isRtl) "كتب اسم الهدف باش نعرفو على شنو غادي نبنيو الخطة." else "Donnez un nom à l'objectif pour personnaliser le plan."
+            a.goalTargetCentimes <= a.goalInitialCentimes -> if (isRtl) "المبلغ المستهدف خاصو يكون أكبر من اللي مجموع دابا." else "Le montant visé doit être supérieur au montant déjà disponible."
+            a.goalTargetMonths <= 0 -> if (isRtl) "اختار مدة صالحة للهدف." else "Choisissez une durée valide."
+            else -> ""
+        }
+        QuestionnaireStepId.B1_INCOME -> if (a.netMonthlyIncomeCentimes <= 0)
+            if (isRtl) "دخل المتوسط الشهري باش ما نعطيوكش تشخيص وهمي." else "Indiquez un revenu mensuel moyen pour éviter un diagnostic trompeur."
+        else ""
+        QuestionnaireStepId.B3_INCOME_RANGE -> if (a.incomeLowestCentimes <= 0 || a.incomeHighestCentimes < a.incomeLowestCentimes)
+            if (isRtl) "دخل أضعف وأقوى شهر، وخلي المبلغ الأعلى أكبر من الأدنى." else "Indiquez un mois bas et un mois haut cohérents."
+        else ""
+        QuestionnaireStepId.D2_DEBT_DETAIL -> if (a.debtPaymentsCentimes <= 0)
+            if (isRtl) "دخل مجموع أقساط الديون الشهرية." else "Indiquez le total mensuel des remboursements."
+        else ""
+        QuestionnaireStepId.G2_LEAK_DETAIL -> if (a.selectedLeaks.any { key ->
+            val d = a.leakDetails[key]
+            d == null || d.costPerUseDh <= 0 || d.weeklyFrequency <= 0
+        }) if (isRtl) "كمل الثمن وعدد المرات لكل مصروف اخترتيه." else "Complétez le coût et la fréquence de chaque poste choisi."
+        else ""
+        else -> ""
+    }
+    return (message.isBlank()) to message
+}
+
+@Composable
+private fun QuestionnaireStageLabel(step: QuestionnaireStepId, isRtl: Boolean) {
+    val label = when (step) {
+        QuestionnaireStepId.GOAL_SETUP -> if (isRtl) "الهدف" else "Objectif"
+        QuestionnaireStepId.A1_OWNERSHIP, QuestionnaireStepId.A2_DEPENDENTS, QuestionnaireStepId.A3_FAMILY_COMMITMENT -> if (isRtl) "الوضع العائلي" else "Foyer"
+        QuestionnaireStepId.B1_INCOME, QuestionnaireStepId.B2_INCOME_TYPE, QuestionnaireStepId.B3_INCOME_RANGE -> if (isRtl) "المدخول" else "Revenus"
+        QuestionnaireStepId.C_ESSENTIALS, QuestionnaireStepId.D1_DEBTS, QuestionnaireStepId.D2_DEBT_DETAIL -> if (isRtl) "الالتزامات" else "Charges & dettes"
+        QuestionnaireStepId.E_EMERGENCY, QuestionnaireStepId.F_CASHFLOW -> if (isRtl) "الأمان المالي" else "Sécurité financière"
+        QuestionnaireStepId.G1_LEAK_SELECT, QuestionnaireStepId.G2_LEAK_DETAIL, QuestionnaireStepId.H_SEASONAL -> if (isRtl) "المصاريف" else "Dépenses"
+        QuestionnaireStepId.I_SAVINGS_BEHAVIOR, QuestionnaireStepId.J_BUYING_BEHAVIOR, QuestionnaireStepId.K_USER_LIMITS -> if (isRtl) "العادات والحدود" else "Habitudes & limites"
+        QuestionnaireStepId.L_GOAL_FLEXIBILITY -> if (isRtl) "مرونة الخطة" else "Souplesse du plan"
+        QuestionnaireStepId.REVIEW -> if (isRtl) "مراجعة الأجوبة" else "Vérification"
+    }
+    Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(7.dp).clip(CircleShape).background(HighlighterBlue))
+        Spacer(Modifier.width(7.dp))
+        Text(
+            text = if (isRtl) "$label · المعلومات كتبقى فالتليفون" else "$label · données conservées sur cet appareil",
+            fontFamily = TajawalFamily,
+            fontWeight = FontWeight.Medium,
+            fontSize = 11.5.sp,
+            color = JournalMutedInk,
+            style = TextStyle(platformStyle = NoFontPadding)
+        )
+    }
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // Header
 // ══════════════════════════════════════════════════════════════════════════════
@@ -250,23 +331,31 @@ private fun QuestionnaireHeader(
                 .padding(horizontal = 8.dp, vertical = 4.dp)
         )
 
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(
+            modifier = Modifier.width(150.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             Text(
-                text = if (isRtl) "$currentStep / $totalSteps" else "$currentStep / $totalSteps",
+                text = if (isRtl) "المرحلة $currentStep من $totalSteps" else "Étape $currentStep sur $totalSteps",
                 fontFamily = TajawalFamily,
                 fontWeight = FontWeight.Bold,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 color = JournalWritingInk,
                 style = TextStyle(platformStyle = NoFontPadding)
             )
-            // Mini progress dots (up to 10 shown)
-            val shown = minOf(totalSteps, 12)
-            for (i in 1..shown) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(JournalMutedInk.copy(alpha = 0.18f))
+            ) {
                 Box(
                     modifier = Modifier
-                        .size(if (i == currentStep) 8.dp else 5.dp)
-                        .clip(CircleShape)
-                        .background(if (i <= currentStep) JournalInk else JournalMutedInk.copy(alpha = 0.3f))
+                        .fillMaxWidth(progress.coerceIn(0f, 1f))
+                        .fillMaxHeight()
+                        .background(JournalInk)
                 )
             }
         }
@@ -512,6 +601,16 @@ private fun StepGoalSetup(
         "AMBER" to Color(0xFFE65100),
         "PURPLE" to Color(0xFF6A1B9A)
     )
+
+    // Start with a localized, editable title instead of leaking a title from a
+    // different language into the questionnaire.
+    LaunchedEffect(a.goalPreset, isRtl) {
+        if (a.goalTitle.isBlank()) {
+            val defaultTitle = presets.firstOrNull { it.first == a.goalPreset }?.third
+                ?: if (isRtl) "هدف التوفير" else "Mon objectif"
+            onUpdate(a.copy(goalTitle = defaultTitle))
+        }
+    }
 
     Column(Modifier.fillMaxWidth()) {
         StepTitle(if (isRtl) "🎯 حدد هدفك المالي" else "🎯 Définissez votre objectif d'épargne")

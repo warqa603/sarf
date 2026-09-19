@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -22,6 +23,8 @@ class SettingsRepository(private val context: Context) {
         val PINNED_CALCULATION_IDS = stringSetPreferencesKey("pinned_calculation_ids")
         val USER_NAME = stringPreferencesKey("user_name")
         val JOURNAL_THEME = stringPreferencesKey("journal_theme")
+        val IS_VIP_UNLOCKED = booleanPreferencesKey("is_vip_unlocked")
+        val ACTIVATED_VIP_CODE = stringPreferencesKey("activated_vip_code")
     }
 
     val userName: Flow<String> = context.dataStore.data.map { preferences ->
@@ -85,6 +88,25 @@ class SettingsRepository(private val context: Context) {
                 current.add(calculationId)
             }
             preferences[PreferencesKeys.PINNED_CALCULATION_IDS] = current
+        }
+    }
+
+    val isVipUnlocked: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.IS_VIP_UNLOCKED] ?: false
+    }
+
+    val activatedVipCode: Flow<String?> = context.dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.ACTIVATED_VIP_CODE]
+    }
+
+    suspend fun setVipUnlocked(unlocked: Boolean, code: String = "") {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.IS_VIP_UNLOCKED] = unlocked
+            if (unlocked) {
+                preferences[PreferencesKeys.ACTIVATED_VIP_CODE] = code
+            } else {
+                preferences.remove(PreferencesKeys.ACTIVATED_VIP_CODE)
+            }
         }
     }
 }

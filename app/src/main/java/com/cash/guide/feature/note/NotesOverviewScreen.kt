@@ -228,7 +228,7 @@ fun NotesOverviewScreen(
                         ) {
                             HisabiSketchIcon(
                                 symbol = HisabiSymbol.Back,
-                                contentDescription = "Retour",
+                                contentDescription = stringResource(R.string.cd_back),
                                 tint = JournalInk,
                                 size = 20.dp
                             )
@@ -251,10 +251,10 @@ fun NotesOverviewScreen(
                                         .size(6.dp)
                                         .background(Color(0xFFEAB308), CircleShape)
                                 )
-                                val titleText = if (isRtl) "ملاحظات وأفكار" else "Notes & idées"
+                                val titleText = stringResource(R.string.title_notes_ideas)
                                 Text(
                                     text = titleText,
-                                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                    fontFamily = resolveJournalFont(titleText, isRtl),
                                     fontSize = if (isRtl) 15.sp else 15.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = JournalWritingInk,
@@ -274,7 +274,7 @@ fun NotesOverviewScreen(
 
                     Text(
                         text = headerMonthText,
-                        fontFamily = PatrickHandFamily,
+                        fontFamily = resolveJournalFont(headerMonthText, isRtl),
                         fontSize = 15.sp,
                         color = JournalWritingInk.copy(alpha = 0.80f),
                         style = TextStyle(platformStyle = NoFontPadding),
@@ -297,7 +297,7 @@ fun NotesOverviewScreen(
                 NotebookSearchField(
                     query = uiState.searchQuery,
                     onQueryChange = { query -> viewModel.updateSearchQuery(query) },
-                    placeholder = if (isRtl) "بحث في الملاحظات..." else "Rechercher dans vos notes...",
+                    placeholder = stringResource(R.string.notes_search_placeholder),
                     onOpenCalendar = { showMonthPicker = true },
                     isDateFiltered = uiState.selectedMonthKey != null
                 )
@@ -313,6 +313,7 @@ fun NotesOverviewScreen(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val createNoteText = stringResource(R.string.notes_create_new)
                     Box(
                         modifier = Modifier
                             .height(JournalRuleSpacing)
@@ -320,7 +321,7 @@ fun NotesOverviewScreen(
                             .background(HighlighterYellow.copy(alpha = 0.35f))
                             .clickable(
                                 role = Role.Button,
-                                onClickLabel = if (isRtl) "إنشاء ملاحظة جديدة" else "Créer une nouvelle note",
+                                onClickLabel = createNoteText,
                                 onClick = {
                                     coroutineScope.launch {
                                         val newId = viewModel.createNewNote()
@@ -341,10 +342,9 @@ fun NotesOverviewScreen(
                                 tint = JournalWritingInk,
                                 size = 13.5.dp
                             )
-                            val btnText = if (isRtl) "إنشاء ملاحظة جديدة" else "Créer une nouvelle note"
                             Text(
-                                text = btnText,
-                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                text = createNoteText,
+                                fontFamily = resolveJournalFont(createNoteText, isRtl),
                                 fontSize = if (isRtl) 13.5.sp else 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = JournalWritingInk,
@@ -358,7 +358,7 @@ fun NotesOverviewScreen(
                 Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
                 // Line 6: "Notes du mois" badge with unified background "X"
-                val notesDuMoisText = if (isRtl) "ملاحظات الشهر" else "Notes du mois"
+                val notesDuMoisText = stringResource(R.string.notes_section_month)
                 JournalSectionBadge(
                     title = notesDuMoisText,
                     badgeColor = HighlighterYellow.copy(alpha = 0.35f),
@@ -406,17 +406,19 @@ fun NotesOverviewScreen(
                             size = 38.dp
                         )
                         Spacer(modifier = Modifier.height(8.dp))
+                        val emptyTitle = stringResource(R.string.notes_empty_title)
                         Text(
-                            text = if (isRtl) "لا توجد أي ملاحظات حالياً" else "Aucune note trouvée",
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            text = emptyTitle,
+                            fontFamily = resolveJournalFont(emptyTitle, isRtl),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = JournalMutedInk
                         )
                         Spacer(modifier = Modifier.height(4.dp))
+                        val emptySubtitle = stringResource(R.string.notes_empty_subtitle)
                         Text(
-                            text = if (isRtl) "اضغط على الزر أسفله لكتابة أول ملاحظة ✍️" else "Appuyez sur le bouton ci-dessous pour créer une note ✍️",
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            text = emptySubtitle,
+                            fontFamily = resolveJournalFont(emptySubtitle, isRtl),
                             fontSize = 13.5.sp,
                             color = JournalMutedInk.copy(alpha = 0.70f),
                             textAlign = TextAlign.Center
@@ -509,7 +511,7 @@ private fun NoteRowItem(
     onDelete: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
-    val displayTitle = note.title.ifBlank { if (isRtl) "ملاحظة بدون عنوان" else "Note sans titre" }
+    val displayTitle = note.title.ifBlank { stringResource(R.string.notes_untitled) }
     val previewContent = note.content.lines().firstOrNull { it.isNotBlank() }
         ?.replace(Regex("==([a-zA-Z]:)?(.*?)== *"), "$2 ")
         ?.trim() ?: ""
@@ -566,7 +568,7 @@ private fun NoteRowItem(
                     ) {
                         HisabiSketchIcon(
                             symbol = HisabiSymbol.PinFilled,
-                            contentDescription = "Épinglé",
+                            contentDescription = stringResource(R.string.action_pin),
                             tint = JournalInk.copy(alpha = 0.85f),
                             size = 13.dp,
                             modifier = Modifier.offset(y = 0.5.dp)
@@ -630,13 +632,10 @@ private fun NoteRowItem(
                 ) {
                     DropdownMenuItem(
                         text = {
+                            val pinText = if (note.isPinned) stringResource(R.string.action_unpin) else stringResource(R.string.action_pin)
                             Text(
-                                text = if (note.isPinned) {
-                                    if (isRtl) "إلغاء التثبيت" else "Désépingler"
-                                } else {
-                                    if (isRtl) "تثبيت الملاحظة" else "Épingler"
-                                },
-                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                text = pinText,
+                                fontFamily = resolveJournalFont(pinText, isRtl),
                                 color = JournalWritingInk
                             )
                         },
@@ -648,9 +647,10 @@ private fun NoteRowItem(
 
                     DropdownMenuItem(
                         text = {
+                            val groupText = stringResource(R.string.action_add_to_group)
                             Text(
-                                text = if (isRtl) "إضافة إلى مجموعة" else stringResource(R.string.action_add_to_group),
-                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                text = groupText,
+                                fontFamily = resolveJournalFont(groupText, isRtl),
                                 color = JournalWritingInk
                             )
                         },
@@ -694,9 +694,10 @@ private fun NoteRowItem(
 
                     DropdownMenuItem(
                         text = {
+                            val delText = stringResource(R.string.action_delete)
                             Text(
-                                text = if (isRtl) "حذف الملاحظة 🗑" else "Supprimer 🗑",
-                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                text = "$delText 🗑",
+                                fontFamily = resolveJournalFont(delText, isRtl),
                                 color = Color(0xFFE53935)
                             )
                         },
@@ -718,9 +719,11 @@ private fun NoteRowItem(
                 .padding(start = 27.dp, end = 14.dp),
             verticalAlignment = Alignment.Bottom
         ) {
+            val fallbackContent = stringResource(R.string.notes_empty_content)
+            val textToShow = previewContent.ifBlank { fallbackContent }
             Text(
-                text = previewContent.ifBlank { if (isRtl) "لا يوجد محتوى..." else "Aucun contenu..." },
-                fontFamily = resolveJournalFont(previewContent, isRtl),
+                text = textToShow,
+                fontFamily = resolveJournalFont(textToShow, isRtl),
                 fontSize = if (isArabicScript(previewContent)) 11.5.sp else 12.sp,
                 fontWeight = FontWeight.Normal,
                 color = JournalMutedInk.copy(alpha = 0.55f),

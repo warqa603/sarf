@@ -29,6 +29,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.res.stringResource
+import com.cash.guide.R
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -192,13 +194,13 @@ fun ChecklistsOverviewScreen(
                         ) {
                             HisabiSketchIcon(
                                 symbol = HisabiSymbol.Back,
-                                contentDescription = "Retour",
+                                contentDescription = stringResource(R.string.cd_back),
                                 tint = JournalInk,
                                 size = 20.dp
                             )
                         }
 
-                        // Green Highlighter Pill with green dot: "Mes Checklists" / "قوائم المهام"
+                        // Green Highlighter Pill with green dot: "Mes Checklists"
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
@@ -215,11 +217,11 @@ fun ChecklistsOverviewScreen(
                                         .size(6.dp)
                                         .background(Color(0xFF22C55E), CircleShape)
                                 )
-                                val titleText = if (isRtl) "قوائم المهام" else "Mes Checklists"
+                                val titleText = stringResource(R.string.title_my_checklists)
                                 Text(
                                     text = titleText,
-                                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                                    fontSize = if (isRtl) 15.sp else 15.5.sp,
+                                    fontFamily = resolveJournalFont(titleText, isRtl),
+                                    fontSize = if (isArabicScript(titleText) || isRtl) 15.sp else 15.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = JournalWritingInk,
                                     style = TextStyle(platformStyle = NoFontPadding)

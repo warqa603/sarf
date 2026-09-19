@@ -75,6 +75,7 @@ data class DiagnosticMetrics(
     val debtPaymentsCentimes: Long,
     val familyCommitmentsCentimes: Long,
     val flexibleSpendingCentimes: Long,
+    val flexibleSpendingEstimated: Boolean = false,
     val irregularMonthlyReserveCentimes: Long,
     val freeCashFlowCentimes: Long,
     val realisticCapacityCentimes: Long,   // min(comfort, freeCashFlow)
@@ -174,6 +175,35 @@ data class DiagnosticWarning(
     val isCritical: Boolean = false
 )
 
+/**
+ * A plain-language fact inferred from the questionnaire.  Keeping the evidence
+ * next to the conclusion makes the diagnostic explainable instead of sounding
+ * like generic coaching copy.
+ */
+data class DiagnosticInsight(
+    val id: String,
+    val titleAr: String,
+    val titleFr: String,
+    val detailAr: String,
+    val detailFr: String,
+    val tone: String = "NEUTRAL" // POSITIVE | ATTENTION | NEUTRAL
+)
+
+enum class BudgetDecisionKind { PROTECT, REDUCE, STOP, PREPARE }
+
+/** A concrete budget decision derived from one or more declared answers. */
+data class BudgetDecision(
+    val id: String,
+    val kind: BudgetDecisionKind,
+    val labelAr: String,
+    val labelFr: String,
+    val reasonAr: String,
+    val reasonFr: String,
+    val currentMonthlyCentimes: Long = 0L,
+    val suggestedMonthlyCentimes: Long = 0L,
+    val monthlyImpactCentimes: Long = 0L
+)
+
 // ══════════════════════════════════════════════════════════════════════════════
 // Full diagnostic result (output of the engine)
 // ══════════════════════════════════════════════════════════════════════════════
@@ -192,6 +222,11 @@ data class FullDiagnosticResult(
     val planOptions: List<SavingsPlanOption>,  // Plans A, B, (C)
     val topActions: List<ActionStep>,          // max 3
     val adviceCards: List<DiagnosticAdviceCard> = emptyList(), // Tailored real-world advice cards
+    val understoodFacts: List<DiagnosticInsight> = emptyList(),
+    val strengths: List<DiagnosticInsight> = emptyList(),
+    val budgetDecisions: List<BudgetDecision> = emptyList(),
+    /** 0..100, based only on whether the key questionnaire inputs are usable. */
+    val dataQualityScore: Int = 0,
     val recommendedContentIds: List<String>,   // ordered article IDs
     // legacy compatibility: keep PlanDiagnosis fields for Simulator
     val austerityStepsAr: List<String>,

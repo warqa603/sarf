@@ -3,6 +3,8 @@ package com.cash.guide
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import androidx.fragment.app.FragmentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -23,6 +25,12 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         currentActivity = this
+        
+        // Fetch dynamic remote configuration (e.g. API Keys and VIP Promo Codes)
+        lifecycleScope.launch {
+            com.cash.guide.domain.ai.RemoteConfigManager.fetchAndCacheConfig(applicationContext)
+            com.cash.guide.domain.billing.PromoCodeManager.syncCodesFromGithub(applicationContext)
+        }
         deepLinkUriState.value = intent?.data
 
         // Initialize Google Mobile Ads SDK (AdMob)

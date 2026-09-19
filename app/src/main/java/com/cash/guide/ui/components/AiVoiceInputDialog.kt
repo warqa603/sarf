@@ -57,6 +57,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.cash.guide.R
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import com.cash.guide.domain.ads.AdMobManager
@@ -134,7 +136,7 @@ fun AiVoiceInputDialog(
                                     extractedChecklistResult = result
                                     flowStep = VoiceFlowStep.REVIEW_CHECKLIST
                                 } else {
-                                    errorMessage = "تعذر استخراج العناصر من الأوديو، عاود جرب وتحدث بوضوح"
+                                    errorMessage = context.getString(R.string.ai_voice_extract_items_error)
                                     flowStep = VoiceFlowStep.ERROR
                                 }
                             } else {
@@ -144,12 +146,12 @@ fun AiVoiceInputDialog(
                                     extractedCalculationResult = result
                                     flowStep = VoiceFlowStep.REVIEW_CALCULATION
                                 } else {
-                                    errorMessage = "تعذر استخراج الحسابات من الأوديو، عاود جرب وتحدث بوضوح"
+                                    errorMessage = context.getString(R.string.ai_voice_extract_calc_error)
                                     flowStep = VoiceFlowStep.ERROR
                                 }
                             }
                         } catch (e: Exception) {
-                            errorMessage = "حدث خطأ في الاتصال بالذكاء الاصطناعي: ${e.message}"
+                            errorMessage = context.getString(R.string.ai_voice_network_error) + (e.message?.let { ": $it" } ?: "")
                             flowStep = VoiceFlowStep.ERROR
                         }
                     }
@@ -254,12 +256,12 @@ fun AiVoiceInputDialog(
                             horizontalArrangement = Arrangement.End
                         ) {
                             IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
-                                Icon(imageVector = Icons.Default.Close, contentDescription = "Fermer", tint = JournalMutedInk)
+                                Icon(imageVector = Icons.Default.Close, contentDescription = stringResource(R.string.action_close), tint = JournalMutedInk)
                             }
                         }
 
                         Text(
-                            text = "سلاو ليك المحاولات اليومية (3/3) ⏳",
+                            text = stringResource(R.string.ai_voice_limit_reached_title),
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = Color(0xFFF57F17),
@@ -269,7 +271,7 @@ fun AiVoiceInputDialog(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         Text(
-                            text = "تفرج فإشهار فيديو قصير (15-30 ثانية) وربح 3 محاولات إضافية فوراً لتسجيل السلعة والحسابات!",
+                            text = stringResource(R.string.ai_voice_limit_reached_desc),
                             fontSize = 13.5.sp,
                             color = JournalInk,
                             textAlign = TextAlign.Center,
@@ -294,7 +296,7 @@ fun AiVoiceInputDialog(
                                                 }
                                             )
                                         } else {
-                                            android.widget.Toast.makeText(context, "الإعلان غير جاهز بعد، المرجو المحاولة مرة أخرى", android.widget.Toast.LENGTH_SHORT).show()
+                                            android.widget.Toast.makeText(context, context.getString(R.string.ai_voice_ad_not_ready), android.widget.Toast.LENGTH_SHORT).show()
                                             adMobManager.loadRewardedAd()
                                         }
                                     }
@@ -313,7 +315,7 @@ fun AiVoiceInputDialog(
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "مشاهدة إعلان وربح 3 محاولات 🎁",
+                                    text = stringResource(R.string.ai_voice_watch_ad_btn),
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.5.sp
@@ -353,7 +355,7 @@ fun AiVoiceInputDialog(
                                 border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF81C784))
                             ) {
                                 Text(
-                                    text = "⚡ $credits محاولات متبقية",
+                                    text = stringResource(R.string.ai_voice_remaining_credits, credits),
                                     color = Color(0xFF1B5E20),
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
@@ -362,7 +364,7 @@ fun AiVoiceInputDialog(
                             }
 
                             IconButton(onClick = onDismiss, modifier = Modifier.size(28.dp)) {
-                                Icon(imageVector = Icons.Default.Close, contentDescription = "Fermer", tint = JournalMutedInk)
+                                Icon(imageVector = Icons.Default.Close, contentDescription = stringResource(R.string.action_close), tint = JournalMutedInk)
                             }
                         }
 
@@ -402,7 +404,7 @@ fun AiVoiceInputDialog(
                         Spacer(modifier = Modifier.height(16.dp))
 
                         Text(
-                            text = "كنسمع ليك دابا... تكلم بالدارجة 🎙️",
+                            text = stringResource(R.string.ai_voice_listening_title),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFFD32F2F),
@@ -412,7 +414,7 @@ fun AiVoiceInputDialog(
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Text(
-                            text = if (target == AiVoiceInputTarget.CHECKLIST) "هضر بكل راحة، سمي كاع السلعة لي خاصاك دفعة واحدة" else "هضر بكل راحة، سمي المصاريف أو السلعة بالأثمنة أو بلا أثمنة",
+                            text = if (target == AiVoiceInputTarget.CHECKLIST) stringResource(R.string.ai_voice_listening_hint_checklist) else stringResource(R.string.ai_voice_listening_hint_calc),
                             fontSize = 12.5.sp,
                             color = JournalMutedInk,
                             textAlign = TextAlign.Center
@@ -453,7 +455,7 @@ fun AiVoiceInputDialog(
                                     .clickable { onDismiss() }
                             ) {
                                 Text(
-                                    text = "إلغاء",
+                                    text = stringResource(R.string.action_cancel),
                                     color = JournalInk,
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 13.5.sp,
@@ -472,7 +474,7 @@ fun AiVoiceInputDialog(
                                     }
                             ) {
                                 Text(
-                                    text = "سالي ومراجعة ✨",
+                                    text = stringResource(R.string.ai_voice_finish_btn),
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 14.sp,
@@ -509,7 +511,7 @@ fun AiVoiceInputDialog(
                         )
                         Spacer(modifier = Modifier.height(18.dp))
                         Text(
-                            text = "جاري التحليل بالذكاء الاصطناعي... 🤖",
+                            text = stringResource(R.string.ai_voice_analyzing_title),
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = JournalInk,
@@ -517,7 +519,7 @@ fun AiVoiceInputDialog(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Gemini 2.5 Flash كيستخرج العناصر وكيقادهم...",
+                            text = stringResource(R.string.ai_voice_analyzing_subtitle),
                             fontSize = 12.5.sp,
                             color = JournalMutedInk,
                             textAlign = TextAlign.Center
@@ -576,7 +578,7 @@ fun AiVoiceInputDialog(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "⚠️ لم نتمكن من المعالجة",
+                            text = stringResource(R.string.ai_voice_error_title),
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp,
                             color = Color(0xFFC62828),
@@ -584,7 +586,7 @@ fun AiVoiceInputDialog(
                         )
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
-                            text = errorMessage ?: speechError ?: "يرجى المحاولة مرة أخرى والتحدث بوضوح",
+                            text = errorMessage ?: speechError ?: stringResource(R.string.ai_voice_retry_hint),
                             fontSize = 13.sp,
                             color = JournalInk,
                             textAlign = TextAlign.Center
@@ -602,7 +604,7 @@ fun AiVoiceInputDialog(
                                     .clickable { onDismiss() }
                             ) {
                                 Text(
-                                    text = "إلغاء",
+                                    text = stringResource(R.string.action_cancel),
                                     color = JournalInk,
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 13.5.sp,
@@ -628,7 +630,7 @@ fun AiVoiceInputDialog(
                                     Icon(imageVector = Icons.Default.Refresh, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                                     Spacer(modifier = Modifier.width(6.dp))
                                     Text(
-                                        text = "إعادة المحاولة",
+                                        text = stringResource(R.string.ai_voice_retry_btn),
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.5.sp

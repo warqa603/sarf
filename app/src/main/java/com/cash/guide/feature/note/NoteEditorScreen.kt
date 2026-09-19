@@ -256,7 +256,7 @@ private fun NoteVoiceDictationBanner(
                     val textToShow = when {
                         uiState.dictationError != null -> uiState.dictationError
                         uiState.partialDictation.isNotBlank() -> uiState.partialDictation
-                        uiState.isListening -> if (isRtl) "كنسمع... هضر دابا 🎙️" else "À l'écoute... parlez 🎙️"
+                        uiState.isListening -> stringResource(R.string.note_voice_listening)
                         else -> ""
                     }
 
@@ -467,7 +467,7 @@ fun NoteEditorScreen(
                                     .padding(horizontal = 10.dp, vertical = 6.dp),
                                 contentAlignment = Alignment.CenterStart
                             ) {
-                                val placeholderText = if (isRtl) "عنوان الملاحظة... ✍️" else "Titre de la note..."
+                                val placeholderText = stringResource(R.string.note_title_hint)
                                 BasicTextField(
                                     value = uiState.title,
                                     onValueChange = { viewModel.updateTitle(it) },
@@ -827,7 +827,7 @@ fun NoteEditorScreen(
                                                 onClick = {
                                                     showShareMenu = false
                                                     viewModel.saveChanges()
-                                                    val suffix = if (isRtl) "(نسخة)" else "(Copie)"
+                                                    val suffix = context.getString(R.string.note_duplicate_suffix)
                                                     viewModel.duplicateNote(suffix) {
                                                         Toast.makeText(context, R.string.note_toast_duplicated, Toast.LENGTH_SHORT).show()
                                                     }
@@ -998,7 +998,7 @@ fun NoteEditorScreen(
 
                 // Delete Confirmation Dialog
                 if (showDeleteDialog) {
-                    val noteTitle = uiState.title.text.ifBlank { if (isRtl) "هذه الملاحظة" else "cette note" }
+                    val noteTitle = uiState.title.text.ifBlank { stringResource(R.string.note_this_note) }
                     AlertDialog(
                         onDismissRequest = { showDeleteDialog = false },
                         title = {
@@ -1028,7 +1028,7 @@ fun NoteEditorScreen(
                                 }
                             ) {
                                 Text(
-                                    text = if (isRtl) "حذف" else "Supprimer",
+                                    text = stringResource(R.string.action_delete),
                                     fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                                     fontWeight = FontWeight.Bold,
                                     color = JournalActionDelete
@@ -1038,7 +1038,7 @@ fun NoteEditorScreen(
                         dismissButton = {
                             TextButton(onClick = { showDeleteDialog = false }) {
                                 Text(
-                                    text = if (isRtl) "إلغاء" else "Annuler",
+                                    text = stringResource(R.string.action_cancel),
                                     fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                                     color = JournalMutedInk
                                 )
@@ -1164,7 +1164,7 @@ private fun NoteAccessoryBar(
 
                 // 6. Select All
                 AccessoryTextButton(
-                    text = if (isRtl) "تحديد الكل" else "Tout",
+                    text = stringResource(R.string.note_select_all_btn),
                     onClick = { viewModel.selectAll() }
                 )
 
@@ -1346,7 +1346,7 @@ private fun NoteAccessoryBar(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = if (isRtl) "$words كلمة • $chars حرف" else "$words mots • $chars car.",
+                            text = stringResource(R.string.note_stats_format, words, chars),
                             fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                             fontSize = 11.sp,
                             color = JournalMutedInk.copy(alpha = 0.8f),

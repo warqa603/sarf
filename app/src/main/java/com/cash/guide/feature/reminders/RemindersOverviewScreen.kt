@@ -40,6 +40,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -70,7 +71,8 @@ import com.cash.guide.ui.notebook.MonthPickerDialog
 import com.cash.guide.ui.notebook.NoFontPadding
 import com.cash.guide.ui.notebook.NotebookSearchField
 import com.cash.guide.ui.notebook.PatrickHandFamily
-import com.cash.guide.ui.notebook.TajawalFamily
+import com.cash.guide.R
+import com.cash.guide.ui.notebook.resolveJournalFont
 import com.cash.guide.ui.notebook.journalBaselineOnRule
 import com.cash.guide.ui.notebook.journalHighlighter
 import com.cash.guide.ui.notebook.journalVisualOnRule
@@ -137,7 +139,7 @@ fun RemindersOverviewScreen(
                         ) {
                             HisabiSketchIcon(
                                 symbol = HisabiSymbol.Back,
-                                contentDescription = "Retour",
+                                contentDescription = stringResource(R.string.cd_back),
                                 tint = JournalInk,
                                 size = 20.dp
                             )
@@ -160,10 +162,10 @@ fun RemindersOverviewScreen(
                                         .size(6.dp)
                                         .background(Color(0xFF38BDF8), CircleShape)
                                 )
-                                val titleText = if (isRtl) "التذكيرات والتنبيهات" else "Rappels & alertes"
+                                val titleText = stringResource(R.string.title_reminders_alerts)
                                 Text(
                                     text = titleText,
-                                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                    fontFamily = resolveJournalFont(titleText, isRtl),
                                     fontSize = if (isRtl) 15.sp else 15.5.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = JournalWritingInk,
@@ -183,7 +185,7 @@ fun RemindersOverviewScreen(
 
                     Text(
                         text = headerMonthText,
-                        fontFamily = PatrickHandFamily,
+                        fontFamily = resolveJournalFont(headerMonthText, isRtl),
                         fontSize = 15.sp,
                         color = JournalWritingInk.copy(alpha = 0.80f),
                         style = TextStyle(platformStyle = NoFontPadding),
@@ -206,7 +208,7 @@ fun RemindersOverviewScreen(
                 NotebookSearchField(
                     query = uiState.searchQuery,
                     onQueryChange = { query -> viewModel.updateSearchQuery(query) },
-                    placeholder = if (isRtl) "بحث في التذكيرات..." else "Rechercher un rappel...",
+                    placeholder = stringResource(R.string.reminders_search_placeholder),
                     onOpenCalendar = { showMonthPicker = true },
                     isDateFiltered = uiState.selectedMonthKey != null
                 )
@@ -222,6 +224,7 @@ fun RemindersOverviewScreen(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    val createReminderText = stringResource(R.string.reminders_create_new)
                     Box(
                         modifier = Modifier
                             .height(JournalRuleSpacing)
@@ -229,7 +232,7 @@ fun RemindersOverviewScreen(
                             .background(HighlighterBlue.copy(alpha = 0.35f))
                             .clickable(
                                 role = Role.Button,
-                                onClickLabel = if (isRtl) "إنشاء تذكير جديد" else "Créer un nouveau rappel",
+                                onClickLabel = createReminderText,
                                 onClick = { viewModel.openCreateDialog() }
                             )
                             .padding(horizontal = 14.dp),
@@ -245,10 +248,9 @@ fun RemindersOverviewScreen(
                                 tint = JournalWritingInk,
                                 size = 13.5.dp
                             )
-                            val btnText = if (isRtl) "إنشاء تذكير جديد" else "Créer un nouveau rappel"
                             Text(
-                                text = btnText,
-                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                text = createReminderText,
+                                fontFamily = resolveJournalFont(createReminderText, isRtl),
                                 fontSize = if (isRtl) 13.5.sp else 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = JournalWritingInk,
@@ -263,7 +265,7 @@ fun RemindersOverviewScreen(
 
                 // Line 6: Section Badge: "Tous les rappels" (using unified seamless path!)
                 JournalSectionBadge(
-                    title = if (isRtl) "جميع التذكيرات (${uiState.filteredReminders.size})" else "Tous les rappels (${uiState.filteredReminders.size})",
+                    title = stringResource(R.string.reminders_section_all, uiState.filteredReminders.size),
                     badgeColor = HighlighterBlue.copy(alpha = 0.30f)
                 )
 
@@ -284,21 +286,23 @@ fun RemindersOverviewScreen(
                             size = 38.dp
                         )
                         Spacer(modifier = Modifier.height(8.dp))
+                        val emptyTitle = if (uiState.searchQuery.isNotBlank()) {
+                            stringResource(R.string.reminders_empty_search)
+                        } else {
+                            stringResource(R.string.reminders_empty_title)
+                        }
                         Text(
-                            text = if (uiState.searchQuery.isNotBlank()) {
-                                if (isRtl) "لا توجد نتائج للبحث" else "Aucun rappel trouvé"
-                            } else {
-                                if (isRtl) "لا توجد أي تذكيرات حالياً" else "Aucun rappel programmé"
-                            },
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            text = emptyTitle,
+                            fontFamily = resolveJournalFont(emptyTitle, isRtl),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = JournalMutedInk
                         )
                         Spacer(modifier = Modifier.height(4.dp))
+                        val emptySubtitle = stringResource(R.string.reminders_empty_subtitle)
                         Text(
-                            text = if (isRtl) "اضغط على الزر أعلاه لإضافة تذكيرك الأول 🔔" else "Appuyez sur le bouton ci-dessus pour ajouter un rappel 🔔",
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            text = emptySubtitle,
+                            fontFamily = resolveJournalFont(emptySubtitle, isRtl),
                             fontSize = 13.5.sp,
                             color = JournalMutedInk.copy(alpha = 0.70f),
                             textAlign = TextAlign.Center
@@ -394,13 +398,13 @@ private fun ReminderRowItem(
     }
 
     val recurrenceLabel = when (reminder.recurrenceType) {
-        ReminderRecurrence.DAILY.name -> if (isRtl) "يومياً" else "Quotidien"
-        ReminderRecurrence.WEEKLY.name -> if (isRtl) "أسبوعياً" else "Hebdo"
-        ReminderRecurrence.MONTHLY.name -> if (isRtl) "شهرياً" else "Mensuel"
-        ReminderRecurrence.EVERY_3_MONTHS.name -> if (isRtl) "كل 3 أشهر" else "3 mois"
-        ReminderRecurrence.EVERY_6_MONTHS.name -> if (isRtl) "كل 6 أشهر" else "6 mois"
-        ReminderRecurrence.YEARLY.name -> if (isRtl) "سنوياً" else "Annuel"
-        else -> if (isRtl) "مرة واحدة" else "Une fois"
+        ReminderRecurrence.DAILY.name -> stringResource(R.string.reminders_rec_daily)
+        ReminderRecurrence.WEEKLY.name -> stringResource(R.string.reminders_rec_weekly)
+        ReminderRecurrence.MONTHLY.name -> stringResource(R.string.reminders_rec_monthly)
+        ReminderRecurrence.EVERY_3_MONTHS.name -> stringResource(R.string.reminders_rec_3months)
+        ReminderRecurrence.EVERY_6_MONTHS.name -> stringResource(R.string.reminders_rec_6months)
+        ReminderRecurrence.YEARLY.name -> stringResource(R.string.reminders_rec_yearly)
+        else -> stringResource(R.string.reminders_rec_once)
     }
 
     val timeStr = String.format(Locale.US, "%02d:%02d", reminder.timeHour, reminder.timeMinute)
@@ -433,7 +437,7 @@ private fun ReminderRowItem(
             // Title
             Text(
                 text = reminder.title,
-                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                fontFamily = resolveJournalFont(reminder.title, isRtl),
                 fontSize = if (isRtl) 15.sp else 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = if (reminder.isEnabled) JournalWritingInk else JournalMutedInk.copy(alpha = 0.6f),
@@ -465,7 +469,7 @@ private fun ReminderRowItem(
                 )
                 Text(
                     text = "$recurrenceLabel · $timeStr",
-                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontFamily = resolveJournalFont(recurrenceLabel, isRtl),
                     fontSize = if (isRtl) 13.sp else 13.5.sp,
                     fontWeight = FontWeight.Medium,
                     color = if (reminder.isEnabled) JournalWritingInk.copy(alpha = 0.85f) else JournalMutedInk.copy(alpha = 0.5f),
@@ -484,7 +488,7 @@ private fun ReminderRowItem(
             ) {
                 HisabiSketchIcon(
                     symbol = HisabiSymbol.More,
-                    contentDescription = "Options",
+                    contentDescription = stringResource(R.string.action_edit),
                     tint = JournalMutedInk,
                     size = 15.dp
                 )
@@ -495,8 +499,10 @@ private fun ReminderRowItem(
                 ) {
                     DropdownMenuItem(
                         text = {
+                            val editTxt = stringResource(R.string.reminders_edit_title)
                             Text(
-                                text = if (isRtl) "تعديل التذكير" else "Modifier le rappel",
+                                text = editTxt,
+                                fontFamily = resolveJournalFont(editTxt, isRtl),
                                 color = JournalWritingInk
                             )
                         },
@@ -507,9 +513,11 @@ private fun ReminderRowItem(
                     )
                     DropdownMenuItem(
                         text = {
+                            val toggleTxt = if (reminder.isEnabled) stringResource(R.string.reminders_action_pause)
+                            else stringResource(R.string.reminders_action_activate)
                             Text(
-                                text = if (reminder.isEnabled) (if (isRtl) "تعطيل التنبيه" else "Mettre en pause")
-                                else (if (isRtl) "تفعيل التنبيه" else "Activer le rappel")
+                                text = toggleTxt,
+                                fontFamily = resolveJournalFont(toggleTxt, isRtl)
                             )
                         },
                         onClick = {
@@ -519,8 +527,10 @@ private fun ReminderRowItem(
                     )
                     DropdownMenuItem(
                         text = {
+                            val delTxt = stringResource(R.string.action_delete)
                             Text(
-                                text = if (isRtl) "حذف التذكير" else "Supprimer",
+                                text = delTxt,
+                                fontFamily = resolveJournalFont(delTxt, isRtl),
                                 color = Color.Red
                             )
                         },

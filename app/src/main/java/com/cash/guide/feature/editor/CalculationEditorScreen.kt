@@ -416,7 +416,7 @@ fun CalculationEditorScreen(
                             val count = result.entries.size
                             Toast.makeText(
                                 context,
-                                if (isRtl) "تمت معالجة $count بنود بالذكاء الاصطناعي 🪄" else "$count éléments traités avec l'IA 🪄",
+                                context.getString(R.string.calculation_ai_items_processed, count),
                                 Toast.LENGTH_SHORT
                             ).show()
                         }

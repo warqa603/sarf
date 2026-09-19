@@ -37,6 +37,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
+import com.cash.guide.R
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -685,12 +687,12 @@ private fun RenderAiDialogs(
                         horizontalArrangement = Arrangement.End
                     ) {
                         IconButton(onClick = onDismissRewardedAd, modifier = Modifier.size(28.dp)) {
-                            Icon(imageVector = Icons.Default.Close, contentDescription = "Fermer", tint = JournalMutedInk)
+                            Icon(imageVector = Icons.Default.Close, contentDescription = stringResource(R.string.action_close), tint = JournalMutedInk)
                         }
                     }
 
                     Text(
-                        text = "سلاو ليك المحاولات اليومية (3/3) ⏳",
+                        text = stringResource(R.string.ai_voice_limit_reached_title),
                         fontWeight = FontWeight.Bold,
                         fontSize = 16.sp,
                         color = Color(0xFFF57F17),
@@ -700,7 +702,7 @@ private fun RenderAiDialogs(
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = "تفرج فإشهار فيديو قصير (15-30 ثانية) وربح 3 محاولات إضافية فوراً لتسجيل السلعة والحسابات!",
+                        text = stringResource(R.string.ai_voice_limit_reached_desc),
                         fontSize = 13.5.sp,
                         color = JournalInk,
                         textAlign = TextAlign.Center,
@@ -713,7 +715,7 @@ private fun RenderAiDialogs(
                         onClick = {
                             if (activity != null) {
                                 if (!adMobManager.isRewardedReady.value) {
-                                    Toast.makeText(context, "الإعلان غير جاهز بعد، المرجو المحاولة مرة أخرى", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.ai_voice_ad_not_ready), Toast.LENGTH_SHORT).show()
                                     adMobManager.loadRewardedAd()
                                 } else {
                                     adMobManager.showRewardedAd(
@@ -722,7 +724,7 @@ private fun RenderAiDialogs(
                                     )
                                 }
                             } else {
-                                Toast.makeText(context, "Erreur système: Activity introuvable", Toast.LENGTH_LONG).show()
+                                Toast.makeText(context, context.getString(R.string.ai_voice_system_error), Toast.LENGTH_LONG).show()
                             }
                         },
                         shape = RoundedCornerShape(20.dp),
@@ -742,7 +744,7 @@ private fun RenderAiDialogs(
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "مشاهدة إعلان وربح 3 محاولات 🎁",
+                                text = stringResource(R.string.ai_voice_watch_ad_btn),
                                 color = Color.White,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 14.5.sp

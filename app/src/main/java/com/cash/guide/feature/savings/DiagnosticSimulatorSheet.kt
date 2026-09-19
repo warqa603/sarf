@@ -3,6 +3,7 @@ package com.cash.guide.feature.savings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -89,28 +90,45 @@ fun DiagnosticSimulatorSheet(
                 )
             }
 
-            // ── Mode tab bar (horizontal scroll) ──────────────────────────
+            // ── Mode cards ─────────────────────────────────────────────────
+            // A fixed card rhythm prevents one long label from stretching a tab
+            // while another becomes a tiny square. The row scrolls horizontally.
             Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SimulatorMode.values().forEach { mode ->
                     val (emoji, shortAr, shortFr) = modeLabel(mode)
-                    val label = if (isRtl) "$emoji $shortAr" else "$emoji $shortFr"
+                    val label = if (isRtl) shortAr else shortFr
                     val isSelected = mode == selectedMode
-                    Box(
+                    Column(
                         modifier = Modifier
+                            .width(112.dp)
+                            .height(JournalRuleSpacing * 2)
                             .clip(RoundedCornerShape(8.dp))
                             .background(if (isSelected) HighlighterYellow.copy(alpha = 0.55f) else JournalPaper)
                             .border(1.dp, if (isSelected) JournalWritingInk.copy(0.5f) else JournalMutedInk.copy(0.20f), RoundedCornerShape(8.dp))
                             .clickable(role = Role.Tab) { selectedMode = mode }
-                            .padding(horizontal = 8.dp, vertical = 6.dp)
+                            .padding(horizontal = 6.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
                     ) {
+                        androidx.compose.material3.Text(
+                            text = emoji,
+                            fontFamily = TajawalFamily,
+                            fontSize = 15.sp,
+                            color = JournalWritingInk,
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
                         androidx.compose.material3.Text(
                             text = label,
                             fontFamily = TajawalFamily,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 11.sp,
+                            fontSize = 10.5.sp,
+                            maxLines = 1,
                             color = JournalWritingInk,
                             style = TextStyle(platformStyle = NoFontPadding)
                         )
@@ -547,7 +565,8 @@ private fun SimTitle(text: String) {
         fontWeight = FontWeight.Bold,
         fontSize = 15.sp,
         color = JournalWritingInk,
-        style = TextStyle(platformStyle = NoFontPadding)
+        style = TextStyle(platformStyle = NoFontPadding),
+        modifier = Modifier.journalBaselineOnRule()
     )
 }
 
@@ -558,7 +577,8 @@ private fun SimSubtitle(text: String) {
         fontFamily = TajawalFamily,
         fontSize = 12.sp,
         color = JournalMutedInk,
-        style = TextStyle(platformStyle = NoFontPadding)
+        style = TextStyle(platformStyle = NoFontPadding),
+        modifier = Modifier.journalBaselineOnRule()
     )
 }
 
@@ -566,12 +586,16 @@ private fun SimSubtitle(text: String) {
 private fun ResultCard(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth()
+            .snapHeightToRule()
             .clip(RoundedCornerShape(10.dp))
             .background(JournalPaper)
             .border(1.dp, JournalRule, RoundedCornerShape(10.dp))
-            .padding(12.dp),
-        content = content
-    )
+            .padding(horizontal = 12.dp),
+    ) {
+        content()
+        // The final rule belongs to the outline, not to the last text baseline.
+        Spacer(Modifier.height(JournalRuleSpacing))
+    }
 }
 
 @Composable
@@ -584,7 +608,7 @@ private fun NotebookRuledSimRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().height(JournalRuleSpacing),
-        verticalAlignment = Alignment.CenterVertically,
+        verticalAlignment = Alignment.Bottom,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         androidx.compose.material3.Text(
@@ -593,7 +617,7 @@ private fun NotebookRuledSimRow(
             fontSize = 12.5.sp,
             color = JournalMutedInk,
             style = TextStyle(platformStyle = NoFontPadding),
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f).journalBaselineOnRule()
         )
         if (value.isNotBlank()) {
             androidx.compose.material3.Text(
@@ -602,9 +626,9 @@ private fun NotebookRuledSimRow(
                 fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal,
                 fontSize = 12.5.sp,
                 color = color,
-                style = TextStyle(platformStyle = NoFontPadding)
+                style = TextStyle(platformStyle = NoFontPadding),
+                modifier = Modifier.journalBaselineOnRule()
             )
         }
     }
-    Box(Modifier.fillMaxWidth().height(0.6.dp).background(JournalRule.copy(alpha = 0.4f)))
 }

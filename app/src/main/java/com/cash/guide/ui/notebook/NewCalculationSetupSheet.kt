@@ -211,7 +211,7 @@ fun NewCalculationSetupSheet(
 
                 if (selectedTemplateId != null || title.isNotBlank()) {
                     Text(
-                        text = if (isRtl) "إفراغ ✕" else "Vider ✕",
+                        text = stringResource(R.string.new_calc_clear_selection),
                         fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
@@ -241,7 +241,7 @@ fun NewCalculationSetupSheet(
                 // "Vierge / Personnalisé" chip
                 val isViergeSelected = selectedTemplateId == null && title.isBlank()
                 TemplateChip(
-                    title = if (isRtl) "✨ بدون نموذج" else "✨ Personnalisé",
+                    title = stringResource(R.string.new_calc_template_blank),
                     isSelected = isViergeSelected,
                     isRtl = isRtl,
                     onClick = {

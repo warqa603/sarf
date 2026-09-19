@@ -90,6 +90,9 @@ import com.cash.guide.ui.notebook.JournalWritingInk
 import com.cash.guide.ui.notebook.NoFontPadding
 import com.cash.guide.ui.notebook.PatrickHandFamily
 import com.cash.guide.ui.notebook.TajawalFamily
+import com.cash.guide.R
+import com.cash.guide.ui.notebook.resolveJournalFont
+import androidx.compose.ui.res.stringResource
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -141,6 +144,23 @@ fun NewReminderSheet(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val isEditing = initialReminder != null
+
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val permissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()
+    ) {}
+
+    LaunchedEffect(Unit) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(
+                    context,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) != android.content.pm.PackageManager.PERMISSION_GRANTED
+            ) {
+                permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
 
     var isTitleFocused by remember { mutableStateOf(false) }
     var title by remember(initialReminder) { mutableStateOf(initialReminder?.title ?: "") }
@@ -249,13 +269,10 @@ fun NewReminderSheet(
                             .size(10.dp)
                             .background(dotColor, CircleShape)
                     )
+                    val sheetTitle = if (isEditing) stringResource(R.string.reminders_edit_title) else stringResource(R.string.reminders_create_new)
                     Text(
-                        text = if (isEditing) {
-                            if (isRtl) "تعديل التذكير" else "Modifier le rappel"
-                        } else {
-                            if (isRtl) "إنشاء تذكير جديد" else "Créer un nouveau rappel"
-                        },
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        text = sheetTitle,
+                        fontFamily = resolveJournalFont(sheetTitle, isRtl),
                         fontSize = if (isRtl) 18.sp else 19.sp,
                         fontWeight = FontWeight.Bold,
                         color = JournalWritingInk
@@ -271,7 +288,7 @@ fun NewReminderSheet(
                 ) {
                     HisabiSketchIcon(
                         symbol = HisabiSymbol.Close,
-                        contentDescription = "Fermer",
+                        contentDescription = stringResource(R.string.action_close),
                         tint = JournalMutedInk,
                         size = 14.dp
                     )
@@ -281,9 +298,10 @@ fun NewReminderSheet(
             Spacer(modifier = Modifier.height(14.dp))
 
             // 1. Titre du rappel (Input)
+            val titleLabel = stringResource(R.string.reminders_title_label)
             Text(
-                text = if (isRtl) "عنوان التذكير" else "Titre du rappel",
-                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                text = titleLabel,
+                fontFamily = resolveJournalFont(titleLabel, isRtl),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = JournalMutedInk
@@ -297,9 +315,10 @@ fun NewReminderSheet(
                     .padding(horizontal = 12.dp, vertical = 10.dp)
             ) {
                 if (title.isBlank()) {
+                    val titleHint = stringResource(R.string.reminders_title_hint)
                     Text(
-                        text = if (isRtl) "مثال: أداء فاتورة، موعد طبيب، سلعة..." else "ex: Payer facture, Rendez-vous, Stock...",
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        text = titleHint,
+                        fontFamily = resolveJournalFont(titleHint, isRtl),
                         fontSize = 15.sp,
                         color = JournalMutedInk.copy(alpha = 0.5f),
                         style = TextStyle(platformStyle = NoFontPadding)
@@ -314,7 +333,7 @@ fun NewReminderSheet(
                         .focusRequester(titleFocusRequester)
                         .onFocusChanged { isTitleFocused = it.isFocused },
                     textStyle = TextStyle(
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontFamily = resolveJournalFont(title, isRtl),
                         fontSize = 15.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = JournalWritingInk,
@@ -335,9 +354,10 @@ fun NewReminderSheet(
             ) {
                 // Date picker trigger button
                 Column(modifier = Modifier.weight(1.3f)) {
+                    val dateLabel = stringResource(R.string.reminders_date_label)
                     Text(
-                        text = if (isRtl) "التاريخ" else "Date",
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        text = dateLabel,
+                        fontFamily = resolveJournalFont(dateLabel, isRtl),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = JournalMutedInk
@@ -380,9 +400,10 @@ fun NewReminderSheet(
 
                 // Time picker trigger button
                 Column(modifier = Modifier.weight(0.9f)) {
+                    val timeLabel = stringResource(R.string.reminders_time_label)
                     Text(
-                        text = if (isRtl) "الوقت" else "Heure",
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        text = timeLabel,
+                        fontFamily = resolveJournalFont(timeLabel, isRtl),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = JournalMutedInk
@@ -426,9 +447,10 @@ fun NewReminderSheet(
             Spacer(modifier = Modifier.height(14.dp))
 
             // 3. Fréquence / Récurrence
+            val freqLabel = stringResource(R.string.reminders_freq_label)
             Text(
-                text = if (isRtl) "التكرار" else "Fréquence / Répétition",
-                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                text = freqLabel,
+                fontFamily = resolveJournalFont(freqLabel, isRtl),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = JournalMutedInk
@@ -436,13 +458,13 @@ fun NewReminderSheet(
             Spacer(modifier = Modifier.height(6.dp))
 
             val recurrenceOptions = listOf(
-                ReminderRecurrence.ONCE to (if (isRtl) "مرة واحدة" else "Une fois"),
-                ReminderRecurrence.DAILY to (if (isRtl) "يومياً" else "Chaque jour"),
-                ReminderRecurrence.WEEKLY to (if (isRtl) "أسبوعياً" else "Chaque semaine"),
-                ReminderRecurrence.MONTHLY to (if (isRtl) "شهرياً" else "Chaque mois"),
-                ReminderRecurrence.EVERY_3_MONTHS to (if (isRtl) "كل 3 أشهر" else "Chaque 3 mois"),
-                ReminderRecurrence.EVERY_6_MONTHS to (if (isRtl) "كل 6 أشهر" else "Chaque 6 mois"),
-                ReminderRecurrence.YEARLY to (if (isRtl) "سنوياً" else "Chaque année")
+                ReminderRecurrence.ONCE to stringResource(R.string.reminders_rec_once),
+                ReminderRecurrence.DAILY to stringResource(R.string.reminders_rec_daily),
+                ReminderRecurrence.WEEKLY to stringResource(R.string.reminders_rec_weekly),
+                ReminderRecurrence.MONTHLY to stringResource(R.string.reminders_rec_monthly),
+                ReminderRecurrence.EVERY_3_MONTHS to stringResource(R.string.reminders_rec_3months),
+                ReminderRecurrence.EVERY_6_MONTHS to stringResource(R.string.reminders_rec_6months),
+                ReminderRecurrence.YEARLY to stringResource(R.string.reminders_rec_yearly)
             )
 
             FlowRow(
@@ -469,7 +491,7 @@ fun NewReminderSheet(
                     ) {
                         Text(
                             text = label,
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontFamily = resolveJournalFont(label, isRtl),
                             fontSize = if (isRtl) 12.5.sp else 13.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                             color = if (isSelected) JournalWritingInk else JournalMutedInk
@@ -481,9 +503,10 @@ fun NewReminderSheet(
             // If Weekly selected: Show day chips (L, M, M, J, V, S, D)
             if (selectedRecurrence == ReminderRecurrence.WEEKLY) {
                 Spacer(modifier = Modifier.height(10.dp))
+                val repeatDaysLabel = stringResource(R.string.reminders_repeat_days_label)
                 Text(
-                    text = if (isRtl) "اختر أيام التكرار" else "Jours de répétition",
-                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    text = repeatDaysLabel,
+                    fontFamily = resolveJournalFont(repeatDaysLabel, isRtl),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     color = JournalMutedInk
@@ -534,9 +557,10 @@ fun NewReminderSheet(
 
             // 4. Marqueur de couleur (10 curated colors in horizontal scroll)
             Column(modifier = Modifier.fillMaxWidth()) {
+                val colorLabel = stringResource(R.string.reminders_color_label)
                 Text(
-                    text = if (isRtl) "لون العلامة" else "Couleur du marqueur",
-                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    text = colorLabel,
+                    fontFamily = resolveJournalFont(colorLabel, isRtl),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = JournalMutedInk
@@ -613,13 +637,10 @@ fun NewReminderSheet(
                         tint = if (title.isNotBlank()) JournalWritingInk else JournalMutedInk,
                         size = 16.dp
                     )
+                    val saveBtnText = if (isEditing) stringResource(R.string.reminders_save_changes_btn) else stringResource(R.string.reminders_save_btn)
                     Text(
-                        text = if (isEditing) {
-                            if (isRtl) "حفظ التعديلات" else "Enregistrer les modifications"
-                        } else {
-                            if (isRtl) "حفظ التذكير وتفعيله" else "Enregistrer le rappel"
-                        },
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        text = saveBtnText,
+                        fontFamily = resolveJournalFont(saveBtnText, isRtl),
                         fontSize = if (isRtl) 15.sp else 15.5.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (title.isNotBlank()) JournalWritingInk else JournalMutedInk,
@@ -666,7 +687,7 @@ fun NewReminderSheet(
                         }
                     ) {
                         Text(
-                            text = "OK",
+                            text = stringResource(R.string.action_ok),
                             color = Color(0xFF0284C7),
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp
@@ -676,7 +697,7 @@ fun NewReminderSheet(
                 dismissButton = {
                     TextButton(onClick = { showDatePicker = false }) {
                         Text(
-                            text = if (isRtl) "إلغاء" else "Annuler",
+                            text = stringResource(R.string.action_cancel),
                             color = JournalMutedInk,
                             fontSize = 15.sp
                         )
@@ -729,6 +750,7 @@ fun NewReminderSheet(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun KeyboardTimePickerDialog(
     initialHour: Int,
@@ -737,251 +759,74 @@ private fun KeyboardTimePickerDialog(
     onConfirm: (hour: Int, minute: Int) -> Unit,
     onDismiss: () -> Unit
 ) {
-    var hourStr by remember(initialHour) { mutableStateOf(String.format(Locale.US, "%02d", initialHour)) }
-    var minuteStr by remember(initialMinute) { mutableStateOf(String.format(Locale.US, "%02d", initialMinute)) }
-    val hourFocusRequester = remember { FocusRequester() }
-    val minuteFocusRequester = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
+    val timePickerState = rememberTimePickerState(
+        initialHour = initialHour,
+        initialMinute = initialMinute,
+        is24Hour = true
+    )
 
-    LaunchedEffect(Unit) {
-        hourFocusRequester.requestFocus()
-    }
-
-    Dialog(
+    androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = JournalPaper,
-            border = BorderStroke(1.dp, JournalInk.copy(alpha = 0.15f)),
-            modifier = Modifier
-                .widthIn(max = 340.dp)
-                .padding(20.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Header Icon + Title
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    HisabiSketchIcon(
-                        symbol = HisabiSymbol.Clock,
-                        contentDescription = null,
-                        tint = JournalWritingInk,
-                        size = 20.dp
-                    )
-                    Text(
-                        text = if (isRtl) "تحديد الوقت" else "Choisir l'heure",
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = JournalWritingInk
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
+        confirmButton = {
+            TextButton(onClick = { onConfirm(timePickerState.hour, timePickerState.minute) }) {
+                val okText = stringResource(R.string.action_ok)
                 Text(
-                    text = if (isRtl) "اكتب الساعة والدقيقة بالكيبورد" else "Entrez l'heure et les minutes au clavier",
-                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                    fontSize = 13.sp,
-                    color = JournalMutedInk
+                    text = okText,
+                    color = JournalWritingInk,
+                    fontFamily = resolveJournalFont(okText, isRtl),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
                 )
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // Time Inputs Row: [ HH ] : [ MM ]
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    // Hours Box
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(width = 80.dp, height = 66.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(HighlighterBlue.copy(alpha = 0.22f))
-                                .border(1.5.dp, Color(0xFF38BDF8).copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                                .clickable { hourFocusRequester.requestFocus() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            BasicTextField(
-                                value = hourStr,
-                                onValueChange = { input ->
-                                    val digits = input.filter { it.isDigit() }.take(2)
-                                    val num = digits.toIntOrNull()
-                                    if (digits.isEmpty() || (num != null && num in 0..23)) {
-                                        hourStr = digits
-                                        if (digits.length == 2) {
-                                            minuteFocusRequester.requestFocus()
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.focusRequester(hourFocusRequester),
-                                textStyle = TextStyle(
-                                    fontFamily = PatrickHandFamily,
-                                    fontSize = 34.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = JournalWritingInk,
-                                    textAlign = TextAlign.Center,
-                                    platformStyle = NoFontPadding
-                                ),
-                                keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.Number,
-                                    imeAction = ImeAction.Next
-                                ),
-                                keyboardActions = KeyboardActions(
-                                    onNext = { minuteFocusRequester.requestFocus() }
-                                ),
-                                singleLine = true,
-                                cursorBrush = SolidColor(JournalInk)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(5.dp))
-                        Text(
-                            text = if (isRtl) "الساعات (0-23)" else "Heures (00-23)",
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = JournalMutedInk
-                        )
-                    }
-
-                    // Colon separator
-                    Text(
-                        text = ":",
-                        fontFamily = PatrickHandFamily,
-                        fontSize = 38.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = JournalWritingInk,
-                        modifier = Modifier
-                            .padding(horizontal = 10.dp)
-                            .offset(y = (-10).dp)
-                    )
-
-                    // Minutes Box
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Box(
-                            modifier = Modifier
-                                .size(width = 80.dp, height = 66.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(HighlighterYellow.copy(alpha = 0.28f))
-                                .border(1.5.dp, Color(0xFFEAB308).copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                                .clickable { minuteFocusRequester.requestFocus() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            BasicTextField(
-                                value = minuteStr,
-                                onValueChange = { input ->
-                                    val digits = input.filter { it.isDigit() }.take(2)
-                                    val num = digits.toIntOrNull()
-                                    if (digits.isEmpty() || (num != null && num in 0..59)) {
-                                        minuteStr = digits
-                                        if (digits.length == 2) {
-                                            keyboardController?.hide()
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.focusRequester(minuteFocusRequester),
-                                textStyle = TextStyle(
-                                    fontFamily = PatrickHandFamily,
-                                    fontSize = 34.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = JournalWritingInk,
-                                    textAlign = TextAlign.Center,
-                                    platformStyle = NoFontPadding
-                                ),
-                                keyboardOptions = KeyboardOptions(
-                                    keyboardType = KeyboardType.Number,
-                                    imeAction = ImeAction.Done
-                                ),
-                                keyboardActions = KeyboardActions(
-                                    onDone = { keyboardController?.hide() }
-                                ),
-                                singleLine = true,
-                                cursorBrush = SolidColor(JournalInk)
-                            )
-                        }
-                        Spacer(modifier = Modifier.height(5.dp))
-                        Text(
-                            text = if (isRtl) "الدقائق (0-59)" else "Minutes (00-59)",
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = JournalMutedInk
-                        )
-                    }
-                }
-
-                // Quick presets row
-                Spacer(modifier = Modifier.height(14.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.horizontalScroll(rememberScrollState())
-                ) {
-                    listOf("08:00", "09:00", "12:00", "14:00", "18:00", "20:00", "21:30").forEach { preset ->
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(Color.White.copy(alpha = 0.65f))
-                                .border(1.dp, JournalInk.copy(alpha = 0.15f), RoundedCornerShape(6.dp))
-                                .clickable {
-                                    val parts = preset.split(":")
-                                    hourStr = parts[0]
-                                    minuteStr = parts[1]
-                                }
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = preset,
-                                fontFamily = PatrickHandFamily,
-                                fontSize = 13.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = JournalWritingInk
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Actions: Annuler / OK
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    TextButton(onClick = onDismiss) {
-                        Text(
-                            text = if (isRtl) "إلغاء" else "Annuler",
-                            color = JournalMutedInk,
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontSize = 15.sp
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    TextButton(
-                        onClick = {
-                            val h = hourStr.toIntOrNull()?.coerceIn(0, 23) ?: initialHour
-                            val m = minuteStr.toIntOrNull()?.coerceIn(0, 59) ?: 0
-                            onConfirm(h, m)
-                        }
-                    ) {
-                        Text(
-                            text = "OK",
-                            color = Color(0xFF0284C7),
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontSize = 15.sp
-                        )
-                    }
-                }
             }
-        }
-    }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                val cancelText = stringResource(R.string.action_cancel)
+                Text(
+                    text = cancelText,
+                    color = JournalMutedInk,
+                    fontFamily = resolveJournalFont(cancelText, isRtl),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        title = {
+            val titleText = stringResource(R.string.reminders_time_dialog_title)
+            Text(
+                text = titleText,
+                fontFamily = resolveJournalFont(titleText, isRtl),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = JournalWritingInk
+            )
+        },
+        text = {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                TimePicker(
+                    state = timePickerState,
+                    colors = TimePickerDefaults.colors(
+                        clockDialColor = HighlighterBlue.copy(alpha = 0.22f),
+                        selectorColor = Color(0xFF38BDF8),
+                        containerColor = JournalPaper,
+                        periodSelectorBorderColor = Color(0xFF38BDF8),
+                        periodSelectorSelectedContainerColor = HighlighterBlue.copy(alpha = 0.22f),
+                        periodSelectorUnselectedContainerColor = Color.Transparent,
+                        periodSelectorSelectedContentColor = JournalWritingInk,
+                        periodSelectorUnselectedContentColor = JournalMutedInk,
+                        timeSelectorSelectedContainerColor = HighlighterBlue.copy(alpha = 0.22f),
+                        timeSelectorUnselectedContainerColor = Color.Transparent,
+                        timeSelectorSelectedContentColor = JournalWritingInk,
+                        timeSelectorUnselectedContentColor = JournalMutedInk
+                    )
+                )
+            }
+        },
+        containerColor = JournalPaper,
+        shape = RoundedCornerShape(20.dp),
+        tonalElevation = 0.dp
+    )
 }

@@ -63,9 +63,12 @@ import com.cash.guide.ui.notebook.JournalInk
 import com.cash.guide.ui.notebook.JournalMutedInk
 import com.cash.guide.ui.notebook.JournalPaper
 import com.cash.guide.ui.notebook.JournalWritingInk
-import com.cash.guide.ui.notebook.NoFontPadding
+import com.cash.guide.R
+import com.cash.guide.ui.notebook.resolveJournalFont
+import androidx.compose.ui.res.stringResource
 import com.cash.guide.ui.notebook.PatrickHandFamily
 import com.cash.guide.ui.notebook.TajawalFamily
+import com.cash.guide.ui.notebook.NoFontPadding
 
 private val QuickAmounts = listOf(100L, 200L, 500L, 1000L, 2000L)
 
@@ -141,9 +144,10 @@ fun AddDepositSheet(
                             .size(10.dp)
                             .background(Color(0xFF10B981), CircleShape)
                     )
+                    val sheetTitle = stringResource(R.string.savings_deposit_add_title)
                     Text(
-                        text = if (isRtl) "إضافة مبلغ للتوفير" else "Ajouter une épargne",
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        text = sheetTitle,
+                        fontFamily = resolveJournalFont(sheetTitle, isRtl),
                         fontSize = if (isRtl) 18.sp else 19.sp,
                         fontWeight = FontWeight.Bold,
                         color = JournalWritingInk
@@ -159,7 +163,7 @@ fun AddDepositSheet(
                 ) {
                     HisabiSketchIcon(
                         symbol = HisabiSymbol.Close,
-                        contentDescription = "Fermer",
+                        contentDescription = stringResource(R.string.action_close),
                         tint = JournalMutedInk,
                         size = 14.dp
                     )
@@ -179,7 +183,7 @@ fun AddDepositSheet(
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = goal.title,
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontFamily = resolveJournalFont(goal.title, isRtl),
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = JournalWritingInk
@@ -188,13 +192,14 @@ fun AddDepositSheet(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
+                        val summaryText = stringResource(
+                            R.string.savings_deposit_progress_summary,
+                            formatSavingsMoney(currentDh, isRtl),
+                            formatSavingsMoney(targetDh, isRtl)
+                        )
                         Text(
-                            text = if (isRtl) {
-                                "المجموع: ${formatSavingsMoney(currentDh, true)} من ${formatSavingsMoney(targetDh, true)}"
-                            } else {
-                                "Actuel: ${formatSavingsMoney(currentDh, false)} / ${formatSavingsMoney(targetDh, false)}"
-                            },
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            text = summaryText,
+                            fontFamily = resolveJournalFont(summaryText, isRtl),
                             fontSize = 13.sp,
                             color = JournalMutedInk
                         )
@@ -212,9 +217,10 @@ fun AddDepositSheet(
             Spacer(modifier = Modifier.height(14.dp))
 
             // Quick Amount Buttons
+            val quickAmountsTitle = stringResource(R.string.savings_deposit_quick_amounts)
             Text(
-                text = if (isRtl) "مبالغ سريعة" else "Montants rapides",
-                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                text = quickAmountsTitle,
+                fontFamily = resolveJournalFont(quickAmountsTitle, isRtl),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = JournalMutedInk
@@ -256,7 +262,7 @@ fun AddDepositSheet(
 
             // Custom Amount Input
             Text(
-                text = if (isRtl) "المبلغ المراد إضافته (درهم) *" else "Montant à ajouter (DH) *",
+                text = stringResource(R.string.savings_deposit_amount_label),
                 fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
@@ -276,8 +282,8 @@ fun AddDepositSheet(
             ) {
                 if (amountStr.isBlank()) {
                     Text(
-                        text = if (isRtl) "أدخل المبلغ..." else "Entrez le montant...",
-                        fontFamily = PatrickHandFamily,
+                        text = stringResource(R.string.savings_deposit_amount_hint),
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                         fontSize = 15.sp,
                         color = JournalMutedInk.copy(alpha = 0.5f),
                         style = TextStyle(platformStyle = NoFontPadding)
@@ -309,7 +315,7 @@ fun AddDepositSheet(
 
             // Optional Note Input
             Text(
-                text = if (isRtl) "ملاحظة (اختياري)" else "Note (optionnel)",
+                text = stringResource(R.string.savings_deposit_note_label),
                 fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
@@ -329,7 +335,7 @@ fun AddDepositSheet(
             ) {
                 if (note.isBlank()) {
                     Text(
-                        text = if (isRtl) "مثال: توفير من راتب هذا الشهر..." else "Ex: Épargne du salaire...",
+                        text = stringResource(R.string.savings_deposit_note_hint),
                         fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                         fontSize = 14.sp,
                         color = JournalMutedInk.copy(alpha = 0.5f),
@@ -395,7 +401,7 @@ fun AddDepositSheet(
                         size = 16.dp
                     )
                     Text(
-                        text = if (isRtl) "تأكيد إضافة المبلغ" else "Confirmer l'ajout",
+                        text = stringResource(R.string.savings_deposit_confirm_btn),
                         fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,

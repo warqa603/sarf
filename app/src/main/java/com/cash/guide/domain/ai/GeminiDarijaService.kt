@@ -44,7 +44,13 @@ object GeminiDarijaService {
     var currentModel: String = "gemini-2.5-flash"
 
     private fun getApiKey(): String {
-        return BuildConfig.GEMINI_API_KEY
+        val fallback = BuildConfig.GEMINI_API_KEY
+        val context = com.cash.guide.MainActivity.currentActivity?.applicationContext
+        return if (context != null) {
+            RemoteConfigManager.getGeminiApiKey(context, fallback)
+        } else {
+            fallback
+        }
     }
 
     private fun getScriptInstruction(script: AiOutputScript): String {

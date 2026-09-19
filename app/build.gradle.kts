@@ -155,6 +155,7 @@ android {
 }
 
 dependencies {
+    implementation("com.android.billingclient:billing-ktx:6.2.1")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.biometric)

@@ -17,13 +17,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.AlignmentLine
@@ -116,10 +121,27 @@ fun Modifier.journalVisualOnRule(
 
 
 /**
- * Aligns single-line or multi-line text (up to 2 lines) directly onto the 29dp notebook rules.
+ * Places a small visual bullet dot or indicator directly resting on the paper rule line,
+ * in perfect vertical phase with adjacent text sitting on the same rule.
+ */
+fun Modifier.journalDotOnRule(
+    lineHeight: Dp = JournalRuleSpacing,
+    opticalShiftDown: Dp = 0.5.dp
+): Modifier = this.layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints)
+    val rowHeight = lineHeight.roundToPx()
+    val yOffset = (rowHeight - placeable.height + opticalShiftDown.roundToPx()).coerceAtLeast(0)
+    layout(placeable.width, rowHeight) {
+        placeable.placeRelative(0, yOffset)
+    }
+}
+
+/**
+ * Aligns single-line or multi-line text (1, 2, 3... N lines) directly onto the 29dp notebook rules.
  * - Line 1 FirstBaseline sits on Rule 1 (lineHeight = 29dp).
- * - Line 2 LastBaseline sits on Rule 2 (lineHeight * 2 = 58dp).
- * The measured total height is exactly lineHeight * lineCount (29dp or 58dp).
+ * - Line k Baseline sits on Rule k (lineHeight * k).
+ * The measured total height is exactly lineHeight * lineCount (N * 29dp), ensuring subsequent
+ * elements remain in 100% vertical phase with the underlying blue notebook rules.
  */
 fun Modifier.journalTextOnRules(
     lineHeight: Dp = JournalRuleSpacing,
@@ -133,10 +155,21 @@ fun Modifier.journalTextOnRules(
         val lastBaseline = placeable[LastBaseline]
         val singleRowHeight = lineHeight.roundToPx()
 
-        val isMultiLine = firstBaseline != AlignmentLine.Unspecified &&
-                lastBaseline != AlignmentLine.Unspecified &&
-                lastBaseline > firstBaseline + (singleRowHeight * 0.45f)
-        val lineCount = if (isMultiLine) 2 else 1
+        val lineCount = if (firstBaseline != AlignmentLine.Unspecified &&
+            lastBaseline != AlignmentLine.Unspecified &&
+            singleRowHeight > 0
+        ) {
+            val baselineDelta = lastBaseline - firstBaseline
+            if (baselineDelta > (singleRowHeight * 0.45f)) {
+                kotlin.math.round(baselineDelta.toFloat() / singleRowHeight).toInt() + 1
+            } else {
+                1
+            }
+        } else if (singleRowHeight > 0 && placeable.height > 0) {
+            maxOf(1, kotlin.math.ceil(placeable.height.toFloat() / singleRowHeight).toInt())
+        } else {
+            1
+        }
         val totalRowHeight = singleRowHeight * lineCount
 
         val targetBaseline = singleRowHeight - opticalOffsetFromBottom.roundToPx()
@@ -174,6 +207,46 @@ fun Modifier.snapHeightToRule(
         }
     }
 }
+
+/**
+ * Container card whose outer border and background snap to an exact multiple of [JournalRuleSpacing],
+ * guaranteeing that both its top and bottom borders rest precisely on notebook blue rules.
+ */
+@Composable
+fun JournalRuledCard(
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(8.dp),
+    backgroundColor: Color = JournalPaper,
+    borderColor: Color = JournalRule.copy(alpha = 0.55f),
+    borderWidth: Dp = 1.dp,
+    contentPaddingHorizontal: Dp = 12.dp,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Layout(
+        modifier = modifier
+            .clip(shape)
+            .background(backgroundColor)
+            .border(borderWidth, borderColor, shape),
+        content = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = contentPaddingHorizontal),
+                content = content
+            )
+        }
+    ) { measurables, constraints ->
+        val placeable = measurables[0].measure(constraints.copy(minHeight = 0))
+        val rulePx = JournalRuleSpacing.roundToPx()
+        val remainder = if (rulePx > 0) placeable.height % rulePx else 0
+        val snappedHeight = if (remainder == 0 || rulePx <= 0) placeable.height else placeable.height + (rulePx - remainder)
+
+        layout(placeable.width, snappedHeight) {
+            placeable.placeRelative(0, 0)
+        }
+    }
+}
+
 
 /**
  * Dedicated component for text with an organic highlighter marker stroke:

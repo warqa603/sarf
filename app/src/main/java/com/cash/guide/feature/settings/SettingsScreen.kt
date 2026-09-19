@@ -57,9 +57,12 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Key
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material3.Icon
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.cash.guide.R
 import com.cash.guide.domain.MoneyUnit
@@ -104,8 +107,10 @@ fun SettingsScreen(
     var showExportOptions by remember { mutableStateOf(false) }
     val currentActivity = com.cash.guide.MainActivity.currentActivity
     val billingManager = remember(context) { com.cash.guide.domain.billing.BillingManager.getInstance(context) }
+    val isPremiumUser by billingManager.isPremium.collectAsState()
     var showSetupPinDialog by remember { mutableStateOf(false) }
     var showPremiumDialog by remember { mutableStateOf(false) }
+    var showPromoCodeDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.checkBiometricAvailability(context)
@@ -196,8 +201,14 @@ fun SettingsScreen(
                 title = stringResource(R.string.settings_premium_title),
                 description = stringResource(R.string.settings_premium_desc),
                 bulletColor = Color(0xFFEAB308),
-                badgeText = stringResource(R.string.settings_premium_badge),
-                onClick = { showPremiumDialog = true }
+                badgeText = if (isPremiumUser) stringResource(R.string.settings_premium_active_badge) else stringResource(R.string.settings_premium_badge),
+                onClick = {
+                    if (!isPremiumUser) {
+                        showPremiumDialog = true
+                    } else {
+                        Toast.makeText(context, R.string.settings_promo_code_success, Toast.LENGTH_SHORT).show()
+                    }
+                }
             )
 
             // Share App
@@ -1031,7 +1042,22 @@ fun SettingsScreen(
                         billingManager.launchBillingFlow(it, com.cash.guide.domain.billing.BillingManager.PREMIUM_LIFETIME_ID)
                     }
                 },
+                onPromoCodeClick = {
+                    showPremiumDialog = false
+                    showPromoCodeDialog = true
+                },
                 onDismiss = { showPremiumDialog = false }
+            )
+        }
+
+        // Promo Code Dialog
+        if (showPromoCodeDialog) {
+            PromoCodeRedeemDialog(
+                onDismiss = { showPromoCodeDialog = false },
+                onSuccess = {
+                    showPromoCodeDialog = false
+                    Toast.makeText(context, R.string.settings_promo_code_success, Toast.LENGTH_LONG).show()
+                }
             )
         }
     }
@@ -1420,6 +1446,7 @@ private fun ThemePackCard(
 private fun PremiumOptionsDialog(
     onYearlySelected: () -> Unit,
     onLifetimeSelected: () -> Unit,
+    onPromoCodeClick: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val layoutDirection = androidx.compose.ui.platform.LocalLayoutDirection.current
@@ -1453,15 +1480,17 @@ private fun PremiumOptionsDialog(
             }
             
             Text(
-                text = "Devenir Premium",
-                fontSize = 24.sp,
+                text = stringResource(R.string.settings_premium_become_title),
+                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                fontSize = if (isRtl) 22.sp else 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = com.cash.guide.ui.notebook.JournalInk
             )
             
             Text(
-                text = "Soutenez l'application et profitez d'une expérience fluide et sans aucune interruption.",
-                fontSize = 15.sp,
+                text = stringResource(R.string.settings_premium_become_desc),
+                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                fontSize = if (isRtl) 14.sp else 15.sp,
                 color = com.cash.guide.ui.notebook.JournalMutedInk,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 modifier = Modifier.padding(bottom = 8.dp)
@@ -1469,9 +1498,9 @@ private fun PremiumOptionsDialog(
 
             // Benefits
             Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
-                PremiumBenefitRow("✓ Aucune publicité définitivement")
-                PremiumBenefitRow("✓ Soutenez le développeur indépendant")
-                PremiumBenefitRow("✓ Accès aux futures fonctionnalités VIP")
+                PremiumBenefitRow(stringResource(R.string.settings_premium_benefit_no_ads), isRtl)
+                PremiumBenefitRow(stringResource(R.string.settings_premium_benefit_support), isRtl)
+                PremiumBenefitRow(stringResource(R.string.settings_premium_benefit_vip), isRtl)
             }
             
             Spacer(modifier = Modifier.height(8.dp))
@@ -1486,13 +1515,15 @@ private fun PremiumOptionsDialog(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "Achat Définitif (300 DH)",
-                            fontSize = 18.sp,
+                            text = stringResource(R.string.settings_premium_lifetime_btn),
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontSize = if (isRtl) 16.sp else 18.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.White
                         )
                         Text(
-                            text = "Paiement unique, accès à vie",
+                            text = stringResource(R.string.settings_premium_lifetime_sub),
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                             fontSize = 11.sp,
                             color = Color.White.copy(alpha = 0.9f)
                         )
@@ -1507,10 +1538,33 @@ private fun PremiumOptionsDialog(
                     border = BorderStroke(1.dp, Color(0xFFEAB308).copy(alpha = 0.5f))
                 ) {
                     Text(
-                        text = "Abonnement Annuel (65 DH / an)",
-                        fontSize = 15.sp,
+                        text = stringResource(R.string.settings_premium_yearly_btn),
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontSize = if (isRtl) 14.5.sp else 15.sp,
                         fontWeight = FontWeight.Medium,
                         color = Color(0xFFCA8A04)
+                    )
+                }
+
+                // Promo code button
+                androidx.compose.material3.TextButton(
+                    onClick = onPromoCodeClick,
+                    modifier = Modifier.fillMaxWidth().height(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Key,
+                        contentDescription = null,
+                        tint = Color(0xFFCA8A04),
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.settings_promo_code_btn),
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontSize = if (isRtl) 14.sp else 14.5.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFCA8A04),
+                        textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline
                     )
                 }
             }
@@ -1519,14 +1573,177 @@ private fun PremiumOptionsDialog(
 }
 
 @Composable
-private fun PremiumBenefitRow(text: String) {
+private fun PremiumBenefitRow(text: String, isRtl: Boolean = false) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = text,
-            fontSize = 14.sp,
+            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+            fontSize = if (isRtl) 13.5.sp else 14.sp,
             color = com.cash.guide.ui.notebook.JournalInk.copy(alpha = 0.8f),
             fontWeight = FontWeight.Medium
         )
+    }
+}
+
+@Composable
+private fun PromoCodeRedeemDialog(
+    onDismiss: () -> Unit,
+    onSuccess: () -> Unit
+) {
+    val context = LocalContext.current
+    val layoutDirection = LocalLayoutDirection.current
+    val isRtl = layoutDirection == LayoutDirection.Rtl
+    var codeInput by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth(0.95f)
+                .background(com.cash.guide.ui.notebook.JournalPaper, RoundedCornerShape(20.dp))
+                .border(2.dp, Color(0xFFEAB308).copy(alpha = 0.5f), RoundedCornerShape(20.dp))
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(Color(0xFFFEF08A), RoundedCornerShape(28.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Key,
+                    contentDescription = null,
+                    tint = Color(0xFFCA8A04),
+                    modifier = Modifier.size(30.dp)
+                )
+            }
+
+            Text(
+                text = stringResource(R.string.settings_promo_code_title),
+                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                fontSize = if (isRtl) 20.sp else 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = com.cash.guide.ui.notebook.JournalInk
+            )
+
+            Text(
+                text = stringResource(R.string.settings_promo_code_desc),
+                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                fontSize = if (isRtl) 13.5.sp else 14.5.sp,
+                color = com.cash.guide.ui.notebook.JournalMutedInk,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            )
+
+            androidx.compose.material3.OutlinedTextField(
+                value = codeInput,
+                onValueChange = {
+                    codeInput = it
+                    errorMessage = null
+                },
+                placeholder = {
+                    Text(
+                        text = stringResource(R.string.settings_promo_code_hint),
+                        fontFamily = PatrickHandFamily,
+                        color = com.cash.guide.ui.notebook.JournalMutedInk.copy(alpha = 0.6f)
+                    )
+                },
+                singleLine = true,
+                isError = errorMessage != null,
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Characters,
+                    autoCorrect = false
+                ),
+                textStyle = TextStyle(
+                    fontFamily = PatrickHandFamily,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = com.cash.guide.ui.notebook.JournalWritingInk,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                ),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = androidx.compose.material3.OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFFEAB308),
+                    unfocusedBorderColor = Color(0xFFD1D5DB),
+                    errorBorderColor = Color(0xFFEF4444)
+                )
+            )
+
+            if (errorMessage != null) {
+                Text(
+                    text = errorMessage!!,
+                    color = Color(0xFFEF4444),
+                    fontSize = 12.5.sp,
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                androidx.compose.material3.OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.action_cancel),
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontSize = if (isRtl) 14.sp else 15.sp,
+                        color = com.cash.guide.ui.notebook.JournalMutedInk
+                    )
+                }
+
+                androidx.compose.material3.Button(
+                    onClick = {
+                        if (codeInput.isBlank()) {
+                            errorMessage = context.getString(R.string.settings_promo_code_invalid)
+                            return@Button
+                        }
+                        isLoading = true
+                        coroutineScope.launch {
+                            val result = com.cash.guide.domain.billing.PromoCodeManager.redeemCode(context, codeInput)
+                            isLoading = false
+                            if (result is com.cash.guide.domain.billing.PromoCodeManager.RedeemResult.Success) {
+                                onSuccess()
+                            } else {
+                                errorMessage = context.getString(R.string.settings_promo_code_invalid)
+                            }
+                        }
+                    },
+                    enabled = !isLoading,
+                    modifier = Modifier.weight(1f).height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFEAB308)
+                    )
+                ) {
+                    if (isLoading) {
+                        androidx.compose.material3.CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.settings_promo_code_redeem),
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontSize = if (isRtl) 15.sp else 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 

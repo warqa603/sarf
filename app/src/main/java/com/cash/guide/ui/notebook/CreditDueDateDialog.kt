@@ -562,7 +562,7 @@ fun CreditDueDateDialog(
                     }
                 ) {
                     Text(
-                        text = "OK",
+                        text = stringResource(R.string.action_ok),
                         color = Color(0xFFC2410C),
                         fontWeight = FontWeight.Bold,
                         fontSize = 15.sp

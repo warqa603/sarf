@@ -67,8 +67,10 @@ import com.cash.guide.ui.notebook.JournalMutedInk
 import com.cash.guide.ui.notebook.JournalPaper
 import com.cash.guide.ui.notebook.JournalWritingInk
 import com.cash.guide.ui.notebook.NoFontPadding
+import com.cash.guide.R
+import com.cash.guide.ui.notebook.resolveJournalFont
 import com.cash.guide.ui.notebook.PatrickHandFamily
-import com.cash.guide.ui.notebook.TajawalFamily
+import androidx.compose.ui.res.stringResource
 
 val GoalColors = listOf(
     "BLUE" to Color(0xFF38BDF8),
@@ -80,13 +82,13 @@ val GoalColors = listOf(
     "TEAL" to Color(0xFF14B8A6)
 )
 
-private val QuickGoalSuggestions = listOf(
-    "صندوق الطوارئ",
-    "شراء سيارة",
-    "تسبيق السكن",
-    "عمرة / سفر",
-    "تجهيز وزواج",
-    "مشروع تجاري"
+private val QuickGoalSuggestionRes = listOf(
+    R.string.savings_sugg_emergency,
+    R.string.savings_sugg_car,
+    R.string.savings_sugg_house,
+    R.string.savings_sugg_travel,
+    R.string.savings_sugg_wedding,
+    R.string.savings_sugg_business
 )
 
 @OptIn(ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
@@ -196,13 +198,10 @@ fun NewSavingsGoalSheet(
                             .size(10.dp)
                             .background(dotColor, CircleShape)
                     )
+                    val sheetTitle = if (isEditing) stringResource(R.string.savings_goal_edit_title) else stringResource(R.string.savings_goal_new_title)
                     Text(
-                        text = if (isEditing) {
-                            if (isRtl) "تعديل هدف التوفير" else "Modifier l'objectif"
-                        } else {
-                            if (isRtl) "هدف توفير جديد" else "Nouvel objectif d'épargne"
-                        },
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        text = sheetTitle,
+                        fontFamily = resolveJournalFont(sheetTitle, isRtl),
                         fontSize = if (isRtl) 18.sp else 19.sp,
                         fontWeight = FontWeight.Bold,
                         color = JournalWritingInk
@@ -218,7 +217,7 @@ fun NewSavingsGoalSheet(
                 ) {
                     HisabiSketchIcon(
                         symbol = HisabiSymbol.Close,
-                        contentDescription = "Fermer",
+                        contentDescription = stringResource(R.string.action_close),
                         tint = JournalMutedInk,
                         size = 14.dp
                     )
@@ -229,13 +228,14 @@ fun NewSavingsGoalSheet(
 
             // Suggestions Chips for Quick Goal Title
             if (!isEditing) {
+                val suggestions = QuickGoalSuggestionRes.map { stringResource(it) }
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    QuickGoalSuggestions.forEach { suggestion ->
+                    suggestions.forEach { suggestion ->
                         val isSelected = title == suggestion
                         Box(
                             modifier = Modifier
@@ -252,7 +252,7 @@ fun NewSavingsGoalSheet(
                         ) {
                             Text(
                                 text = suggestion,
-                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                                fontFamily = resolveJournalFont(suggestion, isRtl),
                                 fontSize = 12.5.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                                 color = if (isSelected) JournalWritingInk else JournalMutedInk
@@ -264,9 +264,10 @@ fun NewSavingsGoalSheet(
             }
 
             // 1. Goal Title Input
+            val nameLabel = stringResource(R.string.savings_goal_name_label)
             Text(
-                text = if (isRtl) "اسم الهدف أو المشروع *" else "Nom de l'objectif *",
-                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                text = nameLabel,
+                fontFamily = resolveJournalFont(nameLabel, isRtl),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = JournalMutedInk
@@ -284,9 +285,10 @@ fun NewSavingsGoalSheet(
                     .padding(horizontal = 12.dp, vertical = 10.dp)
             ) {
                 if (title.isBlank()) {
+                    val nameHint = stringResource(R.string.savings_goal_name_hint)
                     Text(
-                        text = if (isRtl) "مثال: 100,000 درهم لشراء شقة..." else "Ex: 100 000 DH pour avance...",
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        text = nameHint,
+                        fontFamily = resolveJournalFont(nameHint, isRtl),
                         fontSize = 15.sp,
                         color = JournalMutedInk.copy(alpha = 0.5f),
                         style = TextStyle(platformStyle = NoFontPadding)
@@ -297,7 +299,7 @@ fun NewSavingsGoalSheet(
                     onValueChange = { title = it },
                     singleLine = true,
                     textStyle = TextStyle(
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontFamily = resolveJournalFont(title, isRtl),
                         fontSize = 15.sp,
                         color = JournalWritingInk,
                         platformStyle = NoFontPadding
@@ -316,9 +318,10 @@ fun NewSavingsGoalSheet(
             Spacer(modifier = Modifier.height(12.dp))
 
             // 2. Target Amount Input
+            val targetLabel = stringResource(R.string.savings_goal_target_label)
             Text(
-                text = if (isRtl) "المبلغ المطلوب (درهم) *" else "Montant cible (DH) *",
-                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                text = targetLabel,
+                fontFamily = resolveJournalFont(targetLabel, isRtl),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = JournalMutedInk
@@ -370,9 +373,10 @@ fun NewSavingsGoalSheet(
 
             // 3. Initial Amount Input (Only when creating)
             if (!isEditing) {
+                val initialLabel = stringResource(R.string.savings_goal_initial_label)
                 Text(
-                    text = if (isRtl) "المبلغ المتوفر حالياً للبدء (اختياري)" else "Montant déjà épargné (optionnel)",
-                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    text = initialLabel,
+                    fontFamily = resolveJournalFont(initialLabel, isRtl),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = JournalMutedInk
@@ -422,9 +426,10 @@ fun NewSavingsGoalSheet(
             }
 
             // 4. Monthly Target Contribution (optional)
+            val monthlyLabel = stringResource(R.string.savings_goal_monthly_label)
             Text(
-                text = if (isRtl) "المساهمة الشهرية المخططة (درهم / شهر)" else "Épargne mensuelle prévue (DH / mois)",
-                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                text = monthlyLabel,
+                fontFamily = resolveJournalFont(monthlyLabel, isRtl),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = JournalMutedInk
@@ -480,9 +485,10 @@ fun NewSavingsGoalSheet(
             Spacer(modifier = Modifier.height(14.dp))
 
             // 5. Color Tag Picker
+            val badgeLabel = stringResource(R.string.savings_goal_badge_color_label)
             Text(
-                text = if (isRtl) "لون التمييز" else "Couleur du badge",
-                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                text = badgeLabel,
+                fontFamily = resolveJournalFont(badgeLabel, isRtl),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = JournalMutedInk
@@ -562,13 +568,10 @@ fun NewSavingsGoalSheet(
                         tint = if (isFormValid) JournalWritingInk else JournalMutedInk.copy(alpha = 0.5f),
                         size = 18.dp
                     )
+                    val saveBtnText = if (isEditing) stringResource(R.string.reminders_save_changes_btn) else stringResource(R.string.savings_goal_create_btn)
                     Text(
-                        text = if (isEditing) {
-                            if (isRtl) "حفظ التعديلات" else "Enregistrer les modifications"
-                        } else {
-                            if (isRtl) "إنشاء الهدف" else "Créer l'objectif"
-                        },
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        text = saveBtnText,
+                        fontFamily = resolveJournalFont(saveBtnText, isRtl),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (isFormValid) JournalWritingInk else JournalMutedInk.copy(alpha = 0.5f)

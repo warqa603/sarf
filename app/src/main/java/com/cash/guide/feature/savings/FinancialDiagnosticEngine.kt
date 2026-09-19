@@ -166,7 +166,10 @@ object FinancialDiagnosticEngine {
 
         val goalGap = (goal.targetAmountCentimes - goal.currentAmountCentimes).coerceAtLeast(0L)
         val months = goal.targetMonths.coerceAtLeast(1)
-        val requiredMonthly = goalGap / months
+        // Round up to a whole dirham: the displayed contribution must actually reach
+        // the target within the chosen duration (no hidden 25th month caused by truncation).
+        val exactRequiredCentimes = (goalGap + months - 1L) / months
+        val requiredMonthly = ((exactRequiredCentimes + 99L) / 100L) * 100L
 
         val comfortSaving = answers.comfortSavingCentimes.takeIf { it > 0 }
             ?: (fcf.freeCashFlowCentimes * 0.8).toLong().coerceAtLeast(0L)
@@ -200,6 +203,7 @@ object FinancialDiagnosticEngine {
             debtPaymentsCentimes = fcf.debtCentimes,
             familyCommitmentsCentimes = fcf.familyCentimes,
             flexibleSpendingCentimes = fcf.flexibleCentimes,
+            flexibleSpendingEstimated = answers.leakDetails.values.none { it.costPerUseDh > 0 && it.weeklyFrequency > 0 },
             irregularMonthlyReserveCentimes = fcf.seasonalMonthlyReserveCentimes,
             freeCashFlowCentimes = fcf.freeCashFlowCentimes,
             realisticCapacityCentimes = realisticCapacity,
@@ -313,17 +317,39 @@ object FinancialDiagnosticEngine {
 
         val leakRecoverable = leaks.sumOf { (it.monthlyDrainDh * 0.5 * 100).toLong() }
 
-        // Plan A — comfortable (at current realistic capacity, may extend deadline)
-        val planAMonthly = maxOf(capacity, goalGap / (targetMonths + 6).coerceAtLeast(1))
-        val planAMonths = if (planAMonthly > 0) (goalGap / planAMonthly).toInt().coerceIn(targetMonths, targetMonths + 24) else targetMonths
-        plans += SavingsPlanOption(
-            label = "A",
-            monthlyCentimes = planAMonthly,
-            months = planAMonths,
-            descAr = "خطة مريحة مع القدرة الحالية — قد تمتد المدة شهوراً إضافية",
-            descFr = "Plan confort avec capacité actuelle — délai peut s'étendre",
-            requiresLeakReductionCentimes = 0L
-        )
+        // Plan A — recommend what the goal needs, never the user's full theoretical capacity.
+        // If capacity is lower than the required contribution, use that capacity and extend
+        // the duration transparently. This avoids absurd plans such as saving 60 000 DH/month
+        // for a goal that only requires 4 166 DH/month.
+        val planAMonthly = when {
+            goalGap <= 0L || capacity <= 0L -> 0L
+            required <= 0L -> 0L
+            capacity >= required -> required
+            else -> capacity
+        }
+        if (planAMonthly > 0L) {
+            val planAMonths = ((goalGap + planAMonthly - 1L) / planAMonthly)
+                .coerceAtLeast(1L)
+                .coerceAtMost(600L)
+                .toInt()
+            val extendsDeadline = planAMonths > targetMonths
+            plans += SavingsPlanOption(
+                label = "A",
+                monthlyCentimes = planAMonthly,
+                months = planAMonths,
+                descAr = if (extendsDeadline) {
+                    "خطة على قد القدرة الحالية — المدة كتزاد بوضوح بلا ضغط على الشهر"
+                } else {
+                    "الخطة الكافية لتحقيق الهدف فالمدة المختارة، مع الحفاظ على الهامش الباقي"
+                },
+                descFr = if (extendsDeadline) {
+                    "Plan adapté à la capacité actuelle — délai prolongé sans fragiliser le mois"
+                } else {
+                    "Montant suffisant pour atteindre l'objectif à temps, sans mobiliser toute la marge"
+                },
+                requiresLeakReductionCentimes = 0L
+            )
+        }
 
         // Plan B — balanced (target on time by recovering some leaks)
         if (required > 0 && abs(required - capacity) < required * 0.5) {
@@ -836,7 +862,171 @@ object FinancialDiagnosticEngine {
     }
 
     // ══════════════════════════════════════════════════════════════════════════
-    // 12. MAIN ENTRY POINT — build full diagnostic result
+    // 12. Explainable diagnostic story
+    // ══════════════════════════════════════════════════════════════════════════
+
+    private fun moneyDh(centimes: Long): String =
+        JournalLedgerManager.formatFrenchNumber((centimes / 100).toString()) + " DH"
+
+    fun buildUnderstoodFacts(
+        answers: QuestionnaireAnswers,
+        goal: SavingsGoalEntity,
+        metrics: DiagnosticMetrics
+    ): List<DiagnosticInsight> {
+        val remaining = (goal.targetAmountCentimes - goal.currentAmountCentimes).coerceAtLeast(0L)
+        val ownershipAr = if (answers.goalOwnership == "GOAL_SOLO") "بوحدك" else "مع مساهمة شخص آخر"
+        val ownershipFr = if (answers.goalOwnership == "GOAL_SOLO") "seul(e)" else "avec une autre contribution"
+        val incomeAr = when (answers.incomeType) {
+            "INCOME_STABLE" -> "مستقر"
+            "INCOME_SEASONAL" -> "موسمي"
+            "INCOME_HIGH_VARIANCE" -> "متقلب بزاف"
+            else -> "متغير"
+        }
+        val incomeFr = when (answers.incomeType) {
+            "INCOME_STABLE" -> "stable"
+            "INCOME_SEASONAL" -> "saisonnier"
+            "INCOME_HIGH_VARIANCE" -> "très variable"
+            else -> "variable"
+        }
+        return listOf(
+            DiagnosticInsight(
+                id = "GOAL_CONTEXT",
+                titleAr = "الهدف اللي باغي توصله",
+                titleFr = "Votre objectif",
+                detailAr = "باقي ${moneyDh(remaining)} فـ ${goal.targetMonths} شهر، وكتدبر الهدف $ownershipAr.",
+                detailFr = "Il reste ${moneyDh(remaining)} à constituer en ${goal.targetMonths} mois, $ownershipFr.",
+                tone = "NEUTRAL"
+            ),
+            DiagnosticInsight(
+                id = "MONTHLY_BALANCE",
+                titleAr = "التوازن الشهري",
+                titleFr = "Votre équilibre mensuel",
+                detailAr = if (metrics.flexibleSpendingEstimated) {
+                    "مدخولك $incomeAr (${moneyDh(metrics.monthlyIncomeCentimes)}). الهامش ${moneyDh(metrics.freeCashFlowCentimes)} تقديري حيث المصاريف المرنة ما تعمراتش بالتفصيل."
+                } else {
+                    "مدخولك $incomeAr (${moneyDh(metrics.monthlyIncomeCentimes)})، ومن بعد الأساسيات والديون والمصاريف المصرح بها كيبقى تقريباً ${moneyDh(metrics.freeCashFlowCentimes)}."
+                },
+                detailFr = if (metrics.flexibleSpendingEstimated) {
+                    "Votre revenu est $incomeFr (${moneyDh(metrics.monthlyIncomeCentimes)}). La marge de ${moneyDh(metrics.freeCashFlowCentimes)} reste une estimation car les dépenses flexibles ne sont pas détaillées."
+                } else {
+                    "Votre revenu est $incomeFr (${moneyDh(metrics.monthlyIncomeCentimes)}). Après charges, dettes et dépenses déclarées, il reste environ ${moneyDh(metrics.freeCashFlowCentimes)}."
+                },
+                tone = if (metrics.freeCashFlowCentimes >= 0) "POSITIVE" else "ATTENTION"
+            ),
+            DiagnosticInsight(
+                id = "GOAL_EFFORT",
+                titleAr = "المجهود المطلوب",
+                titleFr = "L'effort demandé",
+                detailAr = "الهدف كيطلب ${moneyDh(metrics.requiredMonthlyCentimes)} فالشهر، والقدرة المريحة اللي حسبناها هي ${moneyDh(metrics.realisticCapacityCentimes)}.",
+                detailFr = "L'objectif demande ${moneyDh(metrics.requiredMonthlyCentimes)} par mois, pour une capacité réaliste estimée à ${moneyDh(metrics.realisticCapacityCentimes)}.",
+                tone = if (metrics.feasibility == GoalFeasibility.COMFORTABLE || metrics.feasibility == GoalFeasibility.FEASIBLE) "POSITIVE" else "ATTENTION"
+            )
+        )
+    }
+
+    fun buildStrengths(tags: Set<String>, answers: QuestionnaireAnswers): List<DiagnosticInsight> {
+        val items = mutableListOf<DiagnosticInsight>()
+        if (DiagnosticTag.INCOME_STABLE in tags) items += DiagnosticInsight(
+            "STABLE_INCOME", "مدخول واضح", "Revenu prévisible",
+            "المدخول المستقر كيخلي القسط الشهري ساهل فالبرمجة.",
+            "La régularité du revenu facilite une mensualité automatique.", "POSITIVE"
+        )
+        if (DiagnosticTag.DEBT_NONE in tags) items += DiagnosticInsight(
+            "NO_DEBT", "ما عندكش ضغط ديون مصرح به", "Pas de pression de dette déclarée",
+            "هاد النقطة كتخلي مساحة أكبر للهدف بلا ما نضيقو عليك.",
+            "Cela laisse davantage de marge au projet sans fragiliser le mois.", "POSITIVE"
+        )
+        if (DiagnosticTag.EMERGENCY_READY in tags) items += DiagnosticInsight(
+            "BUFFER_READY", "عندك احتياط أولي", "Un coussin de sécurité existe",
+            "الطوارئ أقل احتمالاً تكسر خطة الهدف.",
+            "Un imprévu risque moins de casser le plan.", "POSITIVE"
+        )
+        if (DiagnosticTag.TRACKING_GOOD in tags) items += DiagnosticInsight(
+            "TRACKING", "كتتبع مصاريفك", "Dépenses déjà suivies",
+            "عندك رؤية مزيانة باش تقيس واش الخطة خدامة.",
+            "Vous pourrez mesurer rapidement si le plan tient.", "POSITIVE"
+        )
+        if (DiagnosticTag.SAVE_FIRST in tags) items += DiagnosticInsight(
+            "SAVE_FIRST", "كتوفر قبل الصرف", "Épargne en début de mois",
+            "هاد العادة كتخدم مزيان مع اقتطاع شهري ثابت.",
+            "Cette habitude se prête bien à un virement mensuel fixe.", "POSITIVE"
+        )
+        if (items.isEmpty() && answers.minimumSavingCentimes > 0) items += DiagnosticInsight(
+            "MINIMUM_DECLARED", "حددتي حد أدنى", "Un minimum est déjà défini",
+            "حتى فالشهر الصعيب عندك مبلغ مرجعي تحافظ عليه.",
+            "Même dans un mois difficile, vous avez un repère à préserver.", "POSITIVE"
+        )
+        return items.take(3)
+    }
+
+    fun buildBudgetDecisions(
+        answers: QuestionnaireAnswers,
+        leaks: List<LeakInsight>
+    ): List<BudgetDecision> {
+        val result = mutableListOf<BudgetDecision>()
+
+        fun protect(id: String, amount: Long, ar: String, fr: String, whyAr: String, whyFr: String) {
+            if (amount > 0) result += BudgetDecision(id, BudgetDecisionKind.PROTECT, ar, fr, whyAr, whyFr, amount, amount, 0)
+        }
+        protect("HOUSING", answers.housingCentimes, "السكن", "Logement", "مصروف أساسي للاستقرار؛ ما ندخلوهش فالتقشف.", "Charge essentielle à la stabilité : elle n'est pas utilisée comme variable d'ajustement.")
+        protect("HEALTH", answers.healthCentimes, "الصحة والتطبيب", "Santé", "الأولوية هي الاستمرارية فالعلاج والتغطية.", "La continuité des soins reste prioritaire.")
+        protect("EDUCATION", answers.educationCentimes, "الدراسة", "Éducation", "استثمار عائلي محمي حسب المعطيات ديالك.", "Poste familial protégé selon vos réponses.")
+        protect("FAMILY", answers.familyCommitmentCentimes, "التزامات العائلة", "Engagements familiaux", "التزام مصرح به وماشي تسرب مالي.", "Engagement déclaré, pas une fuite budgétaire.")
+
+        leaks.forEach { leak ->
+            val detail = answers.leakDetails[leak.key]
+            val reductionRate = when (detail?.willingness ?: leak.willingness) {
+                "ALL" -> 1.0
+                "HALF" -> 0.50
+                "SOME" -> 0.25
+                else -> 0.0
+            }
+            if (reductionRate <= 0.0) return@forEach
+            val current = (leak.monthlyDrainDh * 100).toLong()
+            val impact = (current * reductionRate).toLong()
+            val target = (current - impact).coerceAtLeast(0L)
+            val stop = leak.key == "SUBSCRIPTIONS" && reductionRate >= 1.0
+            result += BudgetDecision(
+                id = "LEAK_${leak.key}",
+                kind = if (stop) BudgetDecisionKind.STOP else BudgetDecisionKind.REDUCE,
+                labelAr = leak.titleAr,
+                labelFr = leak.titleFr,
+                reasonAr = if (stop) "قلتي بلي تقدر تحيدها كاملة؛ راجع غير الخدمات اللي ما كتستعملهاش." else "حسب الثمن وعدد المرات اللي صرحتي بهم؛ الاقتراح كيحترم الحد اللي قبلتي تنقصه.",
+                reasonFr = if (stop) "Vous avez indiqué pouvoir l'arrêter : résiliez uniquement ce qui n'est réellement plus utilisé." else "Calcul fondé sur le coût, la fréquence et le niveau de réduction que vous avez accepté.",
+                currentMonthlyCentimes = current,
+                suggestedMonthlyCentimes = target,
+                monthlyImpactCentimes = impact
+            )
+        }
+
+        answers.seasonalExpenses.filter { it.annualCentimes > 0 }.forEach { expense ->
+            val reserve = expense.annualCentimes / 12
+            result += BudgetDecision(
+                id = "SEASONAL_${expense.label}",
+                kind = BudgetDecisionKind.PREPARE,
+                labelAr = expense.label,
+                labelFr = expense.label,
+                reasonAr = "هاد المصروف متوقع، لذلك الأحسن يتقسم على 12 شهر بلا ما يكسر الهدف.",
+                reasonFr = "Cette dépense est prévisible : la mensualiser évite de casser l'objectif.",
+                suggestedMonthlyCentimes = reserve,
+                monthlyImpactCentimes = reserve
+            )
+        }
+        return result
+    }
+
+    fun computeDataQualityScore(answers: QuestionnaireAnswers): Int {
+        var score = 20 // goal fields are required by the questionnaire
+        if (answers.netMonthlyIncomeCentimes > 0) score += 25
+        if (protectedEssentialsCentimes(answers) > 0) score += 20
+        if (answers.comfortSavingCentimes > 0 || answers.minimumSavingCentimes > 0) score += 15
+        if (answers.selectedLeaks.isEmpty() || answers.selectedLeaks.all { answers.leakDetails[it] != null }) score += 10
+        if (answers.emergencyResponse != "UNKNOWN" || answers.emergencyFundCentimes > 0) score += 10
+        return score.coerceIn(0, 100)
+    }
+
+    // ══════════════════════════════════════════════════════════════════════════
+    // 13. MAIN ENTRY POINT — build full diagnostic result
     // ══════════════════════════════════════════════════════════════════════════
 
     fun buildResult(
@@ -862,6 +1052,10 @@ object FinancialDiagnosticEngine {
         val protectedPrefs = answers.userProtectedPreferences
         val actions = generateTopActions(tags, leaks, metrics, goal, protectedPrefs)
         val adviceCards = generatePersonalizedAdviceCards(answers, tags, leaks, metrics, goal)
+        val understoodFacts = buildUnderstoodFacts(answers, goal, metrics)
+        val strengths = buildStrengths(tags, answers)
+        val budgetDecisions = buildBudgetDecisions(answers, leaks)
+        val dataQualityScore = computeDataQualityScore(answers)
         val contentIds = scoreContentIds(tags, goalPreset)
         val (austerityAr, austerityFr) = buildAusteritySteps(leaks, goal, metrics)
 
@@ -879,6 +1073,10 @@ object FinancialDiagnosticEngine {
             planOptions = plans,
             topActions = actions,
             adviceCards = adviceCards,
+            understoodFacts = understoodFacts,
+            strengths = strengths,
+            budgetDecisions = budgetDecisions,
+            dataQualityScore = dataQualityScore,
             recommendedContentIds = contentIds,
             austerityStepsAr = austerityAr,
             austerityStepsFr = austerityFr
@@ -1038,8 +1236,9 @@ object FinancialDiagnosticEngine {
         }
         if (answers.incomeLowestCentimes > 0) return answers.incomeLowestCentimes
 
-        // Absolute fallback — user hasn't answered income yet (shouldn't happen in full interview)
-        return 600000L // 6000 DH as default
+        // Never invent income. Validation normally prevents this state, but old or
+        // partial profiles must remain visibly incomplete rather than misleading.
+        return 0L
     }
 
     private fun protectedEssentialsCentimes(answers: QuestionnaireAnswers): Long {

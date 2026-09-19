@@ -255,7 +255,7 @@ fun ChecklistScreen(
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            val defaultTitle = if (isRtl) "قائمة" else "Checklist"
+                            val defaultTitle = stringResource(R.string.checklist_untitled)
                             BasicTextField(
                                 value = state.titleInput,
                                 onValueChange = { viewModel.updateTitleInput(it) },
@@ -346,7 +346,7 @@ fun ChecklistScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            val countText = if (isRtl) "$completedCount / $totalCount مكتمل" else "$completedCount / $totalCount faits"
+                            val countText = stringResource(R.string.checklist_count_progress, completedCount, totalCount)
                             Text(
                                 text = countText,
                                 fontFamily = resolveJournalFont(countText, isRtl),
@@ -367,7 +367,7 @@ fun ChecklistScreen(
                             }
                         }
 
-                        val shareText = if (isRtl) "مشاركة ↗" else "Partager ↗"
+                        val shareText = stringResource(R.string.checklist_share_btn)
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
@@ -404,10 +404,7 @@ fun ChecklistScreen(
                             ) {
                                 DropdownMenuItem(
                                     text = {
-                                        Text(
-                                            if (isRtl) "🖼️ مشاركة كصورة (ورقة مذكرة)"
-                                            else "🖼️ Partager comme image (Carnet)"
-                                        )
+                                        Text(stringResource(R.string.checklist_share_as_image))
                                     },
                                     onClick = {
                                         showShareMenu = false
@@ -424,10 +421,7 @@ fun ChecklistScreen(
                                 )
                                 DropdownMenuItem(
                                     text = {
-                                        Text(
-                                            if (isRtl) "🔗 مشاركة النص والرابط (كافة التطبيقات)"
-                                            else "🔗 Partager texte & lien (Toutes les applications)"
-                                        )
+                                        Text(stringResource(R.string.checklist_share_as_text))
                                     },
                                     onClick = {
                                         showShareMenu = false
@@ -471,7 +465,7 @@ fun ChecklistScreen(
                             verticalAlignment = Alignment.Bottom,
                             horizontalArrangement = Arrangement.End
                         ) {
-                            val deleteCheckedText = if (isRtl) "حذف المشطوبين ($completedCount)" else "Supprimer les cochés ($completedCount)"
+                            val deleteCheckedText = stringResource(R.string.checklist_delete_checked, completedCount)
                             Text(
                                 text = deleteCheckedText,
                                 fontFamily = resolveJournalFont(deleteCheckedText, isRtl),
@@ -498,7 +492,7 @@ fun ChecklistScreen(
                                 .padding(horizontal = 14.dp),
                             verticalAlignment = Alignment.Bottom
                         ) {
-                            val emptyHint = if (isRtl) "أدخل عنصراً بالأسفل للبدء في كتابة قائمتك ✍️" else "Tapez un article ci-dessous pour commencer votre liste ✍️"
+                            val emptyHint = stringResource(R.string.checklist_empty_hint)
                             Text(
                                 text = emptyHint,
                                 fontFamily = resolveJournalFont(emptyHint, isRtl),
@@ -669,7 +663,7 @@ fun ChecklistScreen(
                                 verticalAlignment = Alignment.Bottom,
                                 horizontalArrangement = Arrangement.Center
                             ) {
-                                val deleteListText = if (isRtl) "حذف هذه القائمة" else "Supprimer cette liste"
+                                val deleteListText = stringResource(R.string.checklist_delete_list)
                                 Text(
                                     text = deleteListText,
                                     fontFamily = resolveJournalFont(deleteListText, isRtl),
@@ -697,7 +691,7 @@ fun ChecklistScreen(
                     viewModel.addMultipleItems(result.items)
                     Toast.makeText(
                         context,
-                        if (isRtl) "تمت إضافة ${result.items.size} عناصر بالذكاء الاصطناعي 🪄" else "${result.items.size} éléments ajoutés avec l'IA 🪄",
+                        context.getString(R.string.checklist_ai_items_added, result.items.size),
                         Toast.LENGTH_SHORT
                     ).show()
                 },
@@ -735,7 +729,7 @@ fun ChecklistScreen(
                             color = JournalInk
                         )
 
-                        val placeholderText = if (isRtl) "زيد شي حاجة (مثلاً: خبز، حليب...)" else "Ajouter un élément (ex: Pain, Lait...)"
+                        val placeholderText = stringResource(R.string.checklist_input_placeholder)
                         BasicTextField(
                             value = state.inputText,
                             onValueChange = { viewModel.updateInputText(it) },
@@ -799,7 +793,7 @@ fun ChecklistScreen(
                                 .padding(horizontal = 10.dp, vertical = 5.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            val addBtnText = if (isRtl) "إضافة" else "Ajouter"
+                            val addBtnText = stringResource(R.string.checklist_add_btn)
                             Text(
                                 text = addBtnText,
                                 fontFamily = resolveJournalFont(addBtnText, isRtl),
@@ -818,10 +812,10 @@ fun ChecklistScreen(
     }
 
     if (showDeleteConfirmDialog) {
-        val dialogTitle = if (isRtl) "حذف القائمة ؟" else "Supprimer la checklist ?"
-        val dialogMessage = if (isRtl) "هل أنت متأكد من رغبتك في حذف هذه القائمة نهائياً؟ هذا الإجراء لا يمكن التراجع عنه." else "Êtes-vous sûr de vouloir supprimer cette checklist ? Cette action est irréversible."
-        val confirmText = if (isRtl) "حذف" else "Supprimer"
-        val dismissText = if (isRtl) "إلغاء" else "Annuler"
+        val dialogTitle = stringResource(R.string.checklist_delete_dialog_title)
+        val dialogMessage = stringResource(R.string.checklist_delete_dialog_message)
+        val confirmText = stringResource(R.string.action_delete)
+        val dismissText = stringResource(R.string.action_cancel)
         AlertDialog(
             onDismissRequest = { showDeleteConfirmDialog = false },
             containerColor = JournalPaper,

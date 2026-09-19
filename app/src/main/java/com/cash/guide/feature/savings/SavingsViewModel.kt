@@ -461,7 +461,9 @@ class SavingsViewModel(
         } else {
             _questionnaireState.value = QuestionnaireAnswers(
                 goalPreset = "CAR",
-                goalTitle = "شراء سيارة",
+                // The UI supplies a localized example.  A hard-coded Arabic title here
+                // leaked into the French questionnaire and made the interview feel broken.
+                goalTitle = "",
                 goalTargetCentimes = 10000000L,
                 goalInitialCentimes = 0L,
                 goalTargetMonths = 24,
