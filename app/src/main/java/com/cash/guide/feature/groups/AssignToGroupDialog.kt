@@ -40,6 +40,7 @@ import com.cash.guide.domain.GroupCategory
 import com.cash.guide.ui.notebook.HighlighterBlue
 import com.cash.guide.ui.notebook.HighlighterGreen
 import com.cash.guide.ui.notebook.HighlighterPink
+import com.cash.guide.ui.notebook.HighlighterPurple
 import com.cash.guide.ui.notebook.HighlighterYellow
 import com.cash.guide.ui.notebook.HisabiSketchIcon
 import com.cash.guide.ui.notebook.HisabiSymbol
@@ -73,7 +74,7 @@ fun AssignToGroupDialog(
         GroupCategory.CALCULATIONS -> HighlighterPink.copy(alpha = 0.50f)
         GroupCategory.NOTES -> HighlighterYellow.copy(alpha = 0.55f)
         GroupCategory.CHECKLISTS -> HighlighterGreen.copy(alpha = 0.50f)
-        GroupCategory.CONTACTS -> HighlighterBlue.copy(alpha = 0.50f)
+        GroupCategory.CONTACTS -> HighlighterPurple.copy(alpha = 0.65f)
     }
 
     val categorySymbol = when (category) {

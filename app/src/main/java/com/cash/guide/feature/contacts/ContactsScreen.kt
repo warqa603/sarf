@@ -67,7 +67,7 @@ fun ContactsScreen(
                 modifier = Modifier.journalBaselineOnRule()
             )
 
-            // Button: + Nouveau contact with text sitting on the blue rule
+            // Button: + Nouveau contact with text and + sitting on the blue rule
             Row(
                 verticalAlignment = Alignment.Bottom,
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -76,9 +76,9 @@ fun ContactsScreen(
                     .clickable(role = Role.Button) { viewModel.openAddContactSheet() }
                     .drawBehind {
                         val washHeight = 24.dp.toPx()
-                        val washY = size.height - washHeight + 1.dp.toPx()
+                        val washY = size.height - washHeight + 5.dp.toPx()
                         drawRoundRect(
-                            color = Color(0xFFDBEAFE).copy(alpha = 0.65f),
+                            color = Color(0xFFEDE9FE).copy(alpha = 0.80f),
                             topLeft = Offset(-6.dp.toPx(), washY),
                             size = Size(size.width + 12.dp.toPx(), washHeight),
                             cornerRadius = CornerRadius(6.dp.toPx(), 6.dp.toPx())
@@ -89,16 +89,16 @@ fun ContactsScreen(
                 HisabiSketchIcon(
                     symbol = HisabiSymbol.Plus,
                     contentDescription = null,
-                    tint = Color(0xFF1E40AF),
+                    tint = Color(0xFF7C3AED),
                     size = 13.dp,
-                    modifier = Modifier.offset(y = (-4.5).dp)
+                    modifier = Modifier.offset(y = 2.dp)
                 )
                 Text(
                     text = stringResource(R.string.contact_btn_new),
                     fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
                     fontSize = if (isRtl) 13.5.sp else 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E40AF),
+                    color = Color(0xFF7C3AED),
                     style = TextStyle(platformStyle = NoFontPadding),
                     modifier = Modifier.journalBaselineOnRule()
                 )
@@ -410,7 +410,7 @@ fun ContactItemRow(
                     fontFamily = PatrickHandFamily,
                     fontSize = 14.5.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E40AF),
+                    color = Color(0xFF6D28D9),
                     style = TextStyle(platformStyle = NoFontPadding),
                     modifier = Modifier.journalBaselineOnRule()
                 )
@@ -478,7 +478,7 @@ fun ContactItemRow(
         }
 
         // Line 2: Exactly on the blue ruled line below!
-        // Center: SMS, WhatsApp, Call (closer together)
+        // Center: SMS, WhatsApp, Call (closer together, and lower SMS and Call to sit on the blue line)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -489,31 +489,32 @@ fun ContactItemRow(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .offset(y = 5.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(11.dp),
                 verticalAlignment = Alignment.Bottom
             ) {
-                // SMS Icon
+                // SMS Icon (Amber / Orange message bubble, pushed down 2.2dp to touch the blue line)
                 Box(
                     modifier = Modifier
+                        .offset(y = 2.2.dp)
                         .clip(CircleShape)
                         .clickable(role = Role.Button, onClick = onSms)
-                        .padding(3.dp),
+                        .padding(horizontal = 2.dp),
                     contentAlignment = Alignment.BottomCenter
                 ) {
                     HisabiSketchIcon(
                         symbol = HisabiSymbol.Sms,
                         contentDescription = "SMS",
-                        tint = Color(0xFF2563EB),
+                        tint = Color(0xFFEA580C),
                         size = 21.dp
                     )
                 }
 
-                // WhatsApp Icon
+                // WhatsApp Icon (Green WhatsApp bubble, sits on line)
                 Box(
                     modifier = Modifier
                         .clip(CircleShape)
                         .clickable(role = Role.Button, onClick = onWhatsApp)
-                        .padding(3.dp),
+                        .padding(horizontal = 2.dp),
                     contentAlignment = Alignment.BottomCenter
                 ) {
                     HisabiSketchIcon(
@@ -524,18 +525,19 @@ fun ContactItemRow(
                     )
                 }
 
-                // Direct Call Icon
+                // Direct Call Icon (Phone Call Green, pushed down 2.2dp to touch the blue line)
                 Box(
                     modifier = Modifier
+                        .offset(y = 2.2.dp)
                         .clip(CircleShape)
                         .clickable(role = Role.Button, onClick = onCall)
-                        .padding(3.dp),
+                        .padding(horizontal = 2.dp),
                     contentAlignment = Alignment.BottomCenter
                 ) {
                     HisabiSketchIcon(
                         symbol = HisabiSymbol.Phone,
                         contentDescription = "Appel",
-                        tint = Color(0xFF1D4ED8),
+                        tint = Color(0xFF16A34A),
                         size = 21.dp
                     )
                 }

@@ -48,6 +48,7 @@ val HighlighterPink = Color(0xFFF3A7B9)    // Category, '=' button, '+' dab, dou
 val HighlighterYellow = Color(0xFFF4D66D)  // 'Total' heading, '−' dab
 val HighlighterGreen = Color(0xFFC9DDA0)   // '×' dab
 val HighlighterBlue = Color(0xFFA8CFE3)    // '÷' dab
+val HighlighterPurple = Color(0xFFDDD6FE)  // Contacts
 
 // Row Action Colors (Handwritten × and ✓)
 val JournalActionDelete = Color(0xFFD66860)   // Restrained muted coral for delete '×'
