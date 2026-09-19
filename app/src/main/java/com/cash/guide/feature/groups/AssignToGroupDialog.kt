@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import com.cash.guide.R
 import com.cash.guide.data.CalculationRepository
 import com.cash.guide.domain.GroupCategory
+import com.cash.guide.ui.notebook.HighlighterBlue
 import com.cash.guide.ui.notebook.HighlighterGreen
 import com.cash.guide.ui.notebook.HighlighterPink
 import com.cash.guide.ui.notebook.HighlighterYellow
@@ -72,12 +73,14 @@ fun AssignToGroupDialog(
         GroupCategory.CALCULATIONS -> HighlighterPink.copy(alpha = 0.50f)
         GroupCategory.NOTES -> HighlighterYellow.copy(alpha = 0.55f)
         GroupCategory.CHECKLISTS -> HighlighterGreen.copy(alpha = 0.50f)
+        GroupCategory.CONTACTS -> HighlighterBlue.copy(alpha = 0.50f)
     }
 
     val categorySymbol = when (category) {
         GroupCategory.CALCULATIONS -> HisabiSymbol.Calculator
         GroupCategory.NOTES -> HisabiSymbol.Page
         GroupCategory.CHECKLISTS -> HisabiSymbol.Check
+        GroupCategory.CONTACTS -> HisabiSymbol.Contacts
     }
 
     AlertDialog(

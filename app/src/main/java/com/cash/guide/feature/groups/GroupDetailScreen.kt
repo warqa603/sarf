@@ -70,7 +70,10 @@ import com.cash.guide.data.db.CalculationWithItems
 import com.cash.guide.data.db.ChecklistWithItems
 import com.cash.guide.data.db.NoteEntity
 import com.cash.guide.domain.CalculationImageShareHelper
+import com.cash.guide.domain.ContactActionHelper
 import com.cash.guide.domain.GroupCategory
+import com.cash.guide.feature.contacts.AddContactSheet
+import com.cash.guide.feature.contacts.ContactItemRow
 import com.cash.guide.domain.JournalLedgerManager
 import com.cash.guide.domain.MoneyUnit
 import com.cash.guide.domain.export.ExcelExportHelper
@@ -272,6 +275,23 @@ fun GroupDetailScreen(
                             modifier = Modifier.journalBaselineOnRule()
                         )
                     }
+                    GroupCategory.CONTACTS -> {
+                        val count = state.contacts.size
+                        val countText = when (count) {
+                            0 -> stringResource(R.string.group_contacts_count_zero)
+                            1 -> stringResource(R.string.group_contacts_count_single)
+                            else -> stringResource(R.string.group_contacts_count, count)
+                        }
+                        Text(
+                            text = countText,
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontSize = if (isRtl) 13.sp else 13.5.sp,
+                            fontWeight = FontWeight.Normal,
+                            color = JournalMutedInk,
+                            style = TextStyle(platformStyle = NoFontPadding),
+                            modifier = Modifier.journalBaselineOnRule()
+                        )
+                    }
                 }
             }
         }
@@ -302,6 +322,12 @@ fun GroupDetailScreen(
                         NotebookPrimaryActionButton(
                             text = stringResource(R.string.group_detail_new_checklist),
                             onClick = { viewModel.openCreateChecklistDialog() }
+                        )
+                    }
+                    GroupCategory.CONTACTS -> {
+                        NotebookPrimaryActionButton(
+                            text = stringResource(R.string.group_detail_new_contact),
+                            onClick = { viewModel.openAddContactSheet() }
                         )
                     }
                 }
@@ -414,6 +440,31 @@ fun GroupDetailScreen(
                             isRtl = isRtl,
                             onClick = { onOpenChecklist(item.checklist.id) },
                             onMoreClick = { viewModel.selectChecklistForAction(item) }
+                        )
+                    }
+                }
+            }
+            GroupCategory.CONTACTS -> {
+                val contacts = state.contacts
+                if (contacts.isEmpty() && !state.isLoading) {
+                    item(key = "empty_contacts") {
+                        EmptyCategoryRow(stringResource(R.string.group_detail_empty_contacts), isRtl)
+                    }
+                } else {
+                    items(
+                        items = contacts,
+                        key = { it.id }
+                    ) { contact ->
+                        ContactItemRow(
+                            contact = contact,
+                            isRtl = isRtl,
+                            onCall = { ContactActionHelper.dialPhone(context, contact.phoneNumber) },
+                            onWhatsApp = { ContactActionHelper.openWhatsApp(context, contact.phoneNumber) },
+                            onEdit = { viewModel.openEditContactSheet(contact) },
+                            onTogglePin = { viewModel.toggleContactPin(contact.id) },
+                            onShare = { ContactActionHelper.shareContact(context, contact) },
+                            onDelete = { viewModel.promptDeleteContact(contact) },
+                            onRemoveFromGroup = { viewModel.removeContactFromGroup(contact.id) }
                         )
                     }
                 }
@@ -624,8 +675,8 @@ fun GroupDetailScreen(
         )
     }
 
-    // Delete Confirmation Dialog (Unified for Calculation, Note, or Checklist)
-    val hasItemToDelete = state.calculationToDelete != null || state.noteToDelete != null || state.checklistToDelete != null
+    // Delete Confirmation Dialog (Unified for Calculation, Note, Checklist, or Contact)
+    val hasItemToDelete = state.calculationToDelete != null || state.noteToDelete != null || state.checklistToDelete != null || state.contactToDelete != null
     if (hasItemToDelete) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissDeleteDialog() },
@@ -653,6 +704,7 @@ fun GroupDetailScreen(
                         state.calculationToDelete != null -> viewModel.confirmDeleteCalculation()
                         state.noteToDelete != null -> viewModel.confirmDeleteNote()
                         state.checklistToDelete != null -> viewModel.confirmDeleteChecklist()
+                        state.contactToDelete != null -> viewModel.confirmDeleteContact()
                     }
                 }) {
                     Text(
@@ -672,6 +724,19 @@ fun GroupDetailScreen(
                     )
                 }
             }
+        )
+    }
+
+    // Add / Edit Contact Sheet in Group
+    if (state.showAddContactSheet) {
+        AddContactSheet(
+            editingContact = state.editingContact,
+            groups = emptyList(),
+            onDismiss = { viewModel.dismissAddContactSheet() },
+            onSave = { id, name, phone, secPhone, note, _, colorTag ->
+                viewModel.saveContact(id, name, phone, secPhone, note, colorTag)
+            },
+            onCreateGroup = { _, _ -> }
         )
     }
 }

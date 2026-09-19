@@ -36,12 +36,16 @@ data class GroupsUiState(
 
     val checklistsGroupCount: Int
         get() = groups.count { it.category == GroupCategory.CHECKLISTS }
+
+    val contactsGroupCount: Int
+        get() = groups.count { it.category == GroupCategory.CONTACTS }
 }
 
 class GroupsViewModel(
     private val calculationRepository: CalculationRepository,
     private val noteRepository: NoteRepository,
-    private val checklistRepository: ChecklistRepository
+    private val checklistRepository: ChecklistRepository,
+    private val contactRepository: com.cash.guide.data.ContactRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GroupsUiState())
@@ -49,12 +53,14 @@ class GroupsViewModel(
 
     init {
         viewModelScope.launch {
+            val contactsFlow = contactRepository?.observeAll() ?: kotlinx.coroutines.flow.flowOf(emptyList())
             combine(
                 calculationRepository.observeAllGroups(),
                 calculationRepository.observeAllSaved(),
                 noteRepository.observeAll(),
-                checklistRepository.observeAll()
-            ) { groups, calculations, notes, checklists ->
+                checklistRepository.observeAll(),
+                contactsFlow
+            ) { groups, calculations, notes, checklists, contacts ->
                 groups.map { group ->
                     val cat = GroupCategory.fromStorage(group.category)
                     when (cat) {
@@ -69,6 +75,10 @@ class GroupsViewModel(
                         GroupCategory.CHECKLISTS -> UnifiedGroupItem(
                             group = group,
                             checklists = checklists.filter { it.checklist.groupId == group.id }
+                        )
+                        GroupCategory.CONTACTS -> UnifiedGroupItem(
+                            group = group,
+                            contacts = contacts.filter { it.groupId == group.id }
                         )
                     }
                 }

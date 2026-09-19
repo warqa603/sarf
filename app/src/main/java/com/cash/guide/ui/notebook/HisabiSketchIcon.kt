@@ -59,7 +59,10 @@ enum class HisabiSymbol {
     Cut,
     Microphone,
     CheckBox,
-    Highlighter
+    Highlighter,
+    Contacts,
+    Phone,
+    WhatsApp
 }
 
 @Composable
@@ -745,6 +748,53 @@ fun HisabiSketchIcon(
 
                 // 5. Highlighter fluorescent ink stroke at bottom
                 drawLine(tint, point(3f, 21.5f), point(11.5f, 21.5f), u(2.4f), StrokeCap.Round)
+            }
+            HisabiSymbol.Contacts -> {
+                // Card body
+                drawRoundRect(tint, point(5.5f, 3f), androidx.compose.ui.geometry.Size(u(14f), u(18f)), androidx.compose.ui.geometry.CornerRadius(u(2.5f)), style = pen)
+                // Left spine rings
+                drawLine(tint, point(3.5f, 6.5f), point(6.5f, 6.5f), u(1.5f), StrokeCap.Round)
+                drawLine(tint, point(3.5f, 11.5f), point(6.5f, 11.5f), u(1.5f), StrokeCap.Round)
+                drawLine(tint, point(3.5f, 16.5f), point(6.5f, 16.5f), u(1.5f), StrokeCap.Round)
+                // User silhouette inside
+                drawCircle(tint, u(2.3f), point(12.5f, 8.5f), style = pen)
+                drawArc(tint, 180f, 180f, false, point(9.5f, 12.5f), androidx.compose.ui.geometry.Size(u(6f), u(5f)), style = pen)
+            }
+            HisabiSymbol.Phone -> {
+                val phonePath = Path().apply {
+                    moveTo(u(7f), u(4.5f))
+                    lineTo(u(10.5f), u(4f))
+                    lineTo(u(12f), u(7.5f))
+                    lineTo(u(10f), u(9.5f))
+                    cubicTo(u(11f), u(12f), u(12.5f), u(13.5f), u(15f), u(14.5f))
+                    lineTo(u(17f), u(12.5f))
+                    lineTo(u(20.5f), u(14f))
+                    lineTo(u(20f), u(17.5f))
+                    cubicTo(u(18.5f), u(19.8f), u(14f), u(20.5f), u(6f), u(12.5f))
+                    cubicTo(u(4f), u(6.5f), u(4.5f), u(5f), u(7f), u(4.5f))
+                    close()
+                }
+                drawPath(phonePath, tint, style = pen)
+            }
+            HisabiSymbol.WhatsApp -> {
+                val waPath = Path().apply {
+                    moveTo(u(12f), u(3.5f))
+                    cubicTo(u(17f), u(3.5f), u(20.5f), u(7.2f), u(20.5f), u(12f))
+                    cubicTo(u(20.5f), u(16.5f), u(17f), u(20.5f), u(12f), u(20.5f))
+                    cubicTo(u(10.2f), u(20.5f), u(8.5f), u(19.8f), u(7.2f), u(18.8f))
+                    lineTo(u(3.5f), u(20.5f))
+                    lineTo(u(5.2f), u(16.8f))
+                    cubicTo(u(4.2f), u(15.4f), u(3.5f), u(13.8f), u(3.5f), u(12f))
+                    cubicTo(u(3.5f), u(7.2f), u(7f), u(3.5f), u(12f), u(3.5f))
+                    close()
+                }
+                drawPath(waPath, tint, style = pen)
+                // Handset curve inside
+                val phoneCurve = Path().apply {
+                    moveTo(u(9f), u(8.5f))
+                    cubicTo(u(9f), u(11.5f), u(12.5f), u(15f), u(15.5f), u(15f))
+                }
+                drawPath(phoneCurve, tint, style = fine)
             }
         }
     }

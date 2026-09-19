@@ -17,6 +17,7 @@ object DataSeeder {
         val checklistDao = db.checklistDao()
         val noteDao = db.noteDao()
         val reminderDao = db.reminderDao()
+        val contactDao = db.contactDao()
 
         // 1. Clear existing sample data (Savings/Épargne is deliberately preserved intact)
         calcDao.deleteAllCalculations()
@@ -24,6 +25,7 @@ object DataSeeder {
         checklistDao.deleteAllChecklists()
         noteDao.deleteAllNotes()
         reminderDao.deleteAllReminders()
+        contactDao.deleteAllContacts()
 
         val now = System.currentTimeMillis()
         val minute = 60_000L
@@ -35,7 +37,7 @@ object DataSeeder {
         val currentLang = runCatching { settingsRepo.appLanguage.first() }.getOrDefault("fr")
         val isArabic = currentLang == "ar" || currentLang == "dar" || Locale.getDefault().language == "ar"
 
-        // 2. Insert Unified Groups (Calculations, Notes, Checklists)
+        // 2. Insert Unified Groups (Calculations, Notes, Checklists, Contacts)
         val groups = if (isArabic) {
             listOf(
                 // Calculation Groups
@@ -53,7 +55,12 @@ object DataSeeder {
                 // Checklists Groups
                 CalculationGroupEntity("group_check_courses", "تقدية ومشتريات 🛒", "#F4D66D", now - 15 * day, now - 15 * day, "CHECKLISTS"),
                 CalculationGroupEntity("group_check_voyage", "سفر وعطل 🚗", "#89B5D8", now - 15 * day, now - 15 * day, "CHECKLISTS"),
-                CalculationGroupEntity("group_check_maison", "مدرسة وترتيبات 📚", "#F7BDAB", now - 14 * day, now - 14 * day, "CHECKLISTS")
+                CalculationGroupEntity("group_check_maison", "مدرسة وترتيبات 📚", "#F7BDAB", now - 14 * day, now - 14 * day, "CHECKLISTS"),
+                // Contacts Groups
+                CalculationGroupEntity("group_contact_artisans", "حرفيين ومعلمين 🔨", "#89B5D8", now - 15 * day, now - 15 * day, "CONTACTS"),
+                CalculationGroupEntity("group_contact_famille", "العائلة والمقربين 👨‍👩‍👧", "#F7BDAB", now - 15 * day, now - 15 * day, "CONTACTS"),
+                CalculationGroupEntity("group_contact_sante", "صحة وأطباء 🩺", "#9BD7D5", now - 14 * day, now - 14 * day, "CONTACTS"),
+                CalculationGroupEntity("group_contact_commerce", "موردين وسلعة 📦", "#F4D66D", now - 12 * day, now - 12 * day, "CONTACTS")
             )
         } else {
             listOf(
@@ -72,7 +79,12 @@ object DataSeeder {
                 // Checklists Groups
                 CalculationGroupEntity("group_check_courses", "Courses & Taqdiya 🛒", "#F4D66D", now - 15 * day, now - 15 * day, "CHECKLISTS"),
                 CalculationGroupEntity("group_check_voyage", "Voyages & Sorties 🚗", "#89B5D8", now - 15 * day, now - 15 * day, "CHECKLISTS"),
-                CalculationGroupEntity("group_check_maison", "Maison & École 📚", "#F7BDAB", now - 14 * day, now - 14 * day, "CHECKLISTS")
+                CalculationGroupEntity("group_check_maison", "Maison & École 📚", "#F7BDAB", now - 14 * day, now - 14 * day, "CHECKLISTS"),
+                // Contacts Groups
+                CalculationGroupEntity("group_contact_artisans", "Artisans & M3elmin 🔨", "#89B5D8", now - 15 * day, now - 15 * day, "CONTACTS"),
+                CalculationGroupEntity("group_contact_famille", "Famille & Proches 👨‍👩‍👧", "#F7BDAB", now - 15 * day, now - 15 * day, "CONTACTS"),
+                CalculationGroupEntity("group_contact_sante", "Santé & Médecins 🩺", "#9BD7D5", now - 14 * day, now - 14 * day, "CONTACTS"),
+                CalculationGroupEntity("group_contact_commerce", "Fournisseurs & Sel3a 📦", "#F4D66D", now - 12 * day, now - 12 * day, "CONTACTS")
             )
         }
 
@@ -503,6 +515,187 @@ object DataSeeder {
 
         for (rem in seedReminders) {
             reminderDao.insert(rem)
+        }
+
+        // 5. Insert Moroccan Contacts (Artisans, Famille, Santé, Fournisseurs)
+        val seedContacts = if (isArabic) {
+            listOf(
+                ContactEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = "سي حسن بلومبي",
+                    phoneNumber = "0661234567",
+                    secondaryPhone = "0522123456",
+                    note = "معلم طيارة في الفويت ورشاشات الدوش وسخان الماء",
+                    groupId = "group_contact_artisans",
+                    colorTag = "BLUE",
+                    isPinned = true,
+                    createdAtEpochMs = now - 10 * day,
+                    updatedAtEpochMs = now - 2 * day
+                ),
+                ContactEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = "خالتي فاطمة الزهراء 🌸",
+                    phoneNumber = "0672445566",
+                    secondaryPhone = null,
+                    note = "عائلة - الدار البيضاء حي الولفة",
+                    groupId = "group_contact_famille",
+                    colorTag = "PINK",
+                    isPinned = true,
+                    createdAtEpochMs = now - 12 * day,
+                    updatedAtEpochMs = now - 3 * day
+                ),
+                ContactEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = "معلم رشيد إلكتريسيان",
+                    phoneNumber = "0670987654",
+                    secondaryPhone = null,
+                    note = "إصلاح ديجونكتور وتريسيستي الدار والسبوتات",
+                    groupId = "group_contact_artisans",
+                    colorTag = "YELLOW",
+                    isPinned = false,
+                    createdAtEpochMs = now - 9 * day,
+                    updatedAtEpochMs = now - 4 * day
+                ),
+                ContactEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = "د. أمينة الفاسي",
+                    phoneNumber = "0522334455",
+                    secondaryPhone = "0660112233",
+                    note = "عيادة الأسنان - المواعيد بالواتساب",
+                    groupId = "group_contact_sante",
+                    colorTag = "GREEN",
+                    isPinned = false,
+                    createdAtEpochMs = now - 14 * day,
+                    updatedAtEpochMs = now - 5 * day
+                ),
+                ContactEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = "كاراج المعلم باسو",
+                    phoneNumber = "0663112233",
+                    secondaryPhone = null,
+                    note = "فيدونج وسكانير وفرانات لجميع أنواع السيارات",
+                    groupId = "group_contact_artisans",
+                    colorTag = "BLUE",
+                    isPinned = false,
+                    createdAtEpochMs = now - 8 * day,
+                    updatedAtEpochMs = now - 1 * day
+                ),
+                ContactEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = "المعلم عزيز الصباغ",
+                    phoneNumber = "0654889900",
+                    secondaryPhone = null,
+                    note = "صباغة متقونة ونقية (خيال، صابلي وسبيطولار)",
+                    groupId = "group_contact_artisans",
+                    colorTag = "PURPLE",
+                    isPinned = false,
+                    createdAtEpochMs = now - 7 * day,
+                    updatedAtEpochMs = now - 2 * day
+                ),
+                ContactEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = "عمر مول الهري",
+                    phoneNumber = "0661998877",
+                    secondaryPhone = null,
+                    note = "سلعة الجملة ونصف الجملة، التوصيل للمحل",
+                    groupId = "group_contact_commerce",
+                    colorTag = "YELLOW",
+                    isPinned = false,
+                    createdAtEpochMs = now - 11 * day,
+                    updatedAtEpochMs = now - 3 * day
+                )
+            )
+        } else {
+            listOf(
+                ContactEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = "Si Hassan Plombier",
+                    phoneNumber = "0661234567",
+                    secondaryPhone = "0522123456",
+                    note = "Dépannage fuites d'eau & chauffe-eau, rapide",
+                    groupId = "group_contact_artisans",
+                    colorTag = "BLUE",
+                    isPinned = true,
+                    createdAtEpochMs = now - 10 * day,
+                    updatedAtEpochMs = now - 2 * day
+                ),
+                ContactEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = "Khalti Fatima-Zahra 🌸",
+                    phoneNumber = "0672445566",
+                    secondaryPhone = null,
+                    note = "Famille - Casablanca Oulfa",
+                    groupId = "group_contact_famille",
+                    colorTag = "PINK",
+                    isPinned = true,
+                    createdAtEpochMs = now - 12 * day,
+                    updatedAtEpochMs = now - 3 * day
+                ),
+                ContactEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = "Rachid Électricien",
+                    phoneNumber = "0670987654",
+                    secondaryPhone = null,
+                    note = "Installation disjoncteur, prises & spots LED",
+                    groupId = "group_contact_artisans",
+                    colorTag = "YELLOW",
+                    isPinned = false,
+                    createdAtEpochMs = now - 9 * day,
+                    updatedAtEpochMs = now - 4 * day
+                ),
+                ContactEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = "Dr. Amina El Fassi",
+                    phoneNumber = "0522334455",
+                    secondaryPhone = "0660112233",
+                    note = "Cabinet dentaire - Rdv par WhatsApp",
+                    groupId = "group_contact_sante",
+                    colorTag = "GREEN",
+                    isPinned = false,
+                    createdAtEpochMs = now - 14 * day,
+                    updatedAtEpochMs = now - 5 * day
+                ),
+                ContactEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = "Garage Si Bassou",
+                    phoneNumber = "0663112233",
+                    secondaryPhone = null,
+                    note = "Vidange, plaquettes de frein & diagnostic valise",
+                    groupId = "group_contact_artisans",
+                    colorTag = "BLUE",
+                    isPinned = false,
+                    createdAtEpochMs = now - 8 * day,
+                    updatedAtEpochMs = now - 1 * day
+                ),
+                ContactEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = "Aziz Peintre",
+                    phoneNumber = "0654889900",
+                    secondaryPhone = null,
+                    note = "Peinture d'intérieur propre, salon marocain",
+                    groupId = "group_contact_artisans",
+                    colorTag = "PURPLE",
+                    isPinned = false,
+                    createdAtEpochMs = now - 7 * day,
+                    updatedAtEpochMs = now - 2 * day
+                ),
+                ContactEntity(
+                    id = UUID.randomUUID().toString(),
+                    name = "Omar Moul Lheri",
+                    phoneNumber = "0661998877",
+                    secondaryPhone = null,
+                    note = "Denrées de base en gros, livraison disponible",
+                    groupId = "group_contact_commerce",
+                    colorTag = "YELLOW",
+                    isPinned = false,
+                    createdAtEpochMs = now - 11 * day,
+                    updatedAtEpochMs = now - 3 * day
+                )
+            )
+        }
+
+        for (c in seedContacts) {
+            contactDao.insertContact(c)
         }
 
         // Helper data class for building seeds

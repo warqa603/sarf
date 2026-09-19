@@ -3,6 +3,7 @@ package com.cash.guide.app
 sealed class AppDestination(val route: String) {
     data object Home : AppDestination("home")
     data object Groups : AppDestination("groups")
+    data object Contacts : AppDestination("contacts")
     data object History : AppDestination("history")
     data object Savings : AppDestination("savings")
     data object Settings : AppDestination("settings")

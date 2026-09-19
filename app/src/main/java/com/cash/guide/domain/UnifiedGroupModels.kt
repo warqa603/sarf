@@ -3,12 +3,14 @@ package com.cash.guide.domain
 import com.cash.guide.data.db.CalculationGroupEntity
 import com.cash.guide.data.db.CalculationWithItems
 import com.cash.guide.data.db.ChecklistWithItems
+import com.cash.guide.data.db.ContactEntity
 import com.cash.guide.data.db.NoteEntity
 
 enum class GroupCategory(val storageKey: String) {
     CALCULATIONS("CALCULATIONS"),
     NOTES("NOTES"),
-    CHECKLISTS("CHECKLISTS");
+    CHECKLISTS("CHECKLISTS"),
+    CONTACTS("CONTACTS");
 
     companion object {
         fun fromStorage(key: String?): GroupCategory {
@@ -21,7 +23,8 @@ data class UnifiedGroupItem(
     val group: CalculationGroupEntity,
     val calculations: List<CalculationWithItems> = emptyList(),
     val notes: List<NoteEntity> = emptyList(),
-    val checklists: List<ChecklistWithItems> = emptyList()
+    val checklists: List<ChecklistWithItems> = emptyList(),
+    val contacts: List<ContactEntity> = emptyList()
 ) {
     val category: GroupCategory
         get() = GroupCategory.fromStorage(group.category)
@@ -31,6 +34,7 @@ data class UnifiedGroupItem(
             GroupCategory.CALCULATIONS -> calculations.size
             GroupCategory.NOTES -> notes.size
             GroupCategory.CHECKLISTS -> checklists.size
+            GroupCategory.CONTACTS -> contacts.size
         }
 
     val totalCentimes: Long
@@ -44,5 +48,6 @@ data class UnifiedGroupItem(
             GroupCategory.CALCULATIONS -> calculations.map { it.calculation.title.trim() }.filter { it.isNotBlank() }.take(3)
             GroupCategory.NOTES -> notes.map { it.title.trim() }.filter { it.isNotBlank() }.take(3)
             GroupCategory.CHECKLISTS -> checklists.map { it.checklist.title.trim() }.filter { it.isNotBlank() }.take(3)
+            GroupCategory.CONTACTS -> contacts.map { it.name.trim() }.filter { it.isNotBlank() }.take(3)
         }
 }

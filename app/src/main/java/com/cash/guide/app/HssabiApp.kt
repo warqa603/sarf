@@ -181,7 +181,9 @@ fun HssabiApp(
             reminderRepository = reminderRepository
         )
     }
-    val groupsViewModel = viewModel { GroupsViewModel(calculationRepository, noteRepository, checklistRepository) }
+    val contactRepository = remember { com.cash.guide.data.ContactRepository(database.contactDao()) }
+    val contactsViewModel = viewModel { com.cash.guide.feature.contacts.ContactsViewModel(contactRepository, calculationRepository) }
+    val groupsViewModel = viewModel { GroupsViewModel(calculationRepository, noteRepository, checklistRepository, contactRepository) }
     val historyViewModel = viewModel { HistoryViewModel(calculationRepository) }
     val savingsViewModel = viewModel { SavingsViewModel(savingsRepository) }
     val backupManager = remember { BackupManager(database) }
@@ -207,12 +209,14 @@ fun HssabiApp(
     val isTopLevel = currentRoute in listOf(
         AppDestination.Home.route,
         AppDestination.Groups.route,
+        AppDestination.Contacts.route,
         AppDestination.Savings.route,
         AppDestination.Settings.route
     )
 
     val currentDestination = when (currentRoute) {
         AppDestination.Groups.route -> AppDestination.Groups
+        AppDestination.Contacts.route -> AppDestination.Contacts
         AppDestination.Savings.route -> AppDestination.Savings
         AppDestination.Settings.route -> AppDestination.Settings
         else -> AppDestination.Home
@@ -264,6 +268,7 @@ fun HssabiApp(
                     navController = navController,
                     homeViewModel = homeViewModel,
                     groupsViewModel = groupsViewModel,
+                    contactsViewModel = contactsViewModel,
                     historyViewModel = historyViewModel,
                     savingsViewModel = savingsViewModel,
                     settingsViewModel = settingsViewModel,
@@ -271,6 +276,7 @@ fun HssabiApp(
                     checklistRepository = checklistRepository,
                     noteRepository = noteRepository,
                     reminderRepository = reminderRepository,
+                    contactRepository = contactRepository,
                     settingsRepository = settingsRepository,
                     editorViewModelFactory = {
                         CalculationEditorViewModel(

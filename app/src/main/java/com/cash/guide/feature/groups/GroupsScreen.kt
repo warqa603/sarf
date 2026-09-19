@@ -3,6 +3,8 @@ package com.cash.guide.feature.groups
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,6 +64,7 @@ import com.cash.guide.domain.MoneyUnit
 import com.cash.guide.domain.UnifiedGroupItem
 import com.cash.guide.ui.notebook.HisabiSketchIcon
 import com.cash.guide.ui.notebook.HisabiSymbol
+import com.cash.guide.ui.notebook.HighlighterBlue
 import com.cash.guide.ui.notebook.HighlighterGreen
 import com.cash.guide.ui.notebook.HighlighterPink
 import com.cash.guide.ui.notebook.HighlighterYellow
@@ -178,6 +181,7 @@ fun GroupsScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(JournalRuleSpacing)
+                .horizontalScroll(rememberScrollState())
                 .padding(horizontal = 14.dp),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -186,7 +190,8 @@ fun GroupsScreen(
                 Pair<GroupCategory?, String>(null, stringResource(R.string.group_filter_all)),
                 Pair<GroupCategory?, String>(GroupCategory.CALCULATIONS, stringResource(R.string.group_category_calculations)),
                 Pair<GroupCategory?, String>(GroupCategory.NOTES, stringResource(R.string.group_category_notes)),
-                Pair<GroupCategory?, String>(GroupCategory.CHECKLISTS, stringResource(R.string.group_category_checklists))
+                Pair<GroupCategory?, String>(GroupCategory.CHECKLISTS, stringResource(R.string.group_category_checklists)),
+                Pair<GroupCategory?, String>(GroupCategory.CONTACTS, stringResource(R.string.contacts_screen_title))
             )
 
             filters.forEach { (cat, label) ->
@@ -196,12 +201,14 @@ fun GroupsScreen(
                     GroupCategory.CALCULATIONS -> state.calculationsGroupCount
                     GroupCategory.NOTES -> state.notesGroupCount
                     GroupCategory.CHECKLISTS -> state.checklistsGroupCount
+                    GroupCategory.CONTACTS -> state.contactsGroupCount
                 }
                 val symbol = when (cat) {
                     null -> HisabiSymbol.Folder
                     GroupCategory.CALCULATIONS -> HisabiSymbol.Calculator
                     GroupCategory.NOTES -> HisabiSymbol.Page
                     GroupCategory.CHECKLISTS -> HisabiSymbol.Check
+                    GroupCategory.CONTACTS -> HisabiSymbol.Contacts
                 }
 
                 Box(
@@ -260,6 +267,7 @@ fun GroupsScreen(
                         GroupCategory.CALCULATIONS -> HisabiSymbol.Calculator
                         GroupCategory.NOTES -> HisabiSymbol.Page
                         GroupCategory.CHECKLISTS -> HisabiSymbol.Check
+                        GroupCategory.CONTACTS -> HisabiSymbol.Contacts
                         null -> HisabiSymbol.Folder
                     },
                     contentDescription = null,
@@ -394,6 +402,11 @@ private fun NotebookGroupRow(
                 1 -> context.getString(R.string.group_checklists_count_single)
                 else -> context.getString(R.string.group_checklists_count, groupItem.itemCount)
             }
+            GroupCategory.CONTACTS -> when (groupItem.itemCount) {
+                0 -> context.getString(R.string.group_contacts_count_zero)
+                1 -> context.getString(R.string.group_contacts_count_single)
+                else -> context.getString(R.string.group_contacts_count, groupItem.itemCount)
+            }
         }
         if (groupItem.previewTitles.isNotEmpty()) {
             val joined = groupItem.previewTitles.joinToString(if (isRtl) "، " else ", ")
@@ -407,12 +420,14 @@ private fun NotebookGroupRow(
         GroupCategory.CALCULATIONS -> HisabiSymbol.Calculator
         GroupCategory.NOTES -> HisabiSymbol.Page
         GroupCategory.CHECKLISTS -> HisabiSymbol.Check
+        GroupCategory.CONTACTS -> HisabiSymbol.Contacts
     }
 
     val categoryBadgeColor = when (groupItem.category) {
         GroupCategory.CALCULATIONS -> HighlighterPink.copy(alpha = 0.50f)
         GroupCategory.NOTES -> HighlighterYellow.copy(alpha = 0.55f)
         GroupCategory.CHECKLISTS -> HighlighterGreen.copy(alpha = 0.50f)
+        GroupCategory.CONTACTS -> HighlighterBlue.copy(alpha = 0.50f)
     }
 
     var menuExpanded by remember { mutableStateOf(false) }
@@ -647,7 +662,8 @@ private fun CreateOrEditGroupDialog(
                         val categories = listOf(
                             Triple(GroupCategory.CALCULATIONS, stringResource(R.string.group_category_calculations), HisabiSymbol.Calculator),
                             Triple(GroupCategory.NOTES, stringResource(R.string.group_category_notes), HisabiSymbol.Page),
-                            Triple(GroupCategory.CHECKLISTS, stringResource(R.string.group_category_checklists), HisabiSymbol.Check)
+                            Triple(GroupCategory.CHECKLISTS, stringResource(R.string.group_category_checklists), HisabiSymbol.Check),
+                            Triple(GroupCategory.CONTACTS, stringResource(R.string.contacts_screen_title), HisabiSymbol.Contacts)
                         )
                         categories.forEach { (cat, label, symbol) ->
                             val isSelected = selectedCategory == cat

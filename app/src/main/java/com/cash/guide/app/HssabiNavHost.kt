@@ -55,6 +55,7 @@ fun HssabiNavHost(
     navController: NavHostController,
     homeViewModel: HomeViewModel,
     groupsViewModel: GroupsViewModel,
+    contactsViewModel: com.cash.guide.feature.contacts.ContactsViewModel,
     historyViewModel: HistoryViewModel,
     savingsViewModel: SavingsViewModel,
     settingsViewModel: SettingsViewModel,
@@ -62,6 +63,7 @@ fun HssabiNavHost(
     checklistRepository: ChecklistRepository,
     noteRepository: NoteRepository,
     reminderRepository: ReminderRepository,
+    contactRepository: com.cash.guide.data.ContactRepository,
     settingsRepository: SettingsRepository,
     editorViewModelFactory: () -> CalculationEditorViewModel,
     modifier: Modifier = Modifier
@@ -130,6 +132,9 @@ fun HssabiNavHost(
                 },
                 onNewReminder = {
                     navController.navigate(AppDestination.Reminders.createRoute(openCreate = true))
+                },
+                onOpenSettings = {
+                    navController.navigate(AppDestination.Settings.route)
                 }
             )
         }
@@ -142,6 +147,12 @@ fun HssabiNavHost(
             )
         }
 
+        composable(AppDestination.Contacts.route) {
+            com.cash.guide.feature.contacts.ContactsScreen(
+                viewModel = contactsViewModel
+            )
+        }
+
         composable(
             route = AppDestination.GroupDetail.ROUTE_PATTERN,
             arguments = listOf(navArgument("groupId") { type = NavType.StringType })
@@ -151,7 +162,7 @@ fun HssabiNavHost(
                 viewModelStoreOwner = backStackEntry,
                 key = "group_detail_$groupId"
             ) {
-                GroupDetailViewModel(groupId, calculationRepository, noteRepository, checklistRepository)
+                GroupDetailViewModel(groupId, calculationRepository, noteRepository, checklistRepository, contactRepository)
             }
             GroupDetailScreen(
                 viewModel = groupDetailViewModel,

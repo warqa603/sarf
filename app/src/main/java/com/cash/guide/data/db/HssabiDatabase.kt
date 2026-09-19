@@ -18,9 +18,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ReminderEntity::class,
         SavingsGoalEntity::class,
         SavingsDepositEntity::class,
-        FinancialProfileEntity::class
+        FinancialProfileEntity::class,
+        ContactEntity::class
     ],
-    version = 13,
+    version = 14,
     exportSchema = true
 )
 abstract class HssabiDatabase : RoomDatabase() {
@@ -32,6 +33,7 @@ abstract class HssabiDatabase : RoomDatabase() {
     abstract fun reminderDao(): ReminderDao
     abstract fun savingsDao(): SavingsDao
     abstract fun financialProfileDao(): FinancialProfileDao
+    abstract fun contactDao(): ContactDao
 
 
 
@@ -304,6 +306,30 @@ abstract class HssabiDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_13_14 = object : Migration(13, 14) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `contacts` (
+                        `id` TEXT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `phoneNumber` TEXT NOT NULL,
+                        `secondaryPhone` TEXT DEFAULT NULL,
+                        `note` TEXT DEFAULT NULL,
+                        `groupId` TEXT DEFAULT NULL,
+                        `colorTag` TEXT NOT NULL DEFAULT 'BLUE',
+                        `isPinned` INTEGER NOT NULL DEFAULT 0,
+                        `createdAtEpochMs` INTEGER NOT NULL,
+                        `updatedAtEpochMs` INTEGER NOT NULL,
+                        PRIMARY KEY(`id`)
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_contacts_groupId` ON `contacts` (`groupId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_contacts_updatedAtEpochMs` ON `contacts` (`updatedAtEpochMs`)")
+            }
+        }
+
         fun getInstance(context: Context): HssabiDatabase {
             return INSTANCE ?: synchronized(this) {
                 INSTANCE ?: Room.databaseBuilder(
@@ -311,7 +337,7 @@ abstract class HssabiDatabase : RoomDatabase() {
                     HssabiDatabase::class.java,
                     "hssabi.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14)
                     .build()
                     .also { INSTANCE = it }
             }

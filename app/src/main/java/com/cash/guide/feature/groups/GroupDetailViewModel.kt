@@ -4,10 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cash.guide.data.CalculationRepository
 import com.cash.guide.data.ChecklistRepository
+import com.cash.guide.data.ContactRepository
 import com.cash.guide.data.NoteRepository
 import com.cash.guide.data.db.CalculationGroupEntity
 import com.cash.guide.data.db.CalculationWithItems
 import com.cash.guide.data.db.ChecklistWithItems
+import com.cash.guide.data.db.ContactEntity
 import com.cash.guide.data.db.NoteEntity
 import com.cash.guide.domain.GroupCategory
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +23,7 @@ data class GroupDetailUiState(
     val calculations: List<CalculationWithItems> = emptyList(),
     val notes: List<NoteEntity> = emptyList(),
     val checklists: List<ChecklistWithItems> = emptyList(),
+    val contacts: List<ContactEntity> = emptyList(),
     val isLoading: Boolean = true,
     // Calculation action states
     val selectedCalculationForAction: CalculationWithItems? = null,
@@ -31,7 +34,12 @@ data class GroupDetailUiState(
     // Checklist action states
     val selectedChecklistForAction: ChecklistWithItems? = null,
     val checklistToDelete: ChecklistWithItems? = null,
-    val showCreateChecklistDialog: Boolean = false
+    val showCreateChecklistDialog: Boolean = false,
+    // Contact action states
+    val selectedContactForAction: ContactEntity? = null,
+    val contactToDelete: ContactEntity? = null,
+    val showAddContactSheet: Boolean = false,
+    val editingContact: ContactEntity? = null
 ) {
     val category: GroupCategory
         get() = GroupCategory.fromStorage(group?.category)
@@ -44,6 +52,7 @@ data class GroupDetailUiState(
             GroupCategory.CALCULATIONS -> calculations.size
             GroupCategory.NOTES -> notes.size
             GroupCategory.CHECKLISTS -> checklists.size
+            GroupCategory.CONTACTS -> contacts.size
         }
 }
 
@@ -51,7 +60,8 @@ class GroupDetailViewModel(
     val groupId: String,
     private val calculationRepository: CalculationRepository,
     private val noteRepository: NoteRepository,
-    private val checklistRepository: ChecklistRepository
+    private val checklistRepository: ChecklistRepository,
+    private val contactRepository: ContactRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(GroupDetailUiState())
@@ -63,14 +73,16 @@ class GroupDetailViewModel(
                 calculationRepository.observeGroup(groupId),
                 calculationRepository.observeAllSaved(),
                 noteRepository.observeByGroup(groupId),
-                checklistRepository.observeByGroup(groupId)
-            ) { group, allSaved, groupNotes, groupChecklists ->
+                checklistRepository.observeByGroup(groupId),
+                contactRepository.observeByGroup(groupId)
+            ) { group, allSaved, groupNotes, groupChecklists, groupContacts ->
                 val groupCalculations = allSaved.filter { it.calculation.groupId == groupId }
                 _uiState.value = _uiState.value.copy(
                     group = group,
                     calculations = groupCalculations,
                     notes = groupNotes,
                     checklists = groupChecklists,
+                    contacts = groupContacts,
                     isLoading = false
                 )
             }.collect { }
@@ -93,7 +105,8 @@ class GroupDetailViewModel(
         _uiState.value = _uiState.value.copy(
             calculationToDelete = null,
             noteToDelete = null,
-            checklistToDelete = null
+            checklistToDelete = null,
+            contactToDelete = null
         )
     }
 
@@ -188,5 +201,90 @@ class GroupDetailViewModel(
     suspend fun createChecklistInGroup(title: String): String {
         dismissCreateChecklistDialog()
         return checklistRepository.createChecklist(title = title, groupId = groupId)
+    }
+
+    // Contacts
+    fun selectContactForAction(contact: ContactEntity?) {
+        _uiState.value = _uiState.value.copy(selectedContactForAction = contact)
+    }
+
+    fun promptDeleteContact(contact: ContactEntity) {
+        _uiState.value = _uiState.value.copy(
+            selectedContactForAction = null,
+            contactToDelete = contact
+        )
+    }
+
+    fun confirmDeleteContact() {
+        val contact = _uiState.value.contactToDelete ?: return
+        viewModelScope.launch {
+            contactRepository.deleteContact(contact.id)
+            dismissDeleteDialog()
+        }
+    }
+
+    fun removeContactFromGroup(contactId: String) {
+        viewModelScope.launch {
+            contactRepository.assignGroup(contactId, null)
+            _uiState.value = _uiState.value.copy(selectedContactForAction = null)
+        }
+    }
+
+    fun toggleContactPin(contactId: String) {
+        viewModelScope.launch {
+            contactRepository.togglePin(contactId)
+        }
+    }
+
+    fun openAddContactSheet() {
+        _uiState.value = _uiState.value.copy(showAddContactSheet = true, editingContact = null)
+    }
+
+    fun openEditContactSheet(contact: ContactEntity) {
+        _uiState.value = _uiState.value.copy(
+            selectedContactForAction = null,
+            showAddContactSheet = true,
+            editingContact = contact
+        )
+    }
+
+    fun dismissAddContactSheet() {
+        _uiState.value = _uiState.value.copy(showAddContactSheet = false, editingContact = null)
+    }
+
+    fun saveContact(
+        id: String?,
+        name: String,
+        phoneNumber: String,
+        secondaryPhone: String?,
+        note: String?,
+        colorTag: String
+    ) {
+        viewModelScope.launch {
+            if (id != null) {
+                val existing = contactRepository.getContact(id)
+                if (existing != null) {
+                    contactRepository.updateContact(
+                        existing.copy(
+                            name = name.trim(),
+                            phoneNumber = phoneNumber.trim(),
+                            secondaryPhone = secondaryPhone?.trim()?.ifBlank { null },
+                            note = note?.trim()?.ifBlank { null },
+                            colorTag = colorTag
+                        )
+                    )
+                }
+            } else {
+                contactRepository.createContact(
+                    name = name,
+                    phoneNumber = phoneNumber,
+                    secondaryPhone = secondaryPhone,
+                    note = note,
+                    groupId = groupId,
+                    colorTag = colorTag
+                )
+            }
+            dismissAddContactSheet()
+        }
     }
 }

@@ -162,6 +162,7 @@ fun HomeScreen(
     onNewNote: () -> Unit = {},
     onOpenReminders: () -> Unit = {},
     onNewReminder: () -> Unit = {},
+    onOpenSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -273,15 +274,35 @@ fun HomeScreen(
                     )
                 }
 
-                Text(
-                    text = currentMonthYear,
-                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                    fontSize = if (isRtl) 13.5.sp else 14.sp,
-                    fontWeight = FontWeight.Normal,
-                    color = JournalMutedInk.copy(alpha = 0.85f),
-                    style = TextStyle(platformStyle = NoFontPadding),
-                    modifier = Modifier.journalBaselineOnRule()
-                )
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = currentMonthYear,
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontSize = if (isRtl) 13.5.sp else 14.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = JournalMutedInk.copy(alpha = 0.85f),
+                        style = TextStyle(platformStyle = NoFontPadding),
+                        modifier = Modifier.journalBaselineOnRule()
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .offset(y = (-3).dp)
+                            .clip(CircleShape)
+                            .clickable(role = Role.Button, onClick = onOpenSettings)
+                            .padding(2.dp)
+                    ) {
+                        HisabiSketchIcon(
+                            symbol = HisabiSymbol.Gear,
+                            contentDescription = stringResource(R.string.nav_settings),
+                            tint = JournalMutedInk.copy(alpha = 0.85f),
+                            size = 17.dp
+                        )
+                    }
+                }
             }
 
             // Line 2: 1 rule spacer

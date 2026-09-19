@@ -86,7 +86,20 @@ fun NotebookBottomNavigation(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Tab 3: Savings
+                // Tab 3: Contacts
+                BottomNavItem(
+                    label = stringResource(R.string.nav_contacts),
+                    symbol = HisabiSymbol.Contacts,
+                    isSelected = currentDestination == AppDestination.Contacts,
+                    onClick = {
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                        onNavigateTo(AppDestination.Contacts)
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Tab 4: Savings
                 BottomNavItem(
                     label = stringResource(R.string.nav_savings),
                     symbol = HisabiSymbol.Coin,
@@ -95,19 +108,6 @@ fun NotebookBottomNavigation(
                         focusManager.clearFocus()
                         keyboardController?.hide()
                         onNavigateTo(AppDestination.Savings)
-                    },
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Tab 4: Settings
-                BottomNavItem(
-                    label = stringResource(R.string.nav_settings),
-                    symbol = HisabiSymbol.Gear,
-                    isSelected = currentDestination == AppDestination.Settings,
-                    onClick = {
-                        focusManager.clearFocus()
-                        keyboardController?.hide()
-                        onNavigateTo(AppDestination.Settings)
                     },
                     modifier = Modifier.weight(1f)
                 )
