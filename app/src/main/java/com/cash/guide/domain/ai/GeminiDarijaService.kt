@@ -43,6 +43,15 @@ object GeminiDarijaService {
 
     var currentModel: String = "gemini-2.5-flash"
 
+    fun getModel(): String {
+        val context = com.cash.guide.MainActivity.currentActivity?.applicationContext
+        return if (context != null) {
+            RemoteConfigManager.getGeminiModel(context, currentModel)
+        } else {
+            currentModel
+        }
+    }
+
     private fun getApiKey(): String {
         val fallback = BuildConfig.GEMINI_API_KEY
         val context = com.cash.guide.MainActivity.currentActivity?.applicationContext
@@ -425,10 +434,12 @@ object GeminiDarijaService {
     }
 
     private fun callGeminiApi(prompt: String, apiKey: String): String? {
+        val activeModel = getModel()
         val modelsToTry = listOf(
+            activeModel,
             currentModel,
-            "gemini-3.5-flash-lite",
             "gemini-2.5-flash",
+            "gemini-3.5-flash-lite",
             "gemini-flash-latest"
         ).distinct()
         for (model in modelsToTry) {

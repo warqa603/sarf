@@ -27,6 +27,8 @@ import com.cash.guide.feature.groups.GroupsScreen
 import com.cash.guide.feature.groups.GroupsViewModel
 import com.cash.guide.feature.groups.GroupDetailScreen
 import com.cash.guide.feature.groups.GroupDetailViewModel
+import com.cash.guide.feature.onboarding.OnboardingScreen
+import com.cash.guide.feature.onboarding.OnboardingViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.rememberCoroutineScope
 import com.cash.guide.data.CalculationRepository
@@ -66,6 +68,7 @@ fun HssabiNavHost(
     contactRepository: com.cash.guide.data.ContactRepository,
     settingsRepository: SettingsRepository,
     editorViewModelFactory: () -> CalculationEditorViewModel,
+    startDestination: String = AppDestination.Home.route,
     modifier: Modifier = Modifier
 ) {
     val coroutineScope = rememberCoroutineScope()
@@ -86,7 +89,7 @@ fun HssabiNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = AppDestination.Home.route,
+        startDestination = startDestination,
         modifier = modifier
     ) {
         composable(AppDestination.Home.route) {
@@ -134,7 +137,9 @@ fun HssabiNavHost(
                     navController.navigate(AppDestination.Reminders.createRoute(openCreate = true))
                 },
                 onOpenSettings = {
-                    navController.navigate(AppDestination.Settings.route)
+                    navController.navigate(AppDestination.Settings.route) {
+                        launchSingleTop = true
+                    }
                 }
             )
         }
@@ -218,7 +223,32 @@ fun HssabiNavHost(
 
         composable(AppDestination.Settings.route) {
             SettingsScreen(
-                viewModel = settingsViewModel
+                viewModel = settingsViewModel,
+                onRevisitOnboarding = { navController.navigate(AppDestination.Onboarding.route) },
+                onOpenFontTester = { navController.navigate(AppDestination.FontTester.route) }
+            )
+        }
+
+        composable(AppDestination.FontTester.route) {
+            com.cash.guide.feature.showcase.FontTesterScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(AppDestination.Onboarding.route) {
+            val onboardingViewModel: OnboardingViewModel = viewModel(
+                factory = OnboardingViewModel.Factory(settingsRepository)
+            )
+            OnboardingScreen(
+                viewModel = onboardingViewModel,
+                onFinish = {
+                    val popped = navController.popBackStack(AppDestination.Onboarding.route, inclusive = true)
+                    if (!popped) {
+                        navController.navigate(AppDestination.Home.route) {
+                            popUpTo(AppDestination.Onboarding.route) { inclusive = true }
+                        }
+                    }
+                }
             )
         }
 

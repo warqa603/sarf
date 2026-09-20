@@ -625,4 +625,74 @@
     <string name="note_duplicate_suffix">(Copie)</string>
     <string name="note_select_all_btn">Tout</string>
     <string name="note_this_note">cette note</string>
+
+    <!-- Onboarding Flow (7 Slides) -->
+    <string name="onboarding_skip">Passer</string>
+    <string name="onboarding_next">Suivant →</string>
+    <string name="onboarding_back">← Précédent</string>
+    <string name="onboarding_start">Ouvrir mon carnet ✨</string>
+
+    <!-- Slide 1: Welcome & Language -->
+    <string name="onboarding_s1_badge">Bienvenue • مرحباً</string>
+    <string name="onboarding_s1_title">Votre Carnet Artisanal Marocain</string>
+    <string name="onboarding_s1_subtitle">Simple, authentique, sur papier ligné avec écriture manuscrite.</string>
+    <string name="onboarding_s1_lang_prompt">Choisissez votre langue :</string>
+
+    <!-- Slide 2: Calculations & Ruled Paper -->
+    <string name="onboarding_s2_badge">Comptes sur papier • على السطر</string>
+    <string name="onboarding_s2_title">Calculs &amp; Comptes comme sur un vrai carnet</string>
+    <string name="onboarding_s2_subtitle">Écrivez ligne par ligne avec totaux automatiques et suivi clair des crédits.</string>
+    <string name="onboarding_s2_feature1">Lignes manuscrites avec sous-totaux dynamiques</string>
+    <string name="onboarding_s2_feature2">Gestion précise des dettes et crédits (Kridi &amp; Salaf)</string>
+    <string name="onboarding_s2_feature3">Export PDF soigné ou partage en image de carnet</string>
+
+    <!-- Slide 3: Checklists & Family Sharing -->
+    <string name="onboarding_s3_badge">Listes &amp; Partage • سخرة وبارطاج</string>
+    <string name="onboarding_s3_title">Listes de courses &amp; Partage WhatsApp</string>
+    <string name="onboarding_s3_subtitle">Préparez vos courses, cochez vos achats, et partagez la liste avec votre conjoint ou famille en un clic sur WhatsApp.</string>
+    <string name="onboarding_s3_feature1">Checklists claires avec cases à cocher tactiles</string>
+    <string name="onboarding_s3_feature2">Envoi instantané sur WhatsApp pour votre conjoint</string>
+    <string name="onboarding_s3_feature3">Rappels pour ne rien oublier lors des courses</string>
+
+    <!-- Slide 4: Quick Notes -->
+    <string name="onboarding_s4_badge">Notes &amp; Idées • مذكرات وأفكار</string>
+    <string name="onboarding_s4_title">Carnet de Notes &amp; Idées Rapides</string>
+    <string name="onboarding_s4_subtitle">Notez recettes, idées, budgets ou rappels sur des feuillets colorés avec surligneurs pastel.</string>
+    <string name="onboarding_s4_feature1">Feuillets de notes lignés aux teintes pastel</string>
+    <string name="onboarding_s4_feature2">Surligneurs artistiques et mise en valeur</string>
+    <string name="onboarding_s4_feature3">Recherche instantanée dans toutes vos notes</string>
+
+    <!-- Slide 5: Contacts & M3elmin -->
+    <string name="onboarding_s5_badge">Artisans &amp; M3elmin • المعلمين</string>
+    <string name="onboarding_s5_title">Répertoire des Artisans &amp; Professionnels</string>
+    <string name="onboarding_s5_subtitle">Gardez les numéros de vos artisans de confiance (Plombier, Électricien, Épicier) avec suivi des avances et contact direct.</string>
+    <string name="onboarding_s5_feature1">Classement par métier (Plombier, Électricien…)</string>
+    <string name="onboarding_s5_feature2">Appel ou message WhatsApp direct en un geste</string>
+    <string name="onboarding_s5_feature3">Suivi des acomptes et soldes restants</string>
+
+    <!-- Slide 6: AI Darija Voice Assistant -->
+    <string name="onboarding_s6_badge">Assistant Vocal • صوتك كافي</string>
+    <string name="onboarding_s6_title">Dictez en Darija ou en Français</string>
+    <string name="onboarding_s6_subtitle">Parlez naturellement en dialecte marocain : l\'assistant extrait articles, quantités et prix directement sur les lignes.</string>
+    <string name="onboarding_s6_feature1">Compréhension naturelle de la Darija marocaine</string>
+    <string name="onboarding_s6_feature2">Conversion automatique en tableau ou liste de courses</string>
+    <string name="onboarding_s6_feature3">Dictez vos courses ou dépenses sans toucher au clavier</string>
+
+    <!-- Slide 7: Personalization & Ready -->
+    <string name="onboarding_s7_badge">Prêt • كناشك واجد</string>
+    <string name="onboarding_s7_title">Personnalisez votre couverture &amp; Lancez-vous</string>
+    <string name="onboarding_s7_subtitle">Inscrivez votre prénom sur la couverture et choisissez votre devise habituelle.</string>
+    <string name="onboarding_s7_name_label">Votre prénom ou nom</string>
+    <string name="onboarding_s7_name_hint">ex: Karim, Fatima, Si Mohamed…</string>
+    <string name="onboarding_s7_preview_prefix">Carnet de</string>
+    <string name="onboarding_s7_currency_label">Devise principale</string>
+    <string name="onboarding_s7_currency_dh">Dirham (DH)</string>
+    <string name="onboarding_s7_currency_dh_desc">Comptabilité moderne en dirhams</string>
+    <string name="onboarding_s7_currency_rial">Rial (ريال)</string>
+    <string name="onboarding_s7_currency_rial_desc">Pratique pour les souks (1 DH = 20 Rials)</string>
+    <string name="onboarding_s7_badge_offline">100% Hors-ligne &amp; Privé</string>
+    <string name="onboarding_s7_badge_unlimited">Calculs &amp; Notes Illimités</string>
+    <string name="onboarding_s7_badge_backup">Sauvegarde Locale Sécurisée</string>
+    <string name="onboarding_s7_vip_prompt">Vous avez un code VIP / Promo ?</string>
+    <string name="settings_about_revisit_onboarding">Revoir la présentation du carnet (Onboarding)</string>
 </resources>

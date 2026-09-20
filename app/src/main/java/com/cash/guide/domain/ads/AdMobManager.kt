@@ -44,7 +44,32 @@ class AdMobManager private constructor(private val appContext: Context) {
         }
     }
 
+    fun getRewardedAdUnitId(): String {
+        val remote = com.cash.guide.domain.ai.RemoteConfigManager.getAdUnitId(appContext, com.cash.guide.domain.ai.RemoteConfigManager.KEY_ADMOB_REWARDED)
+        return if (remote.isNotBlank()) remote else REAL_REWARDED_AD_UNIT_ID
+    }
+
+    fun getInterstitialAdUnitId(): String {
+        val remote = com.cash.guide.domain.ai.RemoteConfigManager.getAdUnitId(appContext, com.cash.guide.domain.ai.RemoteConfigManager.KEY_ADMOB_INTERSTITIAL)
+        if (remote.isNotBlank()) return remote
+        val remoteExport = com.cash.guide.domain.ai.RemoteConfigManager.getAdUnitId(appContext, com.cash.guide.domain.ai.RemoteConfigManager.KEY_ADMOB_INTERSTITIAL_EXPORT)
+        if (remoteExport.isNotBlank()) return remoteExport
+        return REAL_INTERSTITIAL_AD_UNIT_ID
+    }
+
+    fun getBannerAdUnitId(): String {
+        val remote = com.cash.guide.domain.ai.RemoteConfigManager.getAdUnitId(appContext, com.cash.guide.domain.ai.RemoteConfigManager.KEY_ADMOB_BANNER)
+        if (remote.isNotBlank()) return remote
+        val remoteHome = com.cash.guide.domain.ai.RemoteConfigManager.getAdUnitId(appContext, com.cash.guide.domain.ai.RemoteConfigManager.KEY_ADMOB_BANNER_HOME)
+        if (remoteHome.isNotBlank()) return remoteHome
+        return REAL_BANNER_AD_UNIT_ID
+    }
+
     fun loadRewardedAd() {
+        if (!com.cash.guide.domain.ai.RemoteConfigManager.areAdsEnabled(appContext)) {
+            Log.d(TAG, "Ads are disabled via remote config. Rewarded ad skipped.")
+            return
+        }
         if (rewardedAd != null || isRewardedAdLoading) return
 
         isRewardedAdLoading = true
@@ -52,7 +77,7 @@ class AdMobManager private constructor(private val appContext: Context) {
 
         RewardedAd.load(
             appContext,
-            TEST_REWARDED_AD_UNIT_ID,
+            getRewardedAdUnitId(),
             adRequest,
             object : RewardedAdLoadCallback() {
                 override fun onAdLoaded(ad: RewardedAd) {
@@ -110,6 +135,10 @@ class AdMobManager private constructor(private val appContext: Context) {
     }
 
     fun loadInterstitialAd() {
+        if (!com.cash.guide.domain.ai.RemoteConfigManager.areAdsEnabled(appContext)) {
+            Log.d(TAG, "Ads are disabled via remote config. Interstitial ad skipped.")
+            return
+        }
         if (interstitialAd != null || isInterstitialAdLoading) return
 
         isInterstitialAdLoading = true
@@ -117,7 +146,7 @@ class AdMobManager private constructor(private val appContext: Context) {
 
         InterstitialAd.load(
             appContext,
-            TEST_INTERSTITIAL_AD_UNIT_ID,
+            getInterstitialAdUnitId(),
             adRequest,
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
@@ -144,6 +173,10 @@ class AdMobManager private constructor(private val appContext: Context) {
      * Uses the isRecentlyModified flag to determine if it was a modification or just a view.
      */
     fun showInterstitialIfThresholdMet(activity: Activity, onAdDismissed: () -> Unit = {}) {
+        if (!com.cash.guide.domain.ai.RemoteConfigManager.areAdsEnabled(appContext)) {
+            onAdDismissed()
+            return
+        }
         if (isRecentlyModified) {
             majorActionCounter++
             isRecentlyModified = false
@@ -206,6 +239,11 @@ class AdMobManager private constructor(private val appContext: Context) {
 
     companion object {
         private const val TAG = "AdMobManager"
+
+        // Official Real Warqa Ad Units
+        const val REAL_BANNER_AD_UNIT_ID = "ca-app-pub-4182222159500814/3206901156"
+        const val REAL_INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-4182222159500814/7394303032"
+        const val REAL_REWARDED_AD_UNIT_ID = "ca-app-pub-4182222159500814/9501591629"
 
         // Official Google AdMob Test Unit IDs (100% safe for development/testing)
         const val TEST_BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/6300978111"

@@ -82,6 +82,7 @@ import com.cash.guide.ui.notebook.JournalRecentHeader
 import com.cash.guide.ui.notebook.JournalRule
 import com.cash.guide.ui.notebook.JournalRuleSpacing
 import com.cash.guide.ui.notebook.resolveJournalFont
+import com.cash.guide.ui.notebook.JournalFontManager
 import com.cash.guide.ui.notebook.JournalPaper
 import com.cash.guide.ui.notebook.JournalRuledDocument
 import com.cash.guide.ui.notebook.NoFontPadding
@@ -250,8 +251,9 @@ fun HomeScreen(
                     verticalAlignment = Alignment.Bottom,
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
                         .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
                             role = Role.Button,
                             onClick = {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -262,9 +264,11 @@ fun HomeScreen(
                 ) {
                     Text(
                         text = greetingAnnotated,
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                        fontSize = if (isRtl) 15.5.sp else 16.5.sp,
-                        style = TextStyle(platformStyle = NoFontPadding),
+                        fontFamily = if (isRtl) JournalFontManager.getArabicFont() else JournalFontManager.getLatinFont(),
+                        fontSize = JournalFontManager.scaleFontSize(if (isRtl) 15.5f else 16.5f, isArabic = isRtl).sp,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Visible,
                         modifier = Modifier.journalBaselineOnRule()
                     )
                     Text(
@@ -290,7 +294,7 @@ fun HomeScreen(
 
                     Box(
                         modifier = Modifier
-                            .offset(y = 2.dp)
+                            .offset(y = 4.5.dp)
                             .clip(CircleShape)
                             .clickable(role = Role.Button, onClick = onOpenSettings)
                             .padding(2.dp),
@@ -300,7 +304,7 @@ fun HomeScreen(
                             symbol = HisabiSymbol.Gear,
                             contentDescription = stringResource(R.string.nav_settings),
                             tint = JournalInk,
-                            size = 21.dp
+                            size = 19.5.dp
                         )
                     }
                 }

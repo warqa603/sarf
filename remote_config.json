@@ -1,3 +1,11 @@
-﻿{
-  "gemini_api_key": ""
+{
+  "gemini_api_key": "",
+  "gemini_model": "gemini-2.5-flash",
+  "ads_enabled": true,
+  "admob_banner": "ca-app-pub-4182222159500814/3206901156",
+  "admob_banner_home": "ca-app-pub-4182222159500814/3206901156",
+  "admob_banner_calcul": "ca-app-pub-4182222159500814/3206901156",
+  "admob_interstitial": "ca-app-pub-4182222159500814/7394303032",
+  "admob_interstitial_export": "ca-app-pub-4182222159500814/7394303032",
+  "admob_rewarded": "ca-app-pub-4182222159500814/9501591629"
 }

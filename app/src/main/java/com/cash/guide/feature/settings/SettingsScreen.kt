@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.Surface
@@ -32,9 +33,20 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.text.style.TextOverflow
+import com.cash.guide.ui.notebook.ArabicFontOption
+import com.cash.guide.ui.notebook.LatinFontOption
 import com.cash.guide.ui.notebook.JournalThemeId
 import com.cash.guide.ui.notebook.JournalThemePacks
 import com.cash.guide.ui.notebook.JournalThemePalette
+import com.cash.guide.ui.notebook.JournalTheme
+import com.cash.guide.ui.notebook.AppFontOption
+import com.cash.guide.ui.notebook.JournalFontManager
+import com.cash.guide.ui.notebook.RawPatrickHandFamily
+import com.cash.guide.ui.notebook.RealTajawalFamily
+import com.cash.guide.ui.notebook.BeirutiFamily
+import com.cash.guide.ui.notebook.ZainFamily
+import com.cash.guide.ui.notebook.CreamFrothFamily
+import com.cash.guide.ui.notebook.IbmPlexMonoFamily
 import com.cash.guide.ui.notebook.ExportOptionsBottomSheet
 import com.cash.guide.ui.notebook.SetupPinDialog
 import androidx.compose.ui.Alignment
@@ -98,12 +110,15 @@ import com.cash.guide.ui.notebook.journalBaselineOnRule
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
+    onRevisitOnboarding: () -> Unit = {},
+    onOpenFontTester: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val layoutDirection = LocalLayoutDirection.current
     val isRtl = layoutDirection == LayoutDirection.Rtl
+    val currentPalette = JournalTheme.currentPalette
     var showExportOptions by remember { mutableStateOf(false) }
     val currentActivity = com.cash.guide.MainActivity.currentActivity
     val billingManager = remember(context) { com.cash.guide.domain.billing.BillingManager.getInstance(context) }
@@ -277,37 +292,7 @@ fun SettingsScreen(
             // 1 empty notebook line spacer
             Spacer(modifier = Modifier.height(JournalRuleSpacing))
 
-            // Theme Cards: Row 1 (Classic Yellow & Emerald Registry) - exactly 3 notebook rules (87dp)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(JournalRuleSpacing * 3)
-                    .padding(horizontal = 14.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                ThemePackCard(
-                    palette = JournalThemePacks.ClassicYellow,
-                    isSelected = state.selectedTheme == JournalThemeId.CLASSIC_YELLOW,
-                    onClick = { viewModel.selectTheme(JournalThemeId.CLASSIC_YELLOW) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                )
-
-                ThemePackCard(
-                    palette = JournalThemePacks.EmeraldRegistry,
-                    isSelected = state.selectedTheme == JournalThemeId.EMERALD_REGISTRY,
-                    onClick = { viewModel.selectTheme(JournalThemeId.EMERALD_REGISTRY) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                )
-            }
-
-            // 1 empty notebook line spacer between card rows
-            Spacer(modifier = Modifier.height(JournalRuleSpacing))
-
-            // Theme Cards: Row 2 (White Notebook & Dark Carnet) - exactly 3 notebook rules (87dp)
+            // Theme Cards: Row 1 (White Notebook & Classic Yellow) - exactly 3 notebook rules (87dp)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -325,6 +310,36 @@ fun SettingsScreen(
                 )
 
                 ThemePackCard(
+                    palette = JournalThemePacks.ClassicYellow,
+                    isSelected = state.selectedTheme == JournalThemeId.CLASSIC_YELLOW,
+                    onClick = { viewModel.selectTheme(JournalThemeId.CLASSIC_YELLOW) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+            }
+
+            // 1 empty notebook line spacer between card rows
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            // Theme Cards: Row 2 (Emerald Registry & Dark Carnet) - exactly 3 notebook rules (87dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(JournalRuleSpacing * 3)
+                    .padding(horizontal = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                ThemePackCard(
+                    palette = JournalThemePacks.EmeraldRegistry,
+                    isSelected = state.selectedTheme == JournalThemeId.EMERALD_REGISTRY,
+                    onClick = { viewModel.selectTheme(JournalThemeId.EMERALD_REGISTRY) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+
+                ThemePackCard(
                     palette = JournalThemePacks.DarkCarnet,
                     isSelected = state.selectedTheme == JournalThemeId.DARK_CARNET,
                     onClick = { viewModel.selectTheme(JournalThemeId.DARK_CARNET) },
@@ -332,6 +347,238 @@ fun SettingsScreen(
                         .weight(1f)
                         .fillMaxHeight()
                 )
+            }
+
+            // 1 empty notebook line spacer
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            // =========================================================
+            // SECTION: POLICE DU CARNET (خط الدفتر)
+            // =========================================================
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(JournalRuleSpacing)
+                    .padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Canvas(
+                        modifier = Modifier
+                            .journalVisualOnRule(gapAboveRule = 2.dp)
+                            .size(7.5.dp)
+                    ) {
+                        drawCircle(color = currentPalette.accent)
+                    }
+                    Text(
+                        text = if (isRtl) "خط الدفتر (Police d'écriture)" else "Police du carnet (خط الدفتر)",
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = currentPalette.ink,
+                        style = TextStyle(platformStyle = NoFontPadding),
+                        modifier = Modifier.journalBaselineOnRule()
+                    )
+                }
+
+                // Shortcut to Typography Lab
+                Surface(
+                    modifier = Modifier
+                        .journalVisualOnRule(gapAboveRule = 3.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable { onOpenFontTester() },
+                    color = currentPalette.accent.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(6.dp)
+                ) {
+                    Text(
+                        text = if (isRtl) "مختبر الخطوط ✍️" else "Laboratoire ✍️",
+                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                        fontSize = 11.5.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = currentPalette.ink,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
+            // 1 empty notebook line spacer
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            // Subtitle 1: Arabe / Darija sitting strictly on rule
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(JournalRuleSpacing)
+                    .padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = if (isRtl) "النصوص العربية والأرقام (العربية / الدارجة) :" else "Texte Arabe & Chiffres Arabes (العربية / الدارجة) :",
+                    fontFamily = TajawalFamily,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = currentPalette.mutedInk,
+                    style = TextStyle(platformStyle = NoFontPadding),
+                    modifier = Modifier.journalBaselineOnRule()
+                )
+            }
+
+            // 1 empty notebook line spacer
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            val currentArabic = JournalFontManager.currentArabicFont
+            val currentLatin = JournalFontManager.currentLatinFont
+
+            // 3 Arabic Font Cards: Beiruti, Zain, Cream Froth - exactly 2 notebook rules (58dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(JournalRuleSpacing * 2)
+                    .padding(horizontal = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                ArabicFontCard(
+                    option = ArabicFontOption.BEIRUTI,
+                    isSelected = currentArabic == ArabicFontOption.BEIRUTI,
+                    onClick = {
+                        JournalFontManager.setArabicFont(ArabicFontOption.BEIRUTI, context)
+                        Toast.makeText(context, "Police Arabe : Beiruti appliquée ✨", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+                ArabicFontCard(
+                    option = ArabicFontOption.ZAIN,
+                    isSelected = currentArabic == ArabicFontOption.ZAIN,
+                    onClick = {
+                        JournalFontManager.setArabicFont(ArabicFontOption.ZAIN, context)
+                        Toast.makeText(context, "Police Arabe : Zain (Défaut) appliquée ✨", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+                ArabicFontCard(
+                    option = ArabicFontOption.CREAM_FROTH,
+                    isSelected = currentArabic == ArabicFontOption.CREAM_FROTH,
+                    onClick = {
+                        JournalFontManager.setArabicFont(ArabicFontOption.CREAM_FROTH, context)
+                        Toast.makeText(context, "Police Arabe : Cream Froth appliquée ✨", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+            }
+
+            // 1 empty notebook line spacer
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            // Subtitle 2: Français / Anglais / Calculs sitting strictly on rule
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(JournalRuleSpacing)
+                    .padding(horizontal = 14.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Text(
+                    text = if (isRtl) "النصوص اللاتينية والحسابات (الفرنسية / الإنجليزية) :" else "Texte Français, Anglais & Calculs (الفرنسية / الإنجليزية) :",
+                    fontFamily = TajawalFamily,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = currentPalette.mutedInk,
+                    style = TextStyle(platformStyle = NoFontPadding),
+                    modifier = Modifier.journalBaselineOnRule()
+                )
+            }
+
+            // 1 empty notebook line spacer
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            // Row 1 Latin: Patrick Hand & IBM Plex Mono - exactly 2 notebook rules (58dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(JournalRuleSpacing * 2)
+                    .padding(horizontal = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                LatinFontCard(
+                    option = LatinFontOption.PATRICK_HAND,
+                    isSelected = currentLatin == LatinFontOption.PATRICK_HAND,
+                    onClick = {
+                        JournalFontManager.setLatinFont(LatinFontOption.PATRICK_HAND, context)
+                        Toast.makeText(context, "Police : Patrick Hand (Défaut) appliquée ✨", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+                LatinFontCard(
+                    option = LatinFontOption.IBM_PLEX,
+                    isSelected = currentLatin == LatinFontOption.IBM_PLEX,
+                    onClick = {
+                        JournalFontManager.setLatinFont(LatinFontOption.IBM_PLEX, context)
+                        Toast.makeText(context, "Police : IBM Plex Mono appliquée ✨", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+            }
+
+            // 1 empty notebook line spacer
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            // Row 2 Latin: Zain & Tajawal - exactly 2 notebook rules (58dp)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(JournalRuleSpacing * 2)
+                    .padding(horizontal = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                LatinFontCard(
+                    option = LatinFontOption.ZAIN,
+                    isSelected = currentLatin == LatinFontOption.ZAIN,
+                    onClick = {
+                        JournalFontManager.setLatinFont(LatinFontOption.ZAIN, context)
+                        Toast.makeText(context, "Police : Zain (Latin) appliquée ✨", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+                LatinFontCard(
+                    option = LatinFontOption.TAJAWAL,
+                    isSelected = currentLatin == LatinFontOption.TAJAWAL,
+                    onClick = {
+                        JournalFontManager.setLatinFont(LatinFontOption.TAJAWAL, context)
+                        Toast.makeText(context, "Police : Tajawal appliquée ✨", Toast.LENGTH_SHORT).show()
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                )
+            }
+
+            // 1 empty notebook line spacer
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            // Ruled Paper Live Preview - exactly 3 notebook rules (87dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(JournalRuleSpacing * 3)
+                    .padding(horizontal = 14.dp)
+            ) {
+                RuledNotebookPreview(modifier = Modifier.fillMaxSize())
             }
 
             // 1 empty notebook line spacer
@@ -953,6 +1200,33 @@ fun SettingsScreen(
                 }
             )
 
+            // 1 empty notebook line spacer
+            Spacer(modifier = Modifier.height(JournalRuleSpacing))
+
+            // Section 7: Guide & Découverte
+            SettingsSectionBadge(
+                title = "Guide & Découverte",
+                badgeColor = HighlighterGreen.copy(alpha = 0.35f)
+            )
+
+            // Setting: Revoir la présentation du carnet
+            JournalActionRow(
+                title = stringResource(R.string.settings_about_revisit_onboarding),
+                description = stringResource(R.string.onboarding_s1_subtitle),
+                bulletColor = Color(0xFF1B4D3E),
+                badgeText = "Guide ✨",
+                onClick = onRevisitOnboarding
+            )
+
+            // Setting: Laboratoire Typographique
+            JournalActionRow(
+                title = "Laboratoire Typographique (Polices)",
+                description = "Tester et comparer les 6 polices (Beiruti, Zain, Tajawal, Patrick Hand...)",
+                bulletColor = Color(0xFF7C3AED),
+                badgeText = "Polices ✍️",
+                onClick = onOpenFontTester
+            )
+
             // Bottom Spacers: 5 notebook lines for full scrolling clearance above dock
             Spacer(modifier = Modifier.height(JournalRuleSpacing * 5))
         }
@@ -1292,155 +1566,419 @@ private fun ThemePackCard(
     Surface(
         modifier = modifier
             .fillMaxHeight()
-            .clip(RoundedCornerShape(6.dp))
+            .clip(RoundedCornerShape(8.dp))
             .clickable(role = Role.RadioButton, onClick = {
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                 onClick()
             }),
-        shape = RoundedCornerShape(6.dp),
-        color = palette.paper,
+        shape = RoundedCornerShape(8.dp),
+        color = palette.cardBg,
         border = BorderStroke(
-            width = if (isSelected) 1.5.dp else 0.8.dp,
-            color = if (isSelected) palette.accent else palette.cardBorder
+            width = if (isSelected) 1.8.dp else 0.8.dp,
+            color = if (isSelected) palette.accent else palette.rule.copy(alpha = 0.5f)
         ),
         shadowElevation = 0.dp
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .drawBehind {
-                    // Two miniature ruled lines dividing the 3 rules inside the card (at 29dp and 58dp)
-                    val rule1Y = JournalRuleSpacing.toPx()
-                    val rule2Y = (JournalRuleSpacing * 2).toPx()
-                    val strokeW = 0.6.dp.toPx()
-                    val ruleCol = palette.rule.copy(alpha = 0.35f)
-                    drawLine(
-                        color = ruleCol,
-                        start = Offset(0f, rule1Y),
-                        end = Offset(size.width, rule1Y),
-                        strokeWidth = strokeW
-                    )
-                    drawLine(
-                        color = ruleCol,
-                        start = Offset(0f, rule2Y),
-                        end = Offset(size.width, rule2Y),
-                        strokeWidth = strokeW
-                    )
-                }
+                .padding(horizontal = 10.dp, vertical = 7.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
+            // Row 1: Theme name + Selection badge
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Row 1 (29dp = 1 rule): Theme name + Selection badge
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(JournalRuleSpacing)
-                        .padding(horizontal = 9.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = stringResource(palette.nameResId),
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                        fontSize = if (isRtl) 13.5.sp else 14.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = palette.ink,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false),
-                        style = TextStyle(platformStyle = NoFontPadding)
-                    )
+                Text(
+                    text = stringResource(palette.nameResId),
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontSize = if (isRtl) 13.5.sp else 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = palette.ink,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
 
-                    if (isSelected) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(palette.accent.copy(alpha = 0.22f))
-                                .border(0.8.dp, palette.accent, RoundedCornerShape(4.dp))
-                                .padding(horizontal = 5.dp, vertical = 1.dp)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.settings_theme_active_badge),
-                                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                                fontSize = 10.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = if (palette.isDark) palette.accent else palette.ink,
-                                style = TextStyle(platformStyle = NoFontPadding)
-                            )
-                        }
-                    } else {
-                        // Subtle hollow circle for unselected state
-                        Canvas(modifier = Modifier.size(11.dp)) {
-                            drawCircle(
-                                color = palette.mutedInk.copy(alpha = 0.45f),
-                                style = Stroke(width = 1.2.dp.toPx())
-                            )
-                        }
-                    }
-                }
-
-                // Row 2 (29dp = 1 rule): Miniature writing sample with accent highlighter stroke
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(JournalRuleSpacing)
-                        .padding(horizontal = 9.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                if (isSelected) {
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
-                            .background(palette.accent.copy(alpha = 0.25f))
-                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                            .background(palette.accent.copy(alpha = 0.22f))
+                            .border(0.8.dp, palette.accent, RoundedCornerShape(4.dp))
+                            .padding(horizontal = 5.dp, vertical = 1.dp)
                     ) {
                         Text(
-                            text = if (isRtl) "١٥٠ د.م ✓" else "150.00 DH ✓",
-                            fontFamily = PatrickHandFamily,
-                            fontSize = 12.5.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = palette.ink,
+                            text = stringResource(R.string.settings_theme_active_badge),
+                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (palette.isDark) palette.accent else palette.ink,
                             style = TextStyle(platformStyle = NoFontPadding)
                         )
                     }
-                }
-
-                // Row 3 (29dp = 1 rule): 3 miniature color dots (paper, ink, rule) + description
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(JournalRuleSpacing)
-                        .padding(horizontal = 9.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    // Swatch dots
-                    Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                        Canvas(modifier = Modifier.size(6.dp)) {
-                            drawCircle(color = palette.ink)
-                        }
-                        Canvas(modifier = Modifier.size(6.dp)) {
-                            drawCircle(color = palette.rule)
-                        }
-                        Canvas(modifier = Modifier.size(6.dp)) {
-                            drawCircle(color = palette.accent)
-                        }
+                } else {
+                    Canvas(modifier = Modifier.size(11.dp)) {
+                        drawCircle(
+                            color = palette.mutedInk.copy(alpha = 0.45f),
+                            style = Stroke(width = 1.2.dp.toPx())
+                        )
                     }
-
-                    Text(
-                        text = stringResource(palette.descResId),
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                        fontSize = 10.sp,
-                        color = palette.mutedInk,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        style = TextStyle(platformStyle = NoFontPadding)
-                    )
                 }
+            }
+
+            // Row 2: Miniature writing sample
+            Text(
+                text = if (isRtl) "كناش ديالي ✍️" else "Mon Carnet ✍️",
+                fontFamily = PatrickHandFamily,
+                fontSize = 12.5.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = palette.ink,
+                style = TextStyle(platformStyle = NoFontPadding)
+            )
+
+            // Row 3: 3 miniature color dots + description
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Canvas(modifier = Modifier.size(6.dp)) {
+                        drawCircle(color = palette.ink)
+                    }
+                    Canvas(modifier = Modifier.size(6.dp)) {
+                        drawCircle(color = palette.rule)
+                    }
+                    Canvas(modifier = Modifier.size(6.dp)) {
+                        drawCircle(color = palette.accent)
+                    }
+                }
+
+                Text(
+                    text = stringResource(palette.descResId),
+                    fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
+                    fontSize = 9.5.sp,
+                    color = palette.mutedInk,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
             }
         }
     }
 }
+
+@Composable
+private fun ArabicFontCard(
+    option: ArabicFontOption,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val haptic = LocalHapticFeedback.current
+    val currentPalette = JournalTheme.currentPalette
+    val previewFont = option.family
+
+    val cardBg = if (isSelected) {
+        val a = currentPalette.accent
+        val b = currentPalette.cardBg
+        Color(
+            red = b.red + (a.red - b.red) * 0.10f,
+            green = b.green + (a.green - b.green) * 0.10f,
+            blue = b.blue + (a.blue - b.blue) * 0.10f,
+            alpha = 1.0f
+        )
+    } else {
+        currentPalette.cardBg
+    }
+
+    Surface(
+        modifier = modifier
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(7.dp))
+            .clickable(role = Role.RadioButton, onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            }),
+        shape = RoundedCornerShape(7.dp),
+        color = cardBg,
+        border = BorderStroke(
+            width = if (isSelected) 1.5.dp else 0.8.dp,
+            color = if (isSelected) currentPalette.accent else currentPalette.cardBorder
+        ),
+        shadowElevation = 0.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 9.dp, vertical = 7.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Row 1: Font Name in previewFont + Radio Indicator
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = option.arabicName,
+                    fontFamily = previewFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = (14.5f * option.opticalScale).sp,
+                    color = currentPalette.ink,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+
+                if (isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(currentPalette.accent.copy(alpha = 0.22f))
+                            .border(1.2.dp, currentPalette.accent, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "✓",
+                            fontFamily = TajawalFamily,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = currentPalette.accent,
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                    }
+                } else {
+                    Canvas(modifier = Modifier.size(10.dp)) {
+                        drawCircle(
+                            color = currentPalette.mutedInk.copy(alpha = 0.40f),
+                            style = Stroke(width = 1.2.dp.toPx())
+                        )
+                    }
+                }
+            }
+
+            // Row 2: Subtitle descriptor with ample margin from bottom edge
+            Text(
+                text = option.subtitle,
+                fontFamily = if (LocalLayoutDirection.current == LayoutDirection.Rtl) TajawalFamily else PatrickHandFamily,
+                fontWeight = FontWeight.Normal,
+                fontSize = 10.sp,
+                color = currentPalette.mutedInk,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = TextStyle(platformStyle = NoFontPadding)
+            )
+        }
+    }
+}
+
+@Composable
+private fun LatinFontCard(
+    option: LatinFontOption,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val haptic = LocalHapticFeedback.current
+    val currentPalette = JournalTheme.currentPalette
+    val previewFont = option.family
+
+    val cardBg = if (isSelected) {
+        val a = currentPalette.accent
+        val b = currentPalette.cardBg
+        Color(
+            red = b.red + (a.red - b.red) * 0.10f,
+            green = b.green + (a.green - b.green) * 0.10f,
+            blue = b.blue + (a.blue - b.blue) * 0.10f,
+            alpha = 1.0f
+        )
+    } else {
+        currentPalette.cardBg
+    }
+
+    Surface(
+        modifier = modifier
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(7.dp))
+            .clickable(role = Role.RadioButton, onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                onClick()
+            }),
+        shape = RoundedCornerShape(7.dp),
+        color = cardBg,
+        border = BorderStroke(
+            width = if (isSelected) 1.5.dp else 0.8.dp,
+            color = if (isSelected) currentPalette.accent else currentPalette.cardBorder
+        ),
+        shadowElevation = 0.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 9.dp, vertical = 7.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            // Row 1: Font Name in previewFont + Radio Indicator
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = option.title,
+                    fontFamily = previewFont,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = (14.5f * option.opticalScale).sp,
+                    color = currentPalette.ink,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = TextStyle(platformStyle = NoFontPadding)
+                )
+
+                if (isSelected) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape)
+                            .background(currentPalette.accent.copy(alpha = 0.22f))
+                            .border(1.2.dp, currentPalette.accent, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "✓",
+                            fontFamily = TajawalFamily,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = currentPalette.accent,
+                            style = TextStyle(platformStyle = NoFontPadding)
+                        )
+                    }
+                } else {
+                    Canvas(modifier = Modifier.size(10.dp)) {
+                        drawCircle(
+                            color = currentPalette.mutedInk.copy(alpha = 0.40f),
+                            style = Stroke(width = 1.2.dp.toPx())
+                        )
+                    }
+                }
+            }
+
+            // Row 2: Subtitle descriptor with ample margin from bottom edge
+            Text(
+                text = option.subtitle,
+                fontFamily = if (LocalLayoutDirection.current == LayoutDirection.Rtl) TajawalFamily else PatrickHandFamily,
+                fontWeight = FontWeight.Normal,
+                fontSize = 10.sp,
+                color = currentPalette.mutedInk,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                style = TextStyle(platformStyle = NoFontPadding)
+            )
+        }
+    }
+}
+
+/**
+ * Aperçu en direct sur les vraies règles de papier ligné.
+ * Démontre la taille active et l'assise stricte des lettres sur la ligne bleue.
+ */
+@Composable
+private fun RuledNotebookPreview(
+    modifier: Modifier = Modifier
+) {
+    val currentPalette = JournalTheme.currentPalette
+    val activeArabic = JournalFontManager.currentArabicFont
+    val activeLatin = JournalFontManager.currentLatinFont
+    val globalScale = JournalFontManager.globalFontScale
+
+    val latinFontSize = JournalFontManager.scaleFontSize(15.5f, isArabic = false).sp
+    val arabicFontSize = JournalFontManager.scaleFontSize(15.5f, isArabic = true).sp
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(JournalRuleSpacing * 3)
+            .clip(RoundedCornerShape(8.dp))
+            .background(currentPalette.cardBg)
+            .border(0.8.dp, currentPalette.rule.copy(alpha = 0.6f), RoundedCornerShape(8.dp))
+            .drawBehind {
+                val rowHeightPx = JournalRuleSpacing.toPx()
+                // Rule 1 (bottom of line 1)
+                drawLine(
+                    color = currentPalette.rule.copy(alpha = 0.40f),
+                    start = Offset(0f, rowHeightPx),
+                    end = Offset(size.width, rowHeightPx),
+                    strokeWidth = 0.6.dp.toPx()
+                )
+                // Rule 2 (bottom of line 2)
+                drawLine(
+                    color = currentPalette.rule.copy(alpha = 0.40f),
+                    start = Offset(0f, rowHeightPx * 2),
+                    end = Offset(size.width, rowHeightPx * 2),
+                    strokeWidth = 0.6.dp.toPx()
+                )
+                // Rule 3 (bottom of line 3)
+                drawLine(
+                    color = currentPalette.rule.copy(alpha = 0.40f),
+                    start = Offset(0f, rowHeightPx * 3),
+                    end = Offset(size.width, rowHeightPx * 3),
+                    strokeWidth = 0.6.dp.toPx()
+                )
+                // Vertical Red Margin rule
+                drawLine(
+                    color = Color(0xFFF2A39E).copy(alpha = 0.65f),
+                    start = Offset(32.dp.toPx(), 0f),
+                    end = Offset(32.dp.toPx(), size.height),
+                    strokeWidth = 1.0.dp.toPx()
+                )
+            }
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Line 1: French / Latin text resting on rule 1
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(JournalRuleSpacing)
+                    .padding(start = 38.dp, end = 12.dp)
+            ) {
+                Text(
+                    text = "Taqdiya d l-kounach: 120 DH",
+                    fontFamily = activeLatin.family,
+                    fontSize = latinFontSize,
+                    color = currentPalette.ink,
+                    style = TextStyle(platformStyle = NoFontPadding),
+                    modifier = Modifier.journalBaselineOnRule(opticalOffsetFromBottom = 0.dp)
+                )
+            }
+
+            // Line 2: Arabic text resting on rule 2
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(JournalRuleSpacing)
+                    .padding(start = 38.dp, end = 12.dp)
+            ) {
+                Text(
+                    text = "مطيشة وبصلة 35 درهم • سلف كريم",
+                    fontFamily = activeArabic.family,
+                    fontSize = arabicFontSize,
+                    color = currentPalette.ink,
+                    style = TextStyle(platformStyle = NoFontPadding),
+                    modifier = Modifier.journalBaselineOnRule(opticalOffsetFromBottom = 0.dp)
+                )
+            }
+        }
+    }
+}
+
 
 @Composable
 private fun PremiumOptionsDialog(
@@ -1586,7 +2124,7 @@ private fun PremiumBenefitRow(text: String, isRtl: Boolean = false) {
 }
 
 @Composable
-private fun PromoCodeRedeemDialog(
+fun PromoCodeRedeemDialog(
     onDismiss: () -> Unit,
     onSuccess: () -> Unit
 ) {

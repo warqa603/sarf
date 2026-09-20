@@ -625,4 +625,74 @@
     <string name="note_duplicate_suffix">(نسخة)</string>
     <string name="note_select_all_btn">عزل كولشي</string>
     <string name="note_this_note">هاد الملاحظة</string>
+
+    <!-- Onboarding Flow (7 Slides) -->
+    <string name="onboarding_skip">نقز</string>
+    <string name="onboarding_next">التالي ←</string>
+    <string name="onboarding_back">→ اللور</string>
+    <string name="onboarding_start">حل الكناش ديالي ✨</string>
+
+    <!-- Slide 1: Welcome & Language -->
+    <string name="onboarding_s1_badge">مرحباً بك • Bienvenue</string>
+    <string name="onboarding_s1_title">كناشك المغربي الأصيل</string>
+    <string name="onboarding_s1_subtitle">ساهل، بلدي، على ورقة مسطرة وبخط يدوي بحال الكناش الحقيقي.</string>
+    <string name="onboarding_s1_lang_prompt">عزل اللغة اللي كترتاح فيها:</string>
+
+    <!-- Slide 2: Calculations & Ruled Paper -->
+    <string name="onboarding_s2_badge">حسابات على السطر • Calculs</string>
+    <string name="onboarding_s2_title">حسابات ومصاريف مقيدة ومضبوطة</string>
+    <string name="onboarding_s2_subtitle">قيد مقاضيك ومصاريفك سطر بسطر مع حساب المجموع التلقائي وتتبع الكريدي والسلف.</string>
+    <string name="onboarding_s2_feature1">سطورة باينين مع مجاميع وحسابات فرعية آنية</string>
+    <string name="onboarding_s2_feature2">تتبع الديون والكريدي (كريدي وسلف بكل وضوح)</string>
+    <string name="onboarding_s2_feature3">تصدير PDF نقي أو بارطاجي كتصويرة كناش واعرة</string>
+
+    <!-- Slide 3: Checklists & Family Sharing -->
+    <string name="onboarding_s3_badge">قوائم السخرة • Checklists</string>
+    <string name="onboarding_s3_title">قائمة التقضية وبارطاج فـ الواتساب</string>
+    <string name="onboarding_s3_subtitle">قاد لا ليست د السخرة، كوشي لي شريتي، وبارطاجيها مع راجلك أو داركم فـ WhatsApp بضغطة وحدة.</string>
+    <string name="onboarding_s3_feature1">قوائم منظمة مع كوشي لكل حاجة شريتيها</string>
+    <string name="onboarding_s3_feature2">صيفط لا ليست لراجلك أو عائلتك فـ الواتساب</string>
+    <string name="onboarding_s3_feature3">تذكيرات باش ما تنسى حتى حاجة فـ السخرة</string>
+
+    <!-- Slide 4: Quick Notes -->
+    <string name="onboarding_s4_badge">مذكرات وأفكار • Notes</string>
+    <string name="onboarding_s4_title">كناش الملاحظات والأفكار السريعة</string>
+    <string name="onboarding_s4_subtitle">قيد وصفاتك، مصاريف الشهر، وأفكارك المهمة فـ وريقات ملونة مع تلوين الماركور.</string>
+    <string name="onboarding_s4_feature1">أوراق ملاحظات مسطرة بألوان زوينة ومبهجة</string>
+    <string name="onboarding_s4_feature2">أقلام تمييز وماركورات بحال الدفتر الحقيقي</string>
+    <string name="onboarding_s4_feature3">بحث سريع يلقى ليك أي مذكرة فـ ثانية</string>
+
+    <!-- Slide 5: Contacts & M3elmin -->
+    <string name="onboarding_s5_badge">دليل المعلمين • Contacts</string>
+    <string name="onboarding_s5_title">دليل المعلمين والحرفيين الموثوقين</string>
+    <string name="onboarding_s5_subtitle">جمع نوامر المعلمين (بلومبي، تريسيان، صباغ، مول الحانوت) مع تتبع التسبيقات والاتصال المباشر.</string>
+    <string name="onboarding_s5_feature1">تصنيف المعلمين حسب الحرفة والخدمة</string>
+    <string name="onboarding_s5_feature2">عيط ديريكت أو هضر فـ الواتساب بلمسة وحدة</string>
+    <string name="onboarding_s5_feature3">تتبع التسبيقات والحساب المتبقي لكل معلم</string>
+
+    <!-- Slide 6: AI Darija Voice Assistant -->
+    <string name="onboarding_s6_badge">صوتك كافي • الذكاء الاصطناعي</string>
+    <string name="onboarding_s6_title">هضر بالدارجة والمساعد يقيد ليك كلشي</string>
+    <string name="onboarding_s6_subtitle">غير نطق مقاضيك بالدارجة، والمساعد يجبد السلعة والكمية والثمن ويحطهم فـ السطور أوتوماتيك.</string>
+    <string name="onboarding_s6_feature1">فهم ذكي وطبيعي للدارجة المغربية القحة</string>
+    <string name="onboarding_s6_feature2">تحويل الصوت لحسابات وقوائم فـ ثانية وحدة</string>
+    <string name="onboarding_s6_feature3">صوتك كافي بلا ما تحتاج تكتب فـ الكلافي</string>
+
+    <!-- Slide 7: Personalization & Ready -->
+    <string name="onboarding_s7_badge">واجد ! • كناشك الخاص</string>
+    <string name="onboarding_s7_title">قاد غلاف الكناش ديالك وتوكل على الله</string>
+    <string name="onboarding_s7_subtitle">سمي الكناش ديالك وعزل العملة اللي مولف كتحسب بيها.</string>
+    <string name="onboarding_s7_name_label">اسمك أو اللقب ديالك</string>
+    <string name="onboarding_s7_name_hint">مثال: كريم، فاطمة، السي محمد…</string>
+    <string name="onboarding_s7_preview_prefix">كناش</string>
+    <string name="onboarding_s7_currency_label">العملة الرئيسية اللي كتحسب بيها</string>
+    <string name="onboarding_s7_currency_dh">درهم (د.م)</string>
+    <string name="onboarding_s7_currency_dh_desc">الحساب العصري بالدرهم المغربي</string>
+    <string name="onboarding_s7_currency_rial">ريال (ريال مغربي)</string>
+    <string name="onboarding_s7_currency_rial_desc">ديال الأسواق والحوانت (1 درهم = 20 ريال)</string>
+    <string name="onboarding_s7_badge_offline">100% بلا إنترنت وخاص بيك</string>
+    <string name="onboarding_s7_badge_unlimited">حسابات ومذكرات بلا حدود</string>
+    <string name="onboarding_s7_badge_backup">حفظ ونسخ احتياطي محلي مضمون</string>
+    <string name="onboarding_s7_vip_prompt">عندك كود VIP أو كود ترويجي؟</string>
+    <string name="settings_about_revisit_onboarding">عاود شوف دليل الكناش (Onboarding)</string>
 </resources>

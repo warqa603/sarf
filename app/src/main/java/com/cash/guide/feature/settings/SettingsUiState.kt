@@ -7,7 +7,7 @@ import com.cash.guide.ui.notebook.JournalThemeId
 data class SettingsUiState(
     val currentLanguage: String = "fr",
     val defaultCurrency: MoneyUnit = MoneyUnit.DIRHAM,
-    val selectedTheme: JournalThemeId = JournalThemeId.CLASSIC_YELLOW,
+    val selectedTheme: JournalThemeId = JournalThemeId.WHITE_NOTEBOOK,
     val isLoading: Boolean = true,
     val isProcessingBackup: Boolean = false,
     val restoreCandidate: BackupPayload? = null,

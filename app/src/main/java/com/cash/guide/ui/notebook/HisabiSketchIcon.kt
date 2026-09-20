@@ -264,15 +264,16 @@ fun HisabiSketchIcon(
                 drawCircle(tint, u(1.2f), point(12f, 12f))
             }
             HisabiSymbol.Gear -> {
-                // Sleek authentic 6-tooth mechanical gear
+                // Sleek authentic 6-tooth mechanical gear, vertically symmetric with flat bottom tooth
                 val rInner = 6.2f
                 val rOuter = 8.8f
                 val gearPath = Path().apply {
                     for (i in 0 until 6) {
-                        val a0 = ((i * 60f - 14f) * Math.PI / 180.0).toFloat()
-                        val a1 = ((i * 60f - 7f) * Math.PI / 180.0).toFloat()
-                        val a2 = ((i * 60f + 7f) * Math.PI / 180.0).toFloat()
-                        val a3 = ((i * 60f + 14f) * Math.PI / 180.0).toFloat()
+                        val baseAngle = i * 60f + 30f
+                        val a0 = ((baseAngle - 14f) * Math.PI / 180.0).toFloat()
+                        val a1 = ((baseAngle - 7f) * Math.PI / 180.0).toFloat()
+                        val a2 = ((baseAngle + 7f) * Math.PI / 180.0).toFloat()
+                        val a3 = ((baseAngle + 14f) * Math.PI / 180.0).toFloat()
                         val p0 = Offset(u(12f + rInner * kotlin.math.cos(a0)), u(12f + rInner * kotlin.math.sin(a0)))
                         val p1 = Offset(u(12f + rOuter * kotlin.math.cos(a1)), u(12f + rOuter * kotlin.math.sin(a1)))
                         val p2 = Offset(u(12f + rOuter * kotlin.math.cos(a2)), u(12f + rOuter * kotlin.math.sin(a2)))
@@ -284,9 +285,9 @@ fun HisabiSketchIcon(
                     }
                     close()
                 }
-                drawPath(gearPath, tint, style = fine)
+                drawPath(gearPath, tint, style = pen)
                 // Center axle hole
-                drawCircle(tint, u(3.2f), point(12f, 12f), style = pen)
+                drawCircle(tint, u(3.0f), point(12f, 12f), style = pen)
             }
             HisabiSymbol.Lightbulb -> {
                 val bulb = Path().apply {

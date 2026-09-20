@@ -135,7 +135,7 @@ object CalculationImageShareHelper {
         val primaryFont = if (isRtl) (creamFrothFont ?: majazFont) else patrickHandFont
 
         // Colors
-        val paperColor = Color.rgb(0xFB, 0xF6, 0xE8)          // #FBF6E8 French Cream Paper
+        val paperColor = Color.rgb(0xF8, 0xF9, 0xFA)          // #F8F9FA Feuille Blanche (White Notebook Paper)
         val inkColor = Color.rgb(0x24, 0x24, 0x21)            // #242421 Journal Ink
         val writingInkColor = Color.rgb(0x38, 0x38, 0x34)     // #383834
         val mutedInkColor = Color.rgb(0x7A, 0x79, 0x72)       // #7A7972
@@ -313,13 +313,13 @@ object CalculationImageShareHelper {
                 textAlign = Paint.Align.CENTER
             }
             val emptyText = context.getString(R.string.share_empty_items)
-            val yBaseline = itemsStartY + ruleSpacing - 12f
+            val yBaseline = itemsStartY + ruleSpacing - 1f
             canvas.drawText(emptyText, width / 2f, yBaseline, emptyPaint)
         } else {
             val articlePrefix = context.getString(R.string.share_article_prefix)
             items.forEachIndexed { index, item ->
                 val lineY = itemsStartY + (index + 1) * ruleSpacing
-                val yBaseline = lineY - 5f
+                val yBaseline = lineY - 1f
 
                 // Row Number
                 val numText = "${index + 1}"
@@ -340,7 +340,7 @@ object CalculationImageShareHelper {
                 if (isRtl) {
                     // RTL: Amount on Left, Label on Right
                     canvas.drawText(amountVal, marginX, yBaseline, itemAmountPaint)
-                    canvas.drawText(currencySuffix, marginX + amountW + 10f, yBaseline - 1f, itemCurrencyPaint)
+                    canvas.drawText(currencySuffix, marginX + amountW + 10f, yBaseline, itemCurrencyPaint)
 
                     val labelRight = width - marginX - 68f
                     val maxLabelW = labelRight - (marginX + totalAmountW + 36f)
@@ -349,7 +349,7 @@ object CalculationImageShareHelper {
                 } else {
                     // LTR: Label on Left, Amount on Right
                     canvas.drawText(amountVal, width - marginX - currW - 8f, yBaseline, itemAmountPaint)
-                    canvas.drawText(currencySuffix, width - marginX, yBaseline - 1f, itemCurrencyPaint)
+                    canvas.drawText(currencySuffix, width - marginX, yBaseline, itemCurrencyPaint)
 
                     val labelLeft = marginX + 68f
                     val maxLabelW = (width - marginX - totalAmountW - 36f) - labelLeft

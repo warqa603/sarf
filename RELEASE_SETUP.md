@@ -69,9 +69,10 @@ signingConfig = signingConfigs.getByName("release")
 
 ### معلومات التطبيق المطلوبة:
 - ✅ **App ID**: `com.tajir.sarf`
-- ✅ **AdMob App ID**: `ca-app-pub-4182222159500814~7732575734`
-- ✅ **Banner Ad Unit**: `ca-app-pub-4182222159500814/2951022340`
-- ✅ **Interstitial Ad Unit**: `ca-app-pub-4182222159500814/6555225430`
+- ✅ **AdMob App ID**: `ca-app-pub-4182222159500814~9693163315`
+- ✅ **Banner Ad Unit (Warqa_banner)**: `ca-app-pub-4182222159500814/3206901156`
+- ✅ **Interstitial Ad Unit (Warqa_interstitial)**: `ca-app-pub-4182222159500814/7394303032`
+- ✅ **Rewarded Ad Unit (Warqa_reward)**: `ca-app-pub-4182222159500814/9501591629`
 
 ### الأذونات المستخدمة:
 - `INTERNET` - مطلوب للإعلانات والاتصال بالإنترنت

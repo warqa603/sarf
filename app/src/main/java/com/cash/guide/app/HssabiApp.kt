@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.cash.guide.data.CalculationRepository
@@ -131,8 +132,9 @@ fun HssabiApp(
         }
     }
 
+    val hasSeenOnboarding by settingsRepository.hasSeenOnboarding.collectAsState(initial = null)
     val appLanguage by settingsRepository.appLanguage.collectAsState(initial = "fr")
-    val currentThemeId by settingsRepository.journalTheme.collectAsState(initial = JournalThemeId.CLASSIC_YELLOW)
+    val currentThemeId by settingsRepository.journalTheme.collectAsState(initial = JournalThemeId.WHITE_NOTEBOOK)
     val currentPalette = remember(currentThemeId) { JournalThemePacks.get(currentThemeId) }
     androidx.compose.runtime.LaunchedEffect(currentPalette) {
         JournalTheme.currentPalette = currentPalette
@@ -241,12 +243,25 @@ fun HssabiApp(
                                 currentDestination = currentDestination,
                                 onNavigateTo = { dest ->
                                     if (currentRoute != dest.route) {
-                                        navController.navigate(dest.route) {
-                                            popUpTo(AppDestination.Home.route) {
-                                                saveState = true
+                                        if (dest == AppDestination.Home) {
+                                            val popped = navController.popBackStack(AppDestination.Home.route, inclusive = false)
+                                            if (!popped) {
+                                                navController.navigate(AppDestination.Home.route) {
+                                                    popUpTo(navController.graph.findStartDestination().id) {
+                                                        saveState = true
+                                                    }
+                                                    launchSingleTop = true
+                                                    restoreState = true
+                                                }
                                             }
-                                            launchSingleTop = true
-                                            restoreState = true
+                                        } else {
+                                            navController.navigate(dest.route) {
+                                                popUpTo(navController.graph.findStartDestination().id) {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
                                         }
                                     }
                                 }
@@ -264,28 +279,36 @@ fun HssabiApp(
                         bottom = if (isTopLevel) innerPadding.calculateBottomPadding() else 0.dp
                     )
             ) {
-                HssabiNavHost(
-                    navController = navController,
-                    homeViewModel = homeViewModel,
-                    groupsViewModel = groupsViewModel,
-                    contactsViewModel = contactsViewModel,
-                    historyViewModel = historyViewModel,
-                    savingsViewModel = savingsViewModel,
-                    settingsViewModel = settingsViewModel,
-                    calculationRepository = calculationRepository,
-                    checklistRepository = checklistRepository,
-                    noteRepository = noteRepository,
-                    reminderRepository = reminderRepository,
-                    contactRepository = contactRepository,
-                    settingsRepository = settingsRepository,
-                    editorViewModelFactory = {
-                        CalculationEditorViewModel(
-                            calculationRepository = calculationRepository,
-                            settingsRepository = settingsRepository,
-                            templateRepository = templateRepository
-                        )
+                if (hasSeenOnboarding != null) {
+                    val initialDestination = if (hasSeenOnboarding == true) {
+                        AppDestination.Home.route
+                    } else {
+                        AppDestination.Onboarding.route
                     }
-                )
+                    HssabiNavHost(
+                        navController = navController,
+                        homeViewModel = homeViewModel,
+                        groupsViewModel = groupsViewModel,
+                        contactsViewModel = contactsViewModel,
+                        historyViewModel = historyViewModel,
+                        savingsViewModel = savingsViewModel,
+                        settingsViewModel = settingsViewModel,
+                        calculationRepository = calculationRepository,
+                        checklistRepository = checklistRepository,
+                        noteRepository = noteRepository,
+                        reminderRepository = reminderRepository,
+                        contactRepository = contactRepository,
+                        settingsRepository = settingsRepository,
+                        editorViewModelFactory = {
+                            CalculationEditorViewModel(
+                                calculationRepository = calculationRepository,
+                                settingsRepository = settingsRepository,
+                                templateRepository = templateRepository
+                            )
+                        },
+                        startDestination = initialDestination
+                    )
+                }
             }
         }
 

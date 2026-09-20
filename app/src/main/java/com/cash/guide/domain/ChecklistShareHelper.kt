@@ -148,7 +148,7 @@ object ChecklistShareHelper {
         val boldFont = if (effectiveRtl) (creamFrothBold ?: creamFrothFont ?: majazFont) else patrickHandFont
 
         // 3. Colors matching JournalTheme
-        val paperColor = Color.rgb(0xFB, 0xF6, 0xE8)          // French Cream Paper
+        val paperColor = Color.rgb(0xF8, 0xF9, 0xFA)          // Feuille Blanche (White Notebook Paper)
         val inkColor = Color.rgb(0x24, 0x24, 0x21)            // Journal Ink
         val writingInkColor = Color.rgb(0x38, 0x38, 0x34)     // Writing Ink
         val mutedInkColor = Color.rgb(0x75, 0x75, 0x70)       // Muted Ink
@@ -271,15 +271,15 @@ object ChecklistShareHelper {
         canvas.drawLine(0f, headerH, width.toFloat(), headerH, headerDividerPaint)
 
         // 7. Checklist Items Section sitting on the Ruled Paper
-        val checkboxSize = 46f
+        val checkboxSize = 42f
         val checkStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = inkColor
-            strokeWidth = 3f
+            strokeWidth = 2.5f
             style = Paint.Style.STROKE
         }
         val checkFillPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = checkGreenColor
-            strokeWidth = 4.5f
+            strokeWidth = 4f
             style = Paint.Style.STROKE
             strokeCap = Paint.Cap.ROUND
         }
@@ -297,7 +297,7 @@ object ChecklistShareHelper {
 
         if (items.isEmpty()) {
             val emptyLineY = headerH + ruleSpacing
-            val emptyBaseline = emptyLineY - 14f
+            val emptyBaseline = emptyLineY - 1f
             val emptyText = if (effectiveRtl) "(لا توجد عناصر حالياً في القائمة)" else "(Aucun élément dans la checklist)"
             val emptyPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 typeface = primaryFont
@@ -309,8 +309,8 @@ object ChecklistShareHelper {
         } else {
             items.forEachIndexed { index, item ->
                 val lineY = headerH + (index + 1) * ruleSpacing
-                val baselineY = lineY - 8f
-                val checkboxY = lineY - checkboxSize - 6f
+                val baselineY = lineY - 1f
+                val checkboxY = lineY - checkboxSize - 3f
 
                 val dotColor = rowDotColors[index % rowDotColors.size]
                 itemNumPaint.color = dotColor
@@ -324,7 +324,7 @@ object ChecklistShareHelper {
                     // Checkbox on far Left
                     val boxX = marginX + 10f
                     val rect = RectF(boxX, checkboxY, boxX + checkboxSize, checkboxY + checkboxSize)
-                    canvas.drawRoundRect(rect, 10f, 10f, checkStrokePaint)
+                    canvas.drawRoundRect(rect, 8f, 8f, checkStrokePaint)
 
                     if (item.isChecked) {
                         val p1x = rect.left + checkboxSize * 0.22f
@@ -357,7 +357,7 @@ object ChecklistShareHelper {
                             strokeWidth = 2.5f
                             strokeCap = Paint.Cap.ROUND
                         }
-                        val strikeY = baselineY - 14f
+                        val strikeY = baselineY - 15f
                         canvas.drawLine(textRight - textW - 4f, strikeY, textRight + 4f, strikeY, strikePaint)
                     }
                 } else {
@@ -369,7 +369,7 @@ object ChecklistShareHelper {
                     // Checkbox on far Right
                     val boxX = width - marginX - checkboxSize - 10f
                     val rect = RectF(boxX, checkboxY, boxX + checkboxSize, checkboxY + checkboxSize)
-                    canvas.drawRoundRect(rect, 10f, 10f, checkStrokePaint)
+                    canvas.drawRoundRect(rect, 8f, 8f, checkStrokePaint)
 
                     if (item.isChecked) {
                         val p1x = rect.left + checkboxSize * 0.22f
@@ -402,7 +402,7 @@ object ChecklistShareHelper {
                             strokeWidth = 2.5f
                             strokeCap = Paint.Cap.ROUND
                         }
-                        val strikeY = baselineY - 14f
+                        val strikeY = baselineY - 15f
                         canvas.drawLine(textLeft - 4f, strikeY, textLeft + textW + 4f, strikeY, strikePaint)
                     }
                 }

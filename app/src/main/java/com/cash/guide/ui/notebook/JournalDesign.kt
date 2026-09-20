@@ -60,10 +60,17 @@ val JournalErrorRed = Color(0xFFD66860)       // Muted coral for error text and 
 val JournalActionIconSize = 12.dp
 val JournalActionIconRuleGap = 0.dp
 
-// Offline Handwritten Fonts
-val JournalHandFamily = FontFamily(
-    Font(R.font.patrick_hand_regular, FontWeight.Normal)
+// Offline Handwritten Fonts (Raw Definitions)
+val RawPatrickHandFamily = FontFamily(
+    Font(R.font.patrick_hand_regular, FontWeight.Normal),
+    Font(R.font.patrick_hand_bold, FontWeight.Bold)
 )
+
+// Dynamic Latin & Arabic font accessors hooked to JournalFontManager
+val JournalHandFamily: FontFamily get() = JournalFontManager.getLatinFont()
+val PatrickHandFamily: FontFamily get() = JournalFontManager.getLatinFont()
+val ArabicFamily: FontFamily get() = JournalFontManager.getArabicFont()
+val TajawalFamily: FontFamily get() = JournalFontManager.getArabicFont()
 
 // Authoritative geometry token for ruled paper rhythm and rows
 val JournalRuleSpacing = 29.dp
@@ -116,8 +123,6 @@ fun notebookBaselineOffset(isRtl: Boolean): Dp =
     if (isRtl) NotebookMetrics.baselineOffsetRtl else NotebookMetrics.baselineOffset
 
 // --- Bundled Offline Font Families ---
-val PatrickHandFamily = JournalHandFamily
-
 val MajazFamily = FontFamily(
     Font(R.font.majaz_regular, FontWeight.Normal)
 )
@@ -130,17 +135,32 @@ val CreamFrothFamily = FontFamily(
     Font(R.font.cream_froth_bold, FontWeight.Bold)
 )
 
-// Primary Arabic handwriting font used across the entire app (testing Cream Froth)
-val ArabicFamily: FontFamily = CreamFrothFamily
-
-// Alias maintaining 100% compatibility with untouched CalculationEditorScreen
-val TajawalFamily: FontFamily = CreamFrothFamily
-
 val ManropeFamily = FontFamily(
     Font(R.font.manrope_regular, FontWeight.Normal),
     Font(R.font.manrope_medium, FontWeight.Medium),
     Font(R.font.manrope_semibold, FontWeight.SemiBold),
     Font(R.font.manrope_bold, FontWeight.Bold)
+)
+
+val RealTajawalFamily = FontFamily(
+    Font(R.font.tajawal_regular, FontWeight.Normal),
+    Font(R.font.tajawal_medium, FontWeight.Medium),
+    Font(R.font.tajawal_bold, FontWeight.Bold)
+)
+
+val BeirutiFamily = FontFamily(
+    Font(R.font.beiruti_regular, FontWeight.Normal),
+    Font(R.font.beiruti_bold, FontWeight.Bold)
+)
+
+val ZainFamily = FontFamily(
+    Font(R.font.zain_regular, FontWeight.Normal),
+    Font(R.font.zain_bold, FontWeight.Bold)
+)
+
+val IbmPlexMonoFamily = FontFamily(
+    Font(R.font.ibm_plex_mono_regular, FontWeight.Normal),
+    Font(R.font.ibm_plex_mono_bold, FontWeight.Bold)
 )
 
 // --- Script Detection & Typography Helpers ---
@@ -156,15 +176,10 @@ fun isArabicScript(text: String): Boolean {
 
 /**
  * Universal script- and locale-aware handwritten font resolver.
- * French/English/Latin -> PatrickHandFamily
- * Arabic -> CreamFrothFamily
+ * Delegates dynamically to JournalFontManager.
  */
 fun resolveJournalFont(text: String = "", isRtl: Boolean = false): FontFamily {
-    return if (isArabicScript(text) || (text.isBlank() && isRtl)) {
-        CreamFrothFamily
-    } else {
-        PatrickHandFamily
-    }
+    return JournalFontManager.resolveFont(text, isRtl)
 }
 
 /**

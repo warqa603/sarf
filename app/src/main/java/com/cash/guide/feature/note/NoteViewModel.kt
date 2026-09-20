@@ -17,6 +17,7 @@ import com.cash.guide.domain.JournalShiftState
 import com.cash.guide.domain.ShiftAction
 import com.cash.guide.domain.speech.SpeechRecognitionState
 import com.cash.guide.domain.speech.SpeechRecognizerHelper
+import com.cash.guide.domain.ai.AiOutputScript
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -44,6 +45,8 @@ data class NoteEditorUiState(
     val isListening: Boolean = false,
     val partialDictation: String = "",
     val dictationError: String? = null,
+    val dictationScript: AiOutputScript = AiOutputScript.FRENCH,
+    val contentFontSizeSp: Float = 16.5f,
     val activeHighlighterColor: String = "YELLOW",
     val isSaved: Boolean = false,
     val isLoading: Boolean = true,
@@ -63,7 +66,19 @@ class NoteViewModel(
     context: Context
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(NoteEditorUiState())
+    private val prefs = context.getSharedPreferences("note_editor_prefs", Context.MODE_PRIVATE)
+    private val savedFontSize = prefs.getFloat("key_note_content_font_size", 16.5f)
+    private val initialScript = run {
+        val sysLang = context.resources.configuration.locales.get(0)?.language?.lowercase() ?: "fr"
+        if (sysLang.startsWith("ar")) AiOutputScript.ARABIC else AiOutputScript.FRENCH
+    }
+
+    private val _uiState = MutableStateFlow(
+        NoteEditorUiState(
+            contentFontSizeSp = savedFontSize,
+            dictationScript = initialScript
+        )
+    )
     val uiState: StateFlow<NoteEditorUiState> = _uiState.asStateFlow()
 
     private val speechHelper = SpeechRecognizerHelper(context)
@@ -437,8 +452,29 @@ class NoteViewModel(
         }
     }
 
+    fun setFontSize(sizeSp: Float) {
+        val clamped = sizeSp.coerceIn(13f, 24f)
+        _uiState.update { it.copy(contentFontSizeSp = clamped) }
+        prefs.edit().putFloat("key_note_content_font_size", clamped).apply()
+    }
+
+    fun setDictationScript(script: AiOutputScript) {
+        speechHelper.updateScript(script)
+        _uiState.update { it.copy(dictationScript = script) }
+    }
+
+    fun cycleDictationScript() {
+        val current = _uiState.value.dictationScript
+        val next = when (current) {
+            AiOutputScript.FRENCH -> AiOutputScript.ARABIC
+            AiOutputScript.ARABIC -> AiOutputScript.FRANCO
+            AiOutputScript.FRANCO -> AiOutputScript.FRENCH
+        }
+        setDictationScript(next)
+    }
+
     fun startListening() {
-        speechHelper.startListening()
+        speechHelper.startListening(_uiState.value.dictationScript)
     }
 
     fun stopListening() {
@@ -461,6 +497,169 @@ class NoteViewModel(
         } else {
             startListening()
         }
+    }
+
+    fun toggleBold() {
+        val state = _uiState.value
+        val current = state.content
+        val text = current.text
+        val sel = current.selection
+
+        pushUndoSnapshot(force = true)
+        redoStack.clear()
+
+        if (sel.length > 0) {
+            val start = sel.min.coerceIn(0, text.length)
+            val end = sel.max.coerceIn(0, text.length)
+            val selected = text.substring(start, end)
+            val isWrapped = selected.startsWith("**") && selected.endsWith("**") && selected.length >= 4
+            val newText: String
+            val newSelection: TextRange
+
+            if (isWrapped) {
+                val inner = selected.substring(2, selected.length - 2)
+                newText = text.replaceRange(start, end, inner)
+                newSelection = TextRange(start, start + inner.length)
+            } else {
+                val wrapped = "**$selected**"
+                newText = text.replaceRange(start, end, wrapped)
+                newSelection = TextRange(start, start + wrapped.length)
+            }
+
+            _uiState.update {
+                it.copy(
+                    content = TextFieldValue(newText, newSelection),
+                    activeInputTarget = NoteInputTarget.CONTENT,
+                    canUndo = true,
+                    canRedo = false
+                )
+            }
+        } else {
+            val cursor = sel.start.coerceIn(0, text.length)
+            val insert = "****"
+            val newText = text.replaceRange(cursor, cursor, insert)
+            val newCursor = cursor + 2
+
+            _uiState.update {
+                it.copy(
+                    content = TextFieldValue(newText, TextRange(newCursor)),
+                    activeInputTarget = NoteInputTarget.CONTENT,
+                    canUndo = true,
+                    canRedo = false
+                )
+            }
+        }
+        saveChanges()
+    }
+
+    fun toggleItalic() {
+        val state = _uiState.value
+        val current = state.content
+        val text = current.text
+        val sel = current.selection
+
+        pushUndoSnapshot(force = true)
+        redoStack.clear()
+
+        if (sel.length > 0) {
+            val start = sel.min.coerceIn(0, text.length)
+            val end = sel.max.coerceIn(0, text.length)
+            val selected = text.substring(start, end)
+            val isWrapped = selected.startsWith("*") && selected.endsWith("*") && !selected.startsWith("**") && selected.length >= 2
+            val newText: String
+            val newSelection: TextRange
+
+            if (isWrapped) {
+                val inner = selected.substring(1, selected.length - 1)
+                newText = text.replaceRange(start, end, inner)
+                newSelection = TextRange(start, start + inner.length)
+            } else {
+                val wrapped = "*$selected*"
+                newText = text.replaceRange(start, end, wrapped)
+                newSelection = TextRange(start, start + wrapped.length)
+            }
+
+            _uiState.update {
+                it.copy(
+                    content = TextFieldValue(newText, newSelection),
+                    activeInputTarget = NoteInputTarget.CONTENT,
+                    canUndo = true,
+                    canRedo = false
+                )
+            }
+        } else {
+            val cursor = sel.start.coerceIn(0, text.length)
+            val insert = "**"
+            val newText = text.replaceRange(cursor, cursor, insert)
+            val newCursor = cursor + 1
+
+            _uiState.update {
+                it.copy(
+                    content = TextFieldValue(newText, TextRange(newCursor)),
+                    activeInputTarget = NoteInputTarget.CONTENT,
+                    canUndo = true,
+                    canRedo = false
+                )
+            }
+        }
+        saveChanges()
+    }
+
+    fun toggleHeading() {
+        pushUndoSnapshot(force = true)
+        redoStack.clear()
+        val current = _uiState.value.content
+        val text = current.text
+        val cursor = current.selection.start.coerceIn(0, text.length)
+        val lineStart = text.lastIndexOf('\n', (cursor - 1).coerceAtLeast(0)).let { if (it == -1) 0 else it + 1 }
+        val lineEnd = text.indexOf('\n', cursor).let { if (it == -1) text.length else it }
+        val line = text.substring(lineStart, lineEnd)
+
+        val (newLine, cursorShift) = when {
+            line.startsWith("## ") -> "# " + line.removePrefix("## ") to -1
+            line.startsWith("# ") -> line.removePrefix("# ") to -2
+            else -> "## $line" to 3
+        }
+
+        val newText = text.replaceRange(lineStart, lineEnd, newLine)
+        val newCursor = (cursor + cursorShift).coerceIn(0, newText.length)
+        _uiState.update {
+            it.copy(
+                content = TextFieldValue(newText, TextRange(newCursor)),
+                activeInputTarget = NoteInputTarget.CONTENT,
+                canUndo = true,
+                canRedo = false
+            )
+        }
+        saveChanges()
+    }
+
+    fun toggleQuote() {
+        pushUndoSnapshot(force = true)
+        redoStack.clear()
+        val current = _uiState.value.content
+        val text = current.text
+        val cursor = current.selection.start.coerceIn(0, text.length)
+        val lineStart = text.lastIndexOf('\n', (cursor - 1).coerceAtLeast(0)).let { if (it == -1) 0 else it + 1 }
+        val lineEnd = text.indexOf('\n', cursor).let { if (it == -1) text.length else it }
+        val line = text.substring(lineStart, lineEnd)
+
+        val (newLine, cursorShift) = when {
+            line.startsWith("> ") -> line.removePrefix("> ") to -2
+            else -> "> $line" to 2
+        }
+
+        val newText = text.replaceRange(lineStart, lineEnd, newLine)
+        val newCursor = (cursor + cursorShift).coerceIn(0, newText.length)
+        _uiState.update {
+            it.copy(
+                content = TextFieldValue(newText, TextRange(newCursor)),
+                activeInputTarget = NoteInputTarget.CONTENT,
+                canUndo = true,
+                canRedo = false
+            )
+        }
+        saveChanges()
     }
 
     fun setActiveHighlighterColor(colorTag: String) {

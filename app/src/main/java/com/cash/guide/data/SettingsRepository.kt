@@ -25,6 +25,17 @@ class SettingsRepository(private val context: Context) {
         val JOURNAL_THEME = stringPreferencesKey("journal_theme")
         val IS_VIP_UNLOCKED = booleanPreferencesKey("is_vip_unlocked")
         val ACTIVATED_VIP_CODE = stringPreferencesKey("activated_vip_code")
+        val HAS_SEEN_ONBOARDING = booleanPreferencesKey("has_seen_onboarding")
+    }
+
+    val hasSeenOnboarding: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.HAS_SEEN_ONBOARDING] ?: false
+    }
+
+    suspend fun setHasSeenOnboarding(seen: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.HAS_SEEN_ONBOARDING] = seen
+        }
     }
 
     val userName: Flow<String> = context.dataStore.data.map { preferences ->
@@ -57,7 +68,7 @@ class SettingsRepository(private val context: Context) {
         if (name == "KRAFT_VINTAGE") {
             JournalThemeId.EMERALD_REGISTRY
         } else {
-            JournalThemeId.entries.find { it.name == name } ?: JournalThemeId.CLASSIC_YELLOW
+            JournalThemeId.entries.find { it.name == name } ?: JournalThemeId.WHITE_NOTEBOOK
         }
     }
 

@@ -625,4 +625,74 @@
     <string name="note_duplicate_suffix">(Copy)</string>
     <string name="note_select_all_btn">Select All</string>
     <string name="note_this_note">this note</string>
+
+    <!-- Onboarding Flow (7 Slides) -->
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next →</string>
+    <string name="onboarding_back">← Back</string>
+    <string name="onboarding_start">Open my notebook ✨</string>
+
+    <!-- Slide 1: Welcome & Language -->
+    <string name="onboarding_s1_badge">Welcome • مرحباً</string>
+    <string name="onboarding_s1_title">Your Authentic Moroccan Notebook</string>
+    <string name="onboarding_s1_subtitle">Simple, artisanal, on ruled paper with natural handwriting.</string>
+    <string name="onboarding_s1_lang_prompt">Choose your language:</string>
+
+    <!-- Slide 2: Calculations & Ruled Paper -->
+    <string name="onboarding_s2_badge">Ruled Accounts • على السطر</string>
+    <string name="onboarding_s2_title">Calculations &amp; Ledgers on real paper</string>
+    <string name="onboarding_s2_subtitle">Write line by line with automatic totals and clear credit tracking.</string>
+    <string name="onboarding_s2_feature1">Handwritten lines with dynamic sub-totals</string>
+    <string name="onboarding_s2_feature2">Debt &amp; credit balance tracking (Kridi &amp; Salaf)</string>
+    <string name="onboarding_s2_feature3">Clean PDF exports and notebook image sharing</string>
+
+    <!-- Slide 3: Checklists & Family Sharing -->
+    <string name="onboarding_s3_badge">Checklists &amp; Sharing • سخرة وبارطاج</string>
+    <string name="onboarding_s3_title">Shopping Lists &amp; WhatsApp Sharing</string>
+    <string name="onboarding_s3_subtitle">Prepare your errands, check off items, and send the list to your spouse or family on WhatsApp in one click.</string>
+    <string name="onboarding_s3_feature1">Organized checklists with tactile checkmarks</string>
+    <string name="onboarding_s3_feature2">Instant WhatsApp sharing with your spouse</string>
+    <string name="onboarding_s3_feature3">Smart reminders so nothing gets forgotten</string>
+
+    <!-- Slide 4: Quick Notes -->
+    <string name="onboarding_s4_badge">Notes &amp; Ideas • مذكرات وأفكار</string>
+    <string name="onboarding_s4_title">Notebook for Notes &amp; Quick Ideas</string>
+    <string name="onboarding_s4_subtitle">Jot down recipes, monthly budgets, and ideas on pastel-tinted ruled sheets with highlighters.</string>
+    <string name="onboarding_s4_feature1">Ruled pastel notepad sheets</string>
+    <string name="onboarding_s4_feature2">Artistic highlighters and text markers</string>
+    <string name="onboarding_s4_feature3">Instant search across all your notes</string>
+
+    <!-- Slide 5: Contacts & M3elmin -->
+    <string name="onboarding_s5_badge">Artisans &amp; Trades • المعلمين</string>
+    <string name="onboarding_s5_title">Directory of Trusted Artisans &amp; Trades</string>
+    <string name="onboarding_s5_subtitle">Keep contact details for trusted plumbers, electricians, grocers, with advance payments tracking and direct calls.</string>
+    <string name="onboarding_s5_feature1">Categorized by trade (Plumber, Electrician…)</string>
+    <string name="onboarding_s5_feature2">Direct phone call or WhatsApp in one tap</string>
+    <string name="onboarding_s5_feature3">Track deposits and remaining balances per contact</string>
+
+    <!-- Slide 6: AI Darija Voice Assistant -->
+    <string name="onboarding_s6_badge">Voice Assistant • صوتك كافي</string>
+    <string name="onboarding_s6_title">Dictate in Darija or French</string>
+    <string name="onboarding_s6_subtitle">Speak naturally in Moroccan Darija: the assistant parses items, quantities, and prices directly onto ruled lines.</string>
+    <string name="onboarding_s6_feature1">Natural understanding of Moroccan Darija</string>
+    <string name="onboarding_s6_feature2">Automatic conversion into ledgers or checklists</string>
+    <string name="onboarding_s6_feature3">Hands-free voice input without typing</string>
+
+    <!-- Slide 7: Personalization & Ready -->
+    <string name="onboarding_s7_badge">Ready • كناشك واجد</string>
+    <string name="onboarding_s7_title">Personalize your Cover &amp; Get Started</string>
+    <string name="onboarding_s7_subtitle">Write your name on the notebook cover and pick your currency.</string>
+    <string name="onboarding_s7_name_label">Your name or nickname</string>
+    <string name="onboarding_s7_name_hint">e.g. Karim, Fatima, Si Mohamed…</string>
+    <string name="onboarding_s7_preview_prefix">Notebook of</string>
+    <string name="onboarding_s7_currency_label">Primary currency</string>
+    <string name="onboarding_s7_currency_dh">Dirham (DH)</string>
+    <string name="onboarding_s7_currency_dh_desc">Modern bookkeeping in Dirhams</string>
+    <string name="onboarding_s7_currency_rial">Rial (ريال)</string>
+    <string name="onboarding_s7_currency_rial_desc">Traditional souk unit (1 DH = 20 Rials)</string>
+    <string name="onboarding_s7_badge_offline">100% Offline &amp; Private</string>
+    <string name="onboarding_s7_badge_unlimited">Unlimited Calculations &amp; Notes</string>
+    <string name="onboarding_s7_badge_backup">Secure Local Backup</string>
+    <string name="onboarding_s7_vip_prompt">Do you have a VIP / Promo code?</string>
+    <string name="settings_about_revisit_onboarding">Replay App Introduction (Onboarding)</string>
 </resources>

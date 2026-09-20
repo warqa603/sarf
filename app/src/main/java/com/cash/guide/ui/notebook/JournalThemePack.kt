@@ -97,24 +97,24 @@ object JournalThemePacks {
     )
 
     val allPacks: List<JournalThemePalette> = listOf(
+        WhiteNotebook,
         ClassicYellow,
         EmeraldRegistry,
-        WhiteNotebook,
         DarkCarnet
     )
 
     fun get(id: JournalThemeId): JournalThemePalette = when (id) {
+        JournalThemeId.WHITE_NOTEBOOK -> WhiteNotebook
         JournalThemeId.CLASSIC_YELLOW -> ClassicYellow
         JournalThemeId.EMERALD_REGISTRY -> EmeraldRegistry
-        JournalThemeId.WHITE_NOTEBOOK -> WhiteNotebook
         JournalThemeId.DARK_CARNET -> DarkCarnet
     }
 }
 
-val LocalJournalTheme = compositionLocalOf { JournalThemePacks.ClassicYellow }
+val LocalJournalTheme = compositionLocalOf { JournalThemePacks.WhiteNotebook }
 
 object JournalTheme {
-    var currentPalette: JournalThemePalette by mutableStateOf(JournalThemePacks.ClassicYellow)
+    var currentPalette: JournalThemePalette by mutableStateOf(JournalThemePacks.WhiteNotebook)
 
     val colors: JournalThemePalette
         @Composable

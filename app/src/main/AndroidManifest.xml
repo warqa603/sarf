@@ -18,10 +18,10 @@
         android:hardwareAccelerated="true"
         android:enableOnBackInvokedCallback="true">
 
-        <!-- Google AdMob Application ID (Official test ID for development) -->
+        <!-- Google AdMob Application ID (Official Warqa App ID) -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="ca-app-pub-4182222159500814~9693163315" />
 
         <activity
             android:name="com.cash.guide.MainActivity"

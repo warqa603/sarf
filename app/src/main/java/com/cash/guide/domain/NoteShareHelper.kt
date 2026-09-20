@@ -137,8 +137,8 @@ object NoteShareHelper {
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
-        // Paper background
-        canvas.drawColor(Color.parseColor("#FFFDF8"))
+        // Paper background (Feuille Blanche default)
+        canvas.drawColor(Color.parseColor("#F8F9FA"))
 
         // Ruled lines
         val rulePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -251,14 +251,14 @@ object NoteShareHelper {
 
                         val left = if (contentIsRtl) textX - beforeW - spanW - 4f else textX + beforeW - 4f
                         val right = if (contentIsRtl) textX - beforeW + 4f else textX + beforeW + spanW + 4f
-                        val top = lineY - 42f
-                        val bottom = lineY - 8f
+                        val top = lineY - 48f
+                        val bottom = lineY - 2f
                         canvas.drawRoundRect(RectF(left, top, right, bottom), 8f, 8f, paint)
                     }
 
-                    canvas.drawText(cleanText, textX, lineY - 14f, bodyPaint)
+                    canvas.drawText(cleanText, textX, lineY - 1f, bodyPaint)
                 } else {
-                    canvas.drawText(line, textX, lineY - 14f, bodyPaint)
+                    canvas.drawText(line, textX, lineY - 1f, bodyPaint)
                 }
             }
             lineY += lineSpacing

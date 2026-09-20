@@ -9,17 +9,21 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import com.cash.guide.ui.notebook.CreamFrothFamily
 import com.cash.guide.ui.notebook.Ink
 import com.cash.guide.ui.notebook.InkTone
+import com.cash.guide.ui.notebook.JournalFontManager
 import com.cash.guide.ui.notebook.JournalTheme
 import com.cash.guide.ui.notebook.LocalJournalTheme
 import com.cash.guide.ui.notebook.MutedInk
@@ -70,8 +74,22 @@ fun HisabiTheme(content: @Composable () -> Unit) {
         )
     }
 
+    val currentArabicFont = JournalFontManager.currentArabicFont
+    val currentLatinFont = JournalFontManager.currentLatinFont
+    val globalFontScale = JournalFontManager.globalFontScale
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    val defaultFont = if (isRtl) CreamFrothFamily else PatrickHandFamily
+
+    val defaultFont = if (isRtl) currentArabicFont.family else currentLatinFont.family
+    val fontOpticalScale = if (isRtl) currentArabicFont.opticalScale else currentLatinFont.opticalScale
+
+    val currentDensity = LocalDensity.current
+    val customDensity = remember(currentDensity.density, currentDensity.fontScale, fontOpticalScale) {
+        Density(
+            density = currentDensity.density,
+            fontScale = currentDensity.fontScale * fontOpticalScale
+        )
+    }
+
     val defaultTextStyle = TextStyle(
         fontFamily = defaultFont,
         fontWeight = FontWeight.Normal,
@@ -95,15 +113,19 @@ fun HisabiTheme(content: @Composable () -> Unit) {
         labelSmall = defaultTextStyle.copy(fontSize = 11.sp)
     )
 
-    MaterialTheme(
-        colorScheme = hisabiColors,
-        typography = hisabiTypography
+    CompositionLocalProvider(
+        LocalDensity provides customDensity
     ) {
-        CompositionLocalProvider(
-            LocalJournalTheme provides currentPalette,
-            LocalTextStyle provides defaultTextStyle.copy(fontSize = 14.5.sp, color = currentPalette.ink)
+        MaterialTheme(
+            colorScheme = hisabiColors,
+            typography = hisabiTypography
         ) {
-            content()
+            CompositionLocalProvider(
+                LocalJournalTheme provides currentPalette,
+                LocalTextStyle provides defaultTextStyle.copy(fontSize = 14.5.sp, color = currentPalette.ink)
+            ) {
+                content()
+            }
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿package com.cash.guide.ui.components
+package com.cash.guide.ui.components
 
 import android.content.Context
 import androidx.compose.foundation.background
@@ -25,14 +25,19 @@ import com.google.android.gms.ads.AdView
 @Composable
 fun NotebookBannerAd(
     modifier: Modifier = Modifier,
-    adUnitId: String = AdMobManager.TEST_BANNER_AD_UNIT_ID
+    adUnitId: String? = null
 ) {
     val context = LocalContext.current
     val billingManager = remember(context) { BillingManager.getInstance(context) }
     val isPremium by billingManager.isPremium.collectAsState()
 
-    if (isPremium) {
-        return // Hide ads for premium users
+    val adsEnabled = remember { com.cash.guide.domain.ai.RemoteConfigManager.areAdsEnabled(context) }
+    if (isPremium || !adsEnabled) {
+        return // Hide ads for premium users or if disabled remotely
+    }
+
+    val effectiveAdUnitId = remember(adUnitId, context) {
+        adUnitId ?: AdMobManager.getInstance(context).getBannerAdUnitId()
     }
 
     Box(
@@ -47,7 +52,7 @@ fun NotebookBannerAd(
             factory = { ctx: Context ->
                 AdView(ctx).apply {
                     setAdSize(AdSize.BANNER)
-                    this.adUnitId = adUnitId
+                    this.adUnitId = effectiveAdUnitId
                     loadAd(AdRequest.Builder().build())
                 }
             }

@@ -258,8 +258,7 @@ private fun ExportSheetRuledItem(
             modifier = Modifier
                 .size(28.dp)
                 .clip(CircleShape)
-                .background(badgeColor)
-                .offset(y = (-7).dp),
+                .background(badgeColor),
             contentAlignment = Alignment.Center
         ) {
             HisabiSketchIcon(

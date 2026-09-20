@@ -568,12 +568,12 @@ fun ChecklistScreen(
                         Row(
                             modifier = Modifier.height(JournalRuleSpacing),
                             verticalAlignment = Alignment.Bottom,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(3.5.dp)
                         ) {
                             // Checkbox (left of trash)
                             Box(
                                 modifier = Modifier
-                                    .size(24.dp)
+                                    .size(22.dp)
                                     .clickable(
                                         role = Role.Checkbox,
                                         onClickLabel = if (item.isChecked) "Décocher" else "Cocher",
@@ -583,10 +583,10 @@ fun ChecklistScreen(
                                 contentAlignment = Alignment.BottomCenter
                             ) {
                                 Canvas(
-                                    modifier = Modifier.size(19.dp)
+                                    modifier = Modifier.size(16.dp)
                                 ) {
-                                    val strokeWidth = 1.35.dp.toPx()
-                                    val corner = 3.dp.toPx()
+                                    val strokeWidth = 1.2.dp.toPx()
+                                    val corner = 2.5.dp.toPx()
                                     val rect = androidx.compose.ui.geometry.RoundRect(
                                         left = strokeWidth / 2f,
                                         top = strokeWidth / 2f,
@@ -612,7 +612,7 @@ fun ChecklistScreen(
                                             path = checkPath,
                                             color = Color(0xFF16A34A),
                                             style = Stroke(
-                                                width = 2.dp.toPx(),
+                                                width = 1.8.dp.toPx(),
                                                 cap = StrokeCap.Round,
                                                 join = StrokeJoin.Round
                                             )
@@ -630,7 +630,7 @@ fun ChecklistScreen(
                             // Trash icon (far right)
                             Box(
                                 modifier = Modifier
-                                    .size(24.dp)
+                                    .size(22.dp)
                                     .clickable(
                                         role = Role.Button,
                                         onClickLabel = "Supprimer l'élément",
@@ -642,8 +642,8 @@ fun ChecklistScreen(
                                 HisabiSketchIcon(
                                     symbol = HisabiSymbol.Trash,
                                     contentDescription = "Supprimer",
-                                    tint = JournalActionDelete.copy(alpha = 0.70f),
-                                    size = 17.dp
+                                    tint = JournalActionDelete.copy(alpha = 0.80f),
+                                    size = 19.5.dp
                                 )
                             }
                         }

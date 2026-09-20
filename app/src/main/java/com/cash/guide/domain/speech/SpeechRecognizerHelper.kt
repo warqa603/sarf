@@ -53,7 +53,11 @@ class SpeechRecognizerHelper(private val context: Context) {
         }
     }
 
-    var preferredScript: com.cash.guide.domain.ai.AiOutputScript = com.cash.guide.domain.ai.AiOutputScript.ARABIC
+    var preferredScript: com.cash.guide.domain.ai.AiOutputScript = run {
+        val sysLang = context.resources.configuration.locales.get(0)?.language?.lowercase() ?: "fr"
+        if (sysLang.startsWith("ar")) com.cash.guide.domain.ai.AiOutputScript.ARABIC
+        else com.cash.guide.domain.ai.AiOutputScript.FRENCH
+    }
 
     fun updateScript(script: com.cash.guide.domain.ai.AiOutputScript) {
         if (this.preferredScript != script) {
@@ -162,13 +166,13 @@ class SpeechRecognizerHelper(private val context: Context) {
     private fun buildIntent(): Intent {
         val (primaryLang, additionalLangs) = when (preferredScript) {
             com.cash.guide.domain.ai.AiOutputScript.FRENCH -> {
-                "fr-FR" to arrayListOf("fr-FR", "fr-MA", "ar-MA", "en-US")
+                "fr-FR" to arrayListOf("fr-FR", "fr-MA")
             }
             com.cash.guide.domain.ai.AiOutputScript.FRANCO -> {
-                "ar-MA" to arrayListOf("ar-MA", "fr-FR", "fr-MA", "en-US")
+                "ar-MA" to arrayListOf("ar-MA", "fr-FR", "fr-MA")
             }
             com.cash.guide.domain.ai.AiOutputScript.ARABIC -> {
-                "ar-MA" to arrayListOf("ar-MA", "ar-DZ", "fr-FR", "en-US")
+                "ar-MA" to arrayListOf("ar-MA", "ar-DZ", "ar-SA")
             }
         }
 
@@ -176,7 +180,7 @@ class SpeechRecognizerHelper(private val context: Context) {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, primaryLang)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, primaryLang)
-            putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
+            putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, true)
             putStringArrayListExtra("android.speech.extra.ADDITIONAL_LANGUAGES", additionalLangs)
             putExtra("android.speech.extra.ADDITIONAL_LANGUAGES", additionalLangs.toTypedArray())
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)

@@ -25,6 +25,7 @@ class MainActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         currentActivity = this
+        com.cash.guide.ui.notebook.JournalFontManager.initialize(applicationContext)
         
         // Fetch dynamic remote configuration (e.g. API Keys and VIP Promo Codes)
         lifecycleScope.launch {
