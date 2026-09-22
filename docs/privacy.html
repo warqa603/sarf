@@ -1,18 +1,26 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Politique de confidentialité - Warqa</title>
+    <title>Politique de Confidentialité | Warqa • Carnet & Dépenses</title>
+    <meta name="description" content="Politique de confidentialité officielle de l'application Warqa • Carnet & Dépenses (com.warqa.app), éditée par Joemaker.">
     <style>
         :root {
             --primary: #ca8a04;
-            --primary-light: #fef08a;
+            --primary-dark: #a16207;
+            --primary-light: #fef9c3;
+            --primary-subtle: #fef08a;
             --text-main: #1f2937;
             --text-muted: #4b5563;
             --bg: #fdfbf7;
             --card-bg: #ffffff;
             --border: #e5e7eb;
+            --accent: #2563eb;
+            --success: #15803d;
+        }
+        * {
+            box-sizing: border-box;
         }
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -20,125 +28,239 @@
             background-color: var(--bg);
             color: var(--text-main);
             margin: 0;
-            padding: 0;
+            padding: 20px 16px;
         }
         .container {
-            max-width: 760px;
-            margin: 40px auto;
+            max-width: 800px;
+            margin: 30px auto;
             padding: 40px;
             background: var(--card-bg);
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            border-radius: 20px;
+            box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05), 0 2px 6px -2px rgba(0, 0, 0, 0.03);
             border: 1px solid var(--border);
         }
         .header {
             text-align: center;
-            margin-bottom: 40px;
-            padding-bottom: 30px;
+            margin-bottom: 35px;
+            padding-bottom: 25px;
             border-bottom: 2px dashed var(--border);
         }
         .logo {
-            width: 80px;
-            height: 80px;
+            width: 84px;
+            height: 84px;
             background: var(--primary-light);
-            border-radius: 20px;
+            border: 2px solid var(--primary-subtle);
+            border-radius: 22px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 20px;
-            font-size: 40px;
+            margin-bottom: 18px;
+            font-size: 42px;
         }
         h1 { 
             color: var(--text-main);
-            font-size: 2.2rem;
+            font-size: 2.1rem;
             margin: 0 0 10px 0;
             font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+        .app-identity {
+            font-size: 1.15rem;
+            color: var(--primary-dark);
+            font-weight: 700;
+            margin-bottom: 8px;
         }
         .date {
             color: var(--text-muted);
+            font-size: 0.92rem;
+            font-weight: 500;
+        }
+        .metadata-grid {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 18px 24px;
+            margin: 25px 0 35px 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px 24px;
+        }
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+        }
+        .meta-label {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+        .meta-value {
+            font-size: 1.02rem;
+            color: #0f172a;
+            font-weight: 600;
+            word-break: break-all;
+        }
+        .badge-package {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 6px;
             font-size: 0.95rem;
+            color: #0f172a;
+        }
+        .summary-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-left: 5px solid var(--success);
+            padding: 18px 22px;
+            border-radius: 8px;
+            margin: 25px 0;
+        }
+        .summary-box p {
+            margin: 0;
+            color: #166534;
+            font-size: 1.05rem;
             font-weight: 500;
         }
         h2 { 
             color: var(--text-main);
-            font-size: 1.4rem;
-            margin-top: 35px;
-            margin-bottom: 15px;
+            font-size: 1.35rem;
+            margin-top: 36px;
+            margin-bottom: 14px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            font-weight: 700;
         }
         h2::before {
             content: "";
             display: block;
-            width: 24px;
-            height: 4px;
+            width: 14px;
+            height: 14px;
             background: var(--primary);
-            border-radius: 2px;
+            border-radius: 4px;
         }
         p, ul {
             color: var(--text-muted);
-            font-size: 1.05rem;
+            font-size: 1.02rem;
+            line-height: 1.75;
         }
         ul {
-            padding-left: 20px;
+            padding-left: 22px;
+            margin-top: 8px;
         }
         li {
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
-        .highlight-box {
-            background: var(--primary-light);
-            border-left: 4px solid var(--primary);
-            padding: 15px 20px;
-            border-radius: 0 8px 8px 0;
-            margin: 20px 0;
+        .contact-card {
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 22px;
+            margin-top: 25px;
         }
-        .highlight-box p {
-            margin: 0;
-            color: #854d0e;
-            font-weight: 500;
+        .contact-card a {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .contact-card a:hover {
+            text-decoration: underline;
         }
         @media (max-width: 600px) {
-            .container { margin: 15px; padding: 25px; }
-            h1 { font-size: 1.8rem; }
+            .container { padding: 22px 18px; margin: 15px auto; }
+            h1 { font-size: 1.7rem; }
+            .metadata-grid { grid-template-columns: 1fr; padding: 14px 16px; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <header class="header">
             <div class="logo">📝</div>
-            <h1>Politique de confidentialité</h1>
-            <div class="date">Dernière mise à jour : 18 Septembre 2026</div>
-        </div>
-        
-        <div class="highlight-box">
-            <p><strong>En résumé :</strong> Warqa est une application hors-ligne. Vos données restent sur votre téléphone. Nous ne vendons, ni ne partageons vos données personnelles.</p>
+            <div class="app-identity">Warqa • Carnet & Dépenses (ورقة)</div>
+            <h1>Politique de Confidentialité</h1>
+            <div class="date">Dernière mise à jour : 23 Septembre 2026</div>
+        </header>
+
+        <!-- Identification officielle requise par Google Play -->
+        <div class="metadata-grid">
+            <div class="meta-item">
+                <span class="meta-label">Nom de l'application</span>
+                <span class="meta-value">Warqa • Carnet & Dépenses (ورقة)</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Identifiant du package (Package ID)</span>
+                <span class="meta-value"><span class="badge-package">com.warqa.app</span></span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Développeur / Éditeur (Developer)</span>
+                <span class="meta-value">Joemaker</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">E-mail d'assistance (Contact)</span>
+                <span class="meta-value"><a href="mailto:bestmodels603@gmail.com" style="color:#0f172a; text-decoration:none;">bestmodels603@gmail.com</a></span>
+            </div>
         </div>
 
-        <h2>1. Collecte des données</h2>
-        <p>Warqa est une application fonctionnant principalement hors-ligne (Offline-first). Les données que vous saisissez (calculs, dettes, notes) sont stockées <strong>exclusivement localement</strong> sur votre appareil. L'application ne collecte aucune donnée personnelle vous identifiant directement (comme votre nom, email, ou numéro de téléphone).</p>
+        <div class="summary-box">
+            <p><strong>Engagement de confidentialité :</strong> L'application <strong>Warqa • Carnet & Dépenses</strong>, développée par <strong>Joemaker</strong>, est conçue selon le principe du respect absolu de la vie privée (Offline-First). Vos notes, comptes, listes et calculs restent strictement stockés sur votre appareil et ne sont jamais vendus ni transmis à des tiers.</p>
+        </div>
 
-        <h2>2. Utilisation du microphone et Assistant Vocal</h2>
-        <p>L'application requiert l'accès à votre microphone uniquement lorsque vous utilisez la fonctionnalité de dictée vocale. Le fonctionnement est le suivant :</p>
+        <h2>1. Présentation et Champ d'application</h2>
+        <p>La présente politique de confidentialité décrit la façon dont le développeur <strong>Joemaker</strong> traite et protège les données lorsque vous utilisez l'application mobile Android <strong>Warqa • Carnet & Dépenses</strong> (nom de package : <code>com.warqa.app</code>), disponible sur le Google Play Store.</p>
+
+        <h2>2. Stockage Local et Données Personnelles (Architecture Hors-Ligne)</h2>
+        <p>L'application <strong>Warqa</strong> est une application fonctionnant localement (Offline-first) :</p>
         <ul>
-            <li>Le microphone n'est activé que lorsque vous appuyez explicitement sur le bouton d'enregistrement.</li>
-            <li>La voix est convertie en texte via le service de reconnaissance vocale intégré à votre appareil.</li>
-            <li>Ce texte transcrit est ensuite analysé par une intelligence artificielle (API Google Gemini) pour structurer automatiquement vos calculs.</li>
-            <li><strong>L'audio original n'est jamais sauvegardé</strong> ni sur votre appareil, ni sur nos serveurs.</li>
+            <li><strong>Données de calculs et de notes :</strong> Toutes les feuilles de calcul, entrées financières, totaux de dépenses, listes de courses et notes créées sont stockées <strong>exclusivement en local</strong> sur la base de données interne de votre appareil mobile.</li>
+            <li><strong>Aucune création de compte obligatoire :</strong> L'utilisation de l'application ne requiert aucune inscription, aucun nom d'utilisateur, mot de passe ni identifiant personnel.</li>
+            <li><strong>Aucune collecte clandestine :</strong> Le développeur ne conserve ni ne transmet aucun historique de vos comptes ou calculs personnels sur des serveurs distants.</li>
         </ul>
 
-        <h2>3. Publicités et Achats In-App</h2>
-        <p>Pour soutenir le développement de l'application, nous utilisons le réseau publicitaire Google AdMob. Ce service peut utiliser un identifiant publicitaire pour diffuser des annonces pertinentes. Si vous achetez la version "Premium" (via Google Play Billing), toutes les publicités sont définitivement désactivées.</p>
-        
-        <h2>4. Partage et Sauvegarde</h2>
-        <p>L'application vous permet de générer des fichiers de sauvegarde (.calc) ou de partager vos calculs sous forme d'image ou de texte. Ces actions sont entièrement déclenchées par vous, et transitent par les canaux de votre choix (WhatsApp, Email, etc.).</p>
+        <h2>3. Autorisations et Données Sensibles</h2>
+        <p>Pour fournir certaines fonctionnalités d'assistance, l'application peut solliciter des autorisations spécifiques :</p>
+        <ul>
+            <li><strong>Microphone (Reconnaissance vocale) :</strong> L'accès au microphone est demandé uniquement lorsque vous utilisez la fonctionnalité de dictée vocale en Darija ou en Français. L'enregistrement n'est actif que si vous maintenez ou appuyez sur le bouton vocal. La voix est convertie en texte et analysée via l'API Google Gemini afin de générer automatiquement vos lignes de calcul. <strong>Aucun enregistrement audio n'est conservé ni réutilisé.</strong></li>
+            <li><strong>Partage utilisateur :</strong> Lorsque vous exportez ou partagez un calcul (via WhatsApp, SMS ou e-mail), cette action est initiée à 100% par vous et utilise les applications natives de messagerie installées sur votre appareil.</li>
+        </ul>
 
-        <h2>5. Modifications de cette politique</h2>
-        <p>Nous nous réservons le droit de modifier cette politique de confidentialité à tout moment. Toute modification sera reflétée sur cette page avec la date de mise à jour appropriée.</p>
+        <h2>4. Services Tiers, Publicités et Achats In-App</h2>
+        <p>L'application intègre des services de tiers reconnus et conformes aux politiques du Google Play Store :</p>
+        <ul>
+            <li><strong>Google AdMob (Publicités) :</strong> Pour soutenir le projet, des bannières publicitaires peuvent être diffusées via Google AdMob. Google AdMob peut utiliser l'identifiant publicitaire de votre appareil (AD_ID) pour proposer des annonces adaptées conformément aux règles de Google. Vous pouvez réinitialiser ou limiter ce suivi publicitaire à tout moment dans les paramètres de votre smartphone (<em>Paramètres > Google > Annonces</em>).</li>
+            <li><strong>Google Play Billing (Achats intégrés) :</strong> Les utilisateurs peuvent souscrire à une version Premium sans publicité. Tous les paiements sont traités de façon sécurisée par Google Play Billing. Le développeur <strong>Joemaker</strong> n'a accès à aucune coordonnée bancaire.</li>
+            <li><strong>API Google Gemini :</strong> Utilisée pour le traitement automatique des commandes vocales textuelles. Aucune donnée personnelle n'est associée à ces requêtes.</li>
+        </ul>
 
-        <h2>6. Contact</h2>
-        <p>Si vous avez des questions concernant cette politique de confidentialité, vous pouvez nous contacter via la section "Support" au sein de l'application.</p>
+        <h2>5. Politique de Conservation et de Suppression des Données</h2>
+        <p>Conformément aux exigences de Google Play relatives aux données de l'utilisateur, vous disposez d'un contrôle direct et total sur vos données :</p>
+        <ul>
+            <li><strong>Suppression instantanée au sein de l'application :</strong> Vous pouvez supprimer n'importe quelle note, feuille de calcul ou enregistrement en glissant ou en appuyant sur l'option de suppression dans l'application.</li>
+            <li><strong>Effacement complet des données :</strong> Vous pouvez à tout moment réinitialiser l'application en vous rendant dans <em>Paramètres Android &gt; Applications &gt; Warqa &gt; Stockage &gt; Effacer les données</em>. Cela détruit instantanément et définitivement l'ensemble de vos données locales.</li>
+            <li><strong>Désinstallation :</strong> La simple désinstallation de l'application supprime irréversiblement tous les fichiers et bases de données locales associés.</li>
+            <li><strong>Demande d'assistance pour suppression :</strong> Étant donné que le développeur ne stocke aucune donnée sur un serveur cloud, aucune donnée ne subsiste après la suppression locale. Pour toute question ou assistance relative à vos données, vous pouvez nous écrire directement à <a href="mailto:bestmodels603@gmail.com">bestmodels603@gmail.com</a>.</li>
+        </ul>
+
+        <h2>6. Sécurité des Données</h2>
+        <p>Vos données sont protégées par le système de sécurité Android (Sandboxing applicatif), qui empêche les autres applications d'accéder aux fichiers privés de <strong>Warqa</strong>. Nous appliquons les meilleures pratiques de développement Android pour garantir la sécurité et la stabilité du code.</p>
+
+        <h2>7. Protection des Enfants</h2>
+        <p>L'application <strong>Warqa • Carnet & Dépenses</strong> ne recueille sciemment aucune donnée personnelle auprès d'enfants de moins de 13 ans. L'application est un outil d'organisation générale et de calculs familiaux.</p>
+
+        <h2>8. Modifications de la Politique</h2>
+        <p>Nous nous réservons le droit de mettre à jour cette politique de confidentialité pour refléter l'évolution des réglementations ou des fonctionnalités. Toute mise à jour sera publiée sur cette page web avec mention de la date de révision.</p>
+
+        <h2>9. Contact et Coordonnées du Développeur</h2>
+        <div class="contact-card">
+            <p style="margin: 0 0 8px 0; color: #0f172a; font-weight: 700;">Pour toute question relative à cette politique de confidentialité :</p>
+            <p style="margin: 0 0 6px 0;"><strong>Développeur :</strong> Joemaker</p>
+            <p style="margin: 0 0 6px 0;"><strong>Application :</strong> Warqa • Carnet & Dépenses (<code>com.warqa.app</code>)</p>
+            <p style="margin: 0;"><strong>E-mail de support :</strong> <a href="mailto:bestmodels603@gmail.com">bestmodels603@gmail.com</a> (ou <a href="mailto:bestmodels603@gamil.com">bestmodels603@gamil.com</a>)</p>
+        </div>
     </div>
 </body>
 </html>
