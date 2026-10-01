@@ -15,9 +15,6 @@ import com.cash.guide.domain.JournalKeyboardLanguage
 import com.cash.guide.domain.JournalShiftMode
 import com.cash.guide.domain.JournalShiftState
 import com.cash.guide.domain.ShiftAction
-import com.cash.guide.domain.speech.SpeechRecognitionState
-import com.cash.guide.domain.speech.SpeechRecognizerHelper
-import com.cash.guide.domain.ai.AiOutputScript
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,10 +39,6 @@ data class NoteEditorUiState(
     val colorTag: String = "DEFAULT",
     val isPinned: Boolean = false,
     val createdAtEpochMs: Long = System.currentTimeMillis(),
-    val isListening: Boolean = false,
-    val partialDictation: String = "",
-    val dictationError: String? = null,
-    val dictationScript: AiOutputScript = AiOutputScript.FRENCH,
     val contentFontSizeSp: Float = 16.5f,
     val activeHighlighterColor: String = "YELLOW",
     val isSaved: Boolean = false,
@@ -68,20 +61,14 @@ class NoteViewModel(
 
     private val prefs = context.getSharedPreferences("note_editor_prefs", Context.MODE_PRIVATE)
     private val savedFontSize = prefs.getFloat("key_note_content_font_size", 16.5f)
-    private val initialScript = run {
-        val sysLang = context.resources.configuration.locales.get(0)?.language?.lowercase() ?: "fr"
-        if (sysLang.startsWith("ar")) AiOutputScript.ARABIC else AiOutputScript.FRENCH
-    }
 
     private val _uiState = MutableStateFlow(
         NoteEditorUiState(
-            contentFontSizeSp = savedFontSize,
-            dictationScript = initialScript
+            contentFontSizeSp = savedFontSize
         )
     )
     val uiState: StateFlow<NoteEditorUiState> = _uiState.asStateFlow()
 
-    private val speechHelper = SpeechRecognizerHelper(context)
     private val graphemeSegmenter: GraphemeSegmenter = AndroidIcuGraphemeSegmenter()
     private var lastLatinShiftMode = JournalShiftMode.OFF
 
@@ -138,38 +125,6 @@ class NoteViewModel(
     }
 
     init {
-        speechHelper.onSpeechResult = { text ->
-            if (text.isNotBlank()) {
-                appendDictatedText(text)
-            }
-        }
-
-        viewModelScope.launch {
-            speechHelper.state.collect { st ->
-                _uiState.update {
-                    it.copy(
-                        isListening = (st == SpeechRecognitionState.LISTENING || st == SpeechRecognitionState.PROCESSING)
-                    )
-                }
-            }
-        }
-
-        viewModelScope.launch {
-            speechHelper.partialText.collect { partial ->
-                _uiState.update {
-                    it.copy(partialDictation = partial)
-                }
-            }
-        }
-
-        viewModelScope.launch {
-            speechHelper.errorMessage.collect { err ->
-                _uiState.update {
-                    it.copy(dictationError = err)
-                }
-            }
-        }
-
         loadNote()
     }
 
@@ -458,46 +413,7 @@ class NoteViewModel(
         prefs.edit().putFloat("key_note_content_font_size", clamped).apply()
     }
 
-    fun setDictationScript(script: AiOutputScript) {
-        speechHelper.updateScript(script)
-        _uiState.update { it.copy(dictationScript = script) }
-    }
 
-    fun cycleDictationScript() {
-        val current = _uiState.value.dictationScript
-        val next = when (current) {
-            AiOutputScript.FRENCH -> AiOutputScript.ARABIC
-            AiOutputScript.ARABIC -> AiOutputScript.FRANCO
-            AiOutputScript.FRANCO -> AiOutputScript.FRENCH
-        }
-        setDictationScript(next)
-    }
-
-    fun startListening() {
-        speechHelper.startListening(_uiState.value.dictationScript)
-    }
-
-    fun stopListening() {
-        commitDictation()
-    }
-
-    fun commitDictation() {
-        speechHelper.stopAndDeliver()
-        _uiState.update { it.copy(partialDictation = "", dictationError = null) }
-    }
-
-    fun cancelDictation() {
-        speechHelper.stopListening()
-        _uiState.update { it.copy(partialDictation = "", dictationError = null) }
-    }
-
-    fun toggleListening() {
-        if (_uiState.value.isListening) {
-            commitDictation()
-        } else {
-            startListening()
-        }
-    }
 
     fun toggleBold() {
         val state = _uiState.value
@@ -729,28 +645,6 @@ class NoteViewModel(
                     canRedo = false
                 )
             }
-        }
-        saveChanges()
-    }
-
-    private fun appendDictatedText(text: String) {
-        pushUndoSnapshot(force = true)
-        redoStack.clear()
-        val current = _uiState.value.content
-        val curText = current.text
-        val cursor = current.selection.start.coerceIn(0, curText.length)
-        val prefix = if (cursor > 0 && !curText[cursor - 1].isWhitespace()) " " else ""
-        val suffix = " "
-        val insertion = prefix + text.trim() + suffix
-        val updated = curText.replaceRange(cursor, cursor, insertion)
-        val newCursor = cursor + insertion.length
-        _uiState.update {
-            it.copy(
-                content = TextFieldValue(updated, TextRange(newCursor)),
-                activeInputTarget = NoteInputTarget.CONTENT,
-                canUndo = true,
-                canRedo = false
-            )
         }
         saveChanges()
     }
@@ -1139,10 +1033,5 @@ class NoteViewModel(
             c in '\uFB50'..'\uFDFF' ||
             c in '\uFE70'..'\uFEFF'
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        speechHelper.destroy()
     }
 }

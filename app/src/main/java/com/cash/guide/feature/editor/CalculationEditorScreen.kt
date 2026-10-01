@@ -43,10 +43,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import android.widget.Toast
-import com.cash.guide.domain.ai.ExistingCalculationRowContext
-import com.cash.guide.ui.components.AiVoiceDockedBottomButton
-import com.cash.guide.ui.components.AiVoiceInputTarget
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -383,45 +379,6 @@ fun CalculationEditorScreen(
                     canBreakdown = state.totalCentimes > 0 && !state.hasInvalidRows,
                     onShowBreakdown = { showBreakdownSheet = true }
                 )
-
-                // Extra clearance so content can scroll completely above the bottom-right AI button
-                Spacer(modifier = Modifier.height(JournalRuleSpacing * 4))
-            }
-
-            // Pinned Bottom-Right AI Voice Assistant Button with Manga Speech Bubble
-            if (!state.calculator.isVisible) {
-                val existingRowContexts = remember(state.rows) {
-                    state.rows.filter { it.isPopulated }.mapIndexed { index, row ->
-                        ExistingCalculationRowContext(
-                            id = row.id.toString(),
-                            index = index + 1,
-                            label = row.title.text.trim(),
-                            currentAmount = row.amount.text.toDoubleOrNull() ?: 0.0
-                        )
-                    }
-                }
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .align(Alignment.BottomCenter)
-                        .padding(horizontal = 14.dp, vertical = 8.dp)
-                ) {
-                    AiVoiceDockedBottomButton(
-                        target = AiVoiceInputTarget.CALCULATION,
-                        existingRows = existingRowContexts,
-                        onCalculationResult = { result ->
-                            if (result.entries.isNotEmpty()) {
-                                viewModel.addAiEntries(result.entries, result.title)
-                            }
-                            val count = result.entries.size
-                            Toast.makeText(
-                                context,
-                                context.getString(R.string.calculation_ai_items_processed, count),
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                    )
-                }
             }
         }
 

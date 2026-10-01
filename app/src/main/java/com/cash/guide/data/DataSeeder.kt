@@ -35,7 +35,11 @@ object DataSeeder {
         // Detect language: Arabic / Darija vs French / Default
         val settingsRepo = SettingsRepository(context)
         val currentLang = runCatching { settingsRepo.appLanguage.first() }.getOrDefault("fr")
-        val isArabic = currentLang == "ar" || currentLang == "dar" || Locale.getDefault().language == "ar"
+        val isArabic = when (currentLang) {
+            "ar", "dar" -> true
+            "fr", "en" -> false
+            else -> Locale.getDefault().language == "ar"
+        }
 
         // 2. Insert Unified Groups (Calculations, Notes, Checklists, Contacts)
         val groups = if (isArabic) {
@@ -1213,6 +1217,43 @@ object DataSeeder {
             }
 
             calcDao.upsertCalculationWithItems(calcEntity, itemEntities)
+        }
+
+        // 7. Seed sample savings goal if empty
+        val savingsDao = db.savingsDao()
+        if (savingsDao.getAllGoalsList().isEmpty()) {
+            val goalId = UUID.randomUUID().toString()
+            val goalTitle = if (isArabic) "عمرة الوالدين إن شاء الله 🕋" else "Omra des Parents InchaAllah 🕋"
+            val goal = SavingsGoalEntity(
+                id = goalId,
+                title = goalTitle,
+                targetAmountCentimes = 3000000L, // 30,000 DH
+                currentAmountCentimes = 1850000L, // 18,500 DH (61% progress)
+                targetMonths = 12,
+                colorTag = "GREEN",
+                icon = "MECCA",
+                createdAtEpochMs = now - 60 * day,
+                updatedAtEpochMs = now - 2 * day
+            )
+            savingsDao.insertGoal(goal)
+            savingsDao.insertDeposit(
+                SavingsDepositEntity(
+                    id = UUID.randomUUID().toString(),
+                    goalId = goalId,
+                    amountCentimes = 1000000L,
+                    note = if (isArabic) "دفعة أولى من بركة الشهر" else "Premier versement",
+                    dateEpochMs = now - 50 * day
+                )
+            )
+            savingsDao.insertDeposit(
+                SavingsDepositEntity(
+                    id = UUID.randomUUID().toString(),
+                    goalId = goalId,
+                    amountCentimes = 850000L,
+                    note = if (isArabic) "توفير من أرباح التجارة" else "Épargne commerce",
+                    dateEpochMs = now - 15 * day
+                )
+            )
         }
     }
 }

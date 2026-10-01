@@ -353,8 +353,8 @@
             
             if (isAndroid) {
                 // Try debug package first, then general intent
-                const debugIntent = `intent://checklist?d=${encodeURIComponent(d)}#Intent;scheme=sarf;package=com.tajir.sarf.debug;end`;
-                const releaseIntent = `intent://checklist?d=${encodeURIComponent(d)}#Intent;scheme=sarf;package=com.tajir.sarf;end`;
+                const debugIntent = `intent://checklist?d=${encodeURIComponent(d)}#Intent;scheme=sarf;package=com.warqa.app.debug;end`;
+                const releaseIntent = `intent://checklist?d=${encodeURIComponent(d)}#Intent;scheme=sarf;package=com.warqa.app;end`;
                 const customScheme = `sarf://checklist?d=${encodeURIComponent(d)}`;
 
                 window.location.href = debugIntent;

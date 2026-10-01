@@ -352,7 +352,7 @@
             const isAndroid = /android/i.test(navigator.userAgent);
             
             if (isAndroid) {
-                const debugIntent = `intent://checklist?d=${encodeURIComponent(d)}#Intent;scheme=sarf;package=com.tajir.sarf.debug;end`;
+                const debugIntent = `intent://checklist?d=${encodeURIComponent(d)}#Intent;scheme=sarf;package=com.warqa.app.debug;end`;
                 const customScheme = `sarf://checklist?d=${encodeURIComponent(d)}`;
 
                 window.location.href = debugIntent;

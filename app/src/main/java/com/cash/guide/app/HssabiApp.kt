@@ -123,17 +123,27 @@ fun HssabiApp(
         }
     }
 
+    val hasSeenOnboarding by settingsRepository.hasSeenOnboarding.collectAsState(initial = null)
+    val appLanguage by settingsRepository.appLanguage.collectAsState(initial = "fr")
+
     androidx.compose.runtime.LaunchedEffect(Unit) {
         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val hasSeeded = settingsRepository.hasSeededInitialData.first()
             val calcDao = database.calculationDao()
-            if (calcDao.getAllSaved().isEmpty()) {
+            val checklistDao = database.checklistDao()
+            val noteDao = database.noteDao()
+            val hasExistingData = calcDao.getAllSaved().isNotEmpty() ||
+                    checklistDao.getAll().isNotEmpty() ||
+                    noteDao.getAllNotes().isNotEmpty()
+
+            if (!hasSeeded && !hasExistingData) {
                 com.cash.guide.data.DataSeeder.seedCleanData(context)
+                settingsRepository.setHasSeededInitialData(true)
+            } else if (!hasSeeded) {
+                settingsRepository.setHasSeededInitialData(true)
             }
         }
     }
-
-    val hasSeenOnboarding by settingsRepository.hasSeenOnboarding.collectAsState(initial = null)
-    val appLanguage by settingsRepository.appLanguage.collectAsState(initial = "fr")
     val currentThemeId by settingsRepository.journalTheme.collectAsState(initial = JournalThemeId.WHITE_NOTEBOOK)
     val currentPalette = remember(currentThemeId) { JournalThemePacks.get(currentThemeId) }
     androidx.compose.runtime.LaunchedEffect(currentPalette) {

@@ -20,7 +20,7 @@ class BillingManager private constructor(private val context: Context) : Purchas
 
     private val billingClient = BillingClient.newBuilder(context)
         .setListener(this)
-        .enablePendingPurchases()
+        .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
         .build()
 
     private val productDetailsMap = mutableMapOf<String, ProductDetails>()
@@ -84,9 +84,9 @@ class BillingManager private constructor(private val context: Context) : Purchas
                 .setProductType(BillingClient.ProductType.INAPP).build())
         ).build()
 
-        billingClient.queryProductDetailsAsync(inAppParams) { result, productDetailsList ->
-            if (result.responseCode == BillingClient.BillingResponseCode.OK && !productDetailsList.isNullOrEmpty()) {
-                productDetailsList.forEach { productDetailsMap[it.productId] = it }
+        billingClient.queryProductDetailsAsync(inAppParams) { result, queryProductDetailsResult ->
+            if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                queryProductDetailsResult.productDetailsList.forEach { productDetailsMap[it.productId] = it }
             }
         }
 
@@ -97,9 +97,9 @@ class BillingManager private constructor(private val context: Context) : Purchas
                 .setProductType(BillingClient.ProductType.SUBS).build())
         ).build()
 
-        billingClient.queryProductDetailsAsync(subsParams) { result, productDetailsList ->
-            if (result.responseCode == BillingClient.BillingResponseCode.OK && !productDetailsList.isNullOrEmpty()) {
-                productDetailsList.forEach { productDetailsMap[it.productId] = it }
+        billingClient.queryProductDetailsAsync(subsParams) { result, queryProductDetailsResult ->
+            if (result.responseCode == BillingClient.BillingResponseCode.OK) {
+                queryProductDetailsResult.productDetailsList.forEach { productDetailsMap[it.productId] = it }
             }
         }
     }

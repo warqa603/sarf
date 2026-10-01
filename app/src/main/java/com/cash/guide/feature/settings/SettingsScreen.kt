@@ -211,21 +211,6 @@ fun SettingsScreen(
                 badgeColor = HighlighterYellow.copy(alpha = 0.35f)
             )
 
-            // Premium In-App Purchase
-            JournalActionRow(
-                title = stringResource(R.string.settings_premium_title),
-                description = stringResource(R.string.settings_premium_desc),
-                bulletColor = Color(0xFFEAB308),
-                badgeText = if (isPremiumUser) stringResource(R.string.settings_premium_active_badge) else stringResource(R.string.settings_premium_badge),
-                onClick = {
-                    if (!isPremiumUser) {
-                        showPremiumDialog = true
-                    } else {
-                        Toast.makeText(context, R.string.settings_promo_code_success, Toast.LENGTH_SHORT).show()
-                    }
-                }
-            )
-
             // Share App
             JournalActionRow(
                 title = stringResource(R.string.settings_share_app_title),
@@ -235,7 +220,7 @@ fun SettingsScreen(
                 onClick = {
                     val sendIntent: android.content.Intent = android.content.Intent().apply {
                         action = android.content.Intent.ACTION_SEND
-                        putExtra(android.content.Intent.EXTRA_TEXT, "Warqa: L\'application pour gérer vos dettes et calculs facilement ! https://play.google.com/store/apps/details?id=com.cash.guide")
+                        putExtra(android.content.Intent.EXTRA_TEXT, "Warqa: L\'application pour gérer vos calculs et notes facilement ! https://play.google.com/store/apps/details?id=" + context.packageName)
                         type = "text/plain"
                     }
                     val shareIntent = android.content.Intent.createChooser(sendIntent, null)
@@ -382,25 +367,6 @@ fun SettingsScreen(
                         color = currentPalette.ink,
                         style = TextStyle(platformStyle = NoFontPadding),
                         modifier = Modifier.journalBaselineOnRule()
-                    )
-                }
-
-                // Shortcut to Typography Lab
-                Surface(
-                    modifier = Modifier
-                        .journalVisualOnRule(gapAboveRule = 3.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .clickable { onOpenFontTester() },
-                    color = currentPalette.accent.copy(alpha = 0.15f),
-                    shape = RoundedCornerShape(6.dp)
-                ) {
-                    Text(
-                        text = if (isRtl) "مختبر الخطوط ✍️" else "Laboratoire ✍️",
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                        fontSize = 11.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = currentPalette.ink,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                     )
                 }
             }
@@ -1216,15 +1182,6 @@ fun SettingsScreen(
                 bulletColor = Color(0xFF1B4D3E),
                 badgeText = "Guide ✨",
                 onClick = onRevisitOnboarding
-            )
-
-            // Setting: Laboratoire Typographique
-            JournalActionRow(
-                title = "Laboratoire Typographique (Polices)",
-                description = "Tester et comparer les 6 polices (Beiruti, Zain, Tajawal, Patrick Hand...)",
-                bulletColor = Color(0xFF7C3AED),
-                badgeText = "Polices ✍️",
-                onClick = onOpenFontTester
             )
 
             // Bottom Spacers: 5 notebook lines for full scrolling clearance above dock

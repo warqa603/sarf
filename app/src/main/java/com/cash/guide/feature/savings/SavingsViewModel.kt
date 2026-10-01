@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.cash.guide.data.SavingsRepository
 import com.cash.guide.data.db.SavingsDepositEntity
 import com.cash.guide.data.db.SavingsGoalEntity
-import com.cash.guide.domain.ai.GeminiDarijaService
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -608,23 +607,7 @@ class SavingsViewModel(
             val leakDailyDh = if (goal.leakDailyCostCentimes > 0) goal.leakDailyCostCentimes / 100.0 else 25.0
             val leakDays = if (goal.leakDaysPerWeek > 0) goal.leakDaysPerWeek else 6
 
-            val aiResult = try {
-                GeminiDarijaService.generateSavingsCoachAdvice(
-                    goalTitle = goal.title,
-                    targetAmountDh = targetDh,
-                    targetMonths = goal.targetMonths,
-                    monthlySalaryDh = salaryDh,
-                    leakCategory = goal.leisureCategory,
-                    leakDailyCostDh = leakDailyDh,
-                    leakDaysPerWeek = leakDays,
-                    savingsStyle = goal.savingsStyle,
-                    isRtl = isRtl
-                )
-            } catch (e: Exception) {
-                null
-            }
-
-            _aiCoachAdvice.value = aiResult ?: SavingsKnowledgeBase.generateDeterministicCoachVerdict(
+            _aiCoachAdvice.value = SavingsKnowledgeBase.generateDeterministicCoachVerdict(
                 goalTitle = goal.title,
                 targetAmountDh = targetDh,
                 targetMonths = goal.targetMonths,

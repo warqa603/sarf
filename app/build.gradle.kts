@@ -20,11 +20,11 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.tajir.sarf"
+        applicationId = "com.warqa.app"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 5
+        versionName = "1.0.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         
@@ -49,20 +49,17 @@ android {
     //    storeFile=../sarf-release-key.jks
     // 3. Uncomment the signingConfigs block below and update the paths
     signingConfigs {
-        // Uncomment and configure when ready for release:
-        /*
-        getByName("release") {
+        create("release") {
             val keystorePropertiesFile = rootProject.file("keystore.properties")
             if (keystorePropertiesFile.exists()) {
-                val keystoreProperties = java.util.Properties()
-                keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+                val keystoreProperties = Properties()
+                keystoreProperties.load(FileInputStream(keystorePropertiesFile))
                 storeFile = file(keystoreProperties["storeFile"] as String)
                 storePassword = keystoreProperties["storePassword"] as String
                 keyAlias = keystoreProperties["keyAlias"] as String
                 keyPassword = keystoreProperties["keyPassword"] as String
             }
         }
-        */
     }
 
     buildTypes {
@@ -75,8 +72,7 @@ android {
                 "proguard-rules.pro"
             )
             
-            // Uncomment when signing config is set up:
-            // signingConfig = signingConfigs.getByName("release")
+            signingConfig = signingConfigs.getByName("release")
             
             // Optimize for release
             isDebuggable = false
@@ -155,7 +151,7 @@ android {
 }
 
 dependencies {
-    implementation("com.android.billingclient:billing-ktx:6.2.1")
+    implementation("com.android.billingclient:billing-ktx:8.0.0")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.biometric)

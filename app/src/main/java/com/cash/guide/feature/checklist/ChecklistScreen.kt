@@ -43,10 +43,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import android.widget.Toast
-import com.cash.guide.ui.components.AiVoiceAssistantButton
-import com.cash.guide.ui.components.AiVoiceInputTarget
-import com.cash.guide.ui.components.AiVoiceRowContainer
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -138,7 +134,6 @@ fun ChecklistScreen(
 
     var showShareMenu by remember { mutableStateOf(false) }
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
-    var showAiVoiceDialog by remember { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
     val isImeVisible = WindowInsets.isImeVisible
@@ -685,24 +680,16 @@ fun ChecklistScreen(
                 }
             }
 
-            AiVoiceRowContainer(
-                target = AiVoiceInputTarget.CHECKLIST,
-                onChecklistResult = { result ->
-                    viewModel.addMultipleItems(result.items)
-                    Toast.makeText(
-                        context,
-                        context.getString(R.string.checklist_ai_items_added, result.items.size),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                },
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(JournalPaper)
-                    .padding(horizontal = 14.dp, vertical = 6.dp)
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
                     modifier = Modifier
-                        .weight(1f)
+                        .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
                         .background(JournalPaper)
                         .border(

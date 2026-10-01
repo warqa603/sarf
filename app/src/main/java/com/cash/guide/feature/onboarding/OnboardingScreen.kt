@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,7 +33,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.Icon
@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -88,9 +89,8 @@ fun OnboardingScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    val pagerState = rememberPagerState(pageCount = { 7 })
+    val pagerState = rememberPagerState(pageCount = { 6 })
     val coroutineScope = rememberCoroutineScope()
-    var showPromoDialog by remember { mutableStateOf(false) }
 
     Surface(
         modifier = modifier
@@ -141,8 +141,8 @@ fun OnboardingScreen(
                     Spacer(Modifier.size(48.dp))
                 }
 
-                // Skip button (visible on slides 0..5)
-                if (pagerState.currentPage < 6) {
+                // Skip button (visible on slides 0..4)
+                if (pagerState.currentPage < 5) {
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(14.dp))
@@ -165,7 +165,7 @@ fun OnboardingScreen(
                 }
             }
 
-            // Horizontal Pager: 7 Rich Handcrafted Slides
+            // Horizontal Pager: 6 Rich Handcrafted Slides
             HorizontalPager(
                 state = pagerState,
                 modifier = Modifier
@@ -182,33 +182,31 @@ fun OnboardingScreen(
                     2 -> Slide3ChecklistsAndSharing(isRtl = isRtl)
                     3 -> Slide4QuickNotes(isRtl = isRtl)
                     4 -> Slide5ContactsAndArtisans(isRtl = isRtl)
-                    5 -> Slide6AiVoiceAssistant(isRtl = isRtl)
-                    6 -> Slide7PersonalizationAndLaunch(
+                    5 -> Slide7PersonalizationAndLaunch(
                         userName = uiState.userName,
                         onNameChange = { viewModel.updateUserName(it) },
                         selectedCurrency = uiState.selectedCurrency,
                         onCurrencyChange = { viewModel.selectCurrency(it) },
                         onStart = { viewModel.completeOnboarding(onFinish) },
-                        onOpenPromo = { showPromoDialog = true },
                         isRtl = isRtl
                     )
                 }
             }
 
-            // Bottom Navigation: 7 Indicator Dots & Next CTA Button
+            // Bottom Navigation: 6 Indicator Dots & Next CTA Button
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // 7 Indicator Dots
+                // 6 Indicator Dots
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(bottom = 12.dp)
                 ) {
-                    repeat(7) { index ->
+                    repeat(6) { index ->
                         val isSelected = pagerState.currentPage == index
                         val width by animateDpAsState(
                             targetValue = if (isSelected) 22.dp else 7.dp,
@@ -233,7 +231,7 @@ fun OnboardingScreen(
                 }
 
                 // Next Step Button
-                if (pagerState.currentPage < 6) {
+                if (pagerState.currentPage < 5) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End,
@@ -267,16 +265,6 @@ fun OnboardingScreen(
             }
         }
     }
-
-    if (showPromoDialog) {
-        PromoCodeRedeemDialog(
-            onDismiss = { showPromoDialog = false },
-            onSuccess = {
-                showPromoDialog = false
-                viewModel.completeOnboarding(onFinish)
-            }
-        )
-    }
 }
 
 // ==========================================
@@ -297,37 +285,23 @@ private fun Slide1WelcomeAndLanguage(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Moroccan Leather Notebook Cover Emblem
+        // Official Warqa Logo
         Box(
             modifier = Modifier
-                .size(92.dp)
-                .shadow(6.dp, RoundedCornerShape(22.dp))
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color(0xFF1B4D3E), Color(0xFF0F2E24))
-                    ),
-                    RoundedCornerShape(22.dp)
-                )
-                .border(2.dp, Color(0xFFD4AF37).copy(alpha = 0.75f), RoundedCornerShape(22.dp)),
+                .size(100.dp)
+                .shadow(8.dp, RoundedCornerShape(24.dp), spotColor = Color(0x30000000))
+                .background(Color.White, RoundedCornerShape(24.dp))
+                .border(1.5.dp, Color(0xFFF3E8D8), RoundedCornerShape(24.dp))
+                .padding(6.dp),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "ورقة",
-                    fontFamily = TajawalFamily,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFFFDE68A)
-                )
-                Text(
-                    text = "WARQA",
-                    fontFamily = PatrickHandFamily,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.5.sp,
-                    color = Color.White.copy(alpha = 0.85f)
-                )
-            }
+            Image(
+                painter = painterResource(id = R.drawable.ic_warqa_official_logo),
+                contentDescription = "Warqa Logo",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(18.dp))
+            )
         }
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -1046,126 +1020,7 @@ private fun ContactMockRow(
 }
 
 // ==========================================
-// SLIDE 6: AI VOICE ASSISTANT (DARIJA)
-// ==========================================
-@Composable
-private fun Slide6AiVoiceAssistant(isRtl: Boolean) {
-    val scrollState = rememberScrollState()
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(horizontal = 24.dp, vertical = 6.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // Voice Mic Visual Card
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .shadow(4.dp, RoundedCornerShape(18.dp)),
-            shape = RoundedCornerShape(18.dp),
-            color = Color(0xFFFCE4EC),
-            border = androidx.compose.foundation.BorderStroke(1.5.dp, Color(0xFFF48FB1).copy(alpha = 0.5f))
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Mic Icon with Pulsing Halo
-                Box(
-                    modifier = Modifier
-                        .size(54.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFE91E63)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Mic,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Simulated Audio Wave
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val heights = listOf(8.dp, 16.dp, 24.dp, 12.dp, 28.dp, 18.dp, 10.dp, 22.dp, 14.dp, 6.dp)
-                    heights.forEach { h ->
-                        Box(
-                            modifier = Modifier
-                                .width(3.dp)
-                                .height(h)
-                                .clip(RoundedCornerShape(2.dp))
-                                .background(Color(0xFFE91E63).copy(alpha = 0.7f))
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Darija speech sample bubble
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.White,
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFF48FB1).copy(alpha = 0.35f))
-                ) {
-                    Text(
-                        text = "« قيد ليا جوج كيلو دجاج ب 40 درهم و كيلو تفاح و باكية أتاي »",
-                        fontFamily = TajawalFamily,
-                        fontSize = 13.5.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = Color(0xFF880E4F),
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
-                    )
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OnboardingBadge(text = stringResource(R.string.onboarding_s6_badge), isRtl = isRtl)
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = stringResource(R.string.onboarding_s6_title),
-            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-            fontSize = if (isRtl) 21.sp else 23.sp,
-            fontWeight = FontWeight.Bold,
-            color = JournalInk,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(6.dp))
-
-        Text(
-            text = stringResource(R.string.onboarding_s6_subtitle),
-            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-            fontSize = if (isRtl) 13.5.sp else 15.sp,
-            color = JournalMutedInk,
-            textAlign = TextAlign.Center,
-            lineHeight = 20.sp
-        )
-
-        Spacer(modifier = Modifier.height(14.dp))
-
-        FeatureBullet(icon = "🎙️", text = stringResource(R.string.onboarding_s6_feature1), isRtl = isRtl)
-        FeatureBullet(icon = "⚡", text = stringResource(R.string.onboarding_s6_feature2), isRtl = isRtl)
-        FeatureBullet(icon = "📝", text = stringResource(R.string.onboarding_s6_feature3), isRtl = isRtl)
-    }
-}
-
-// ==========================================
-// SLIDE 7: PERSONALIZATION & READY TO LAUNCH
+// SLIDE 6: PERSONALIZATION & READY TO LAUNCH
 // ==========================================
 @Composable
 private fun Slide7PersonalizationAndLaunch(
@@ -1174,7 +1029,6 @@ private fun Slide7PersonalizationAndLaunch(
     selectedCurrency: MoneyUnit,
     onCurrencyChange: (MoneyUnit) -> Unit,
     onStart: () -> Unit,
-    onOpenPromo: () -> Unit,
     isRtl: Boolean
 ) {
     val scrollState = rememberScrollState()
@@ -1368,27 +1222,6 @@ private fun Slide7PersonalizationAndLaunch(
                 fontSize = if (isRtl) 17.sp else 18.sp,
                 fontWeight = FontWeight.Bold,
                 style = TextStyle(platformStyle = NoFontPadding)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        // VIP / Promo Code Link
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(10.dp))
-                .clickable(onClick = onOpenPromo)
-                .padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(text = "🎁", fontSize = 14.sp)
-            Text(
-                text = stringResource(R.string.onboarding_s7_vip_prompt),
-                fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                fontSize = if (isRtl) 13.sp else 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = JournalWritingInk
             )
         }
     }

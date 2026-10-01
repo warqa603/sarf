@@ -26,6 +26,17 @@ class SettingsRepository(private val context: Context) {
         val IS_VIP_UNLOCKED = booleanPreferencesKey("is_vip_unlocked")
         val ACTIVATED_VIP_CODE = stringPreferencesKey("activated_vip_code")
         val HAS_SEEN_ONBOARDING = booleanPreferencesKey("has_seen_onboarding")
+        val HAS_SEEDED_INITIAL_DATA = booleanPreferencesKey("has_seeded_initial_data")
+    }
+
+    val hasSeededInitialData: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.HAS_SEEDED_INITIAL_DATA] ?: false
+    }
+
+    suspend fun setHasSeededInitialData(seeded: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.HAS_SEEDED_INITIAL_DATA] = seeded
+        }
     }
 
     val hasSeenOnboarding: Flow<Boolean> = context.dataStore.data.map { preferences ->

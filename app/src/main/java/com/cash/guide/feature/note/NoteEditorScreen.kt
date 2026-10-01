@@ -249,202 +249,6 @@ class NoteMarkdownVisualTransformation : VisualTransformation {
     }
 }
 
-@Composable
-private fun NoteVoiceDictationBanner(
-    uiState: NoteEditorUiState,
-    isRtl: Boolean,
-    onCommit: () -> Unit,
-    onCancel: () -> Unit,
-    onToggleScript: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "voice_pulse")
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.35f,
-        targetValue = 1.0f,
-        animationSpec = infiniteRepeatable(
-            animation = keyframes {
-                durationMillis = 1000
-                0.35f at 0
-                1.0f at 500
-                0.35f at 1000
-            },
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "pulse_alpha"
-    )
-
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 6.dp),
-        shape = RoundedCornerShape(16.dp),
-        color = JournalPaper,
-        border = androidx.compose.foundation.BorderStroke(
-            1.2.dp,
-            if (uiState.dictationError != null) JournalActionDelete.copy(alpha = 0.65f) else Color(0xFFE91E63).copy(alpha = 0.45f)
-        ),
-        shadowElevation = 4.dp,
-        tonalElevation = 1.dp
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Level 1: Header with Status + Language Toggle Pill + Close
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(10.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (uiState.dictationError != null) JournalActionDelete
-                                else Color(0xFFE91E63).copy(alpha = pulseAlpha)
-                            )
-                    )
-                    Text(
-                        text = if (uiState.dictationError != null) "Erreur de transcription"
-                               else if (uiState.isListening) "Dictée vocale en cours..."
-                               else "Transcription prête",
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (uiState.dictationError != null) JournalActionDelete else Color(0xFFE91E63)
-                    )
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    val scriptLabel = when (uiState.dictationScript) {
-                        AiOutputScript.FRENCH -> "🇫🇷 Français"
-                        AiOutputScript.ARABIC -> "🇲🇦 دارجة"
-                        AiOutputScript.FRANCO -> "🇲🇦 Franco"
-                    }
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(JournalMutedInk.copy(alpha = 0.10f))
-                            .clickable(role = Role.Button) { onToggleScript() }
-                            .padding(horizontal = 8.dp, vertical = 3.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = scriptLabel,
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = JournalWritingInk
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .clickable(role = Role.Button) { onCancel() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "✕",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = JournalMutedInk
-                        )
-                    }
-                }
-            }
-
-            // Level 2: Spacious Live Speech Transcription Area
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .defaultMinSize(minHeight = 44.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(JournalMutedInk.copy(alpha = 0.05f))
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                contentAlignment = Alignment.CenterStart
-            ) {
-                val displayText = when {
-                    uiState.dictationError != null -> uiState.dictationError
-                    uiState.partialDictation.isNotBlank() -> uiState.partialDictation
-                    uiState.isListening -> stringResource(R.string.note_voice_listening)
-                    else -> ""
-                }
-
-                Text(
-                    text = displayText ?: "",
-                    fontFamily = if (isArabicScript(displayText ?: "") || isRtl) CreamFrothFamily else PatrickHandFamily,
-                    fontSize = 15.sp,
-                    color = if (uiState.dictationError != null) JournalActionDelete
-                            else if (uiState.partialDictation.isNotBlank()) JournalWritingInk
-                            else JournalMutedInk.copy(alpha = 0.70f),
-                    fontWeight = if (uiState.partialDictation.isNotBlank()) FontWeight.Medium else FontWeight.Normal,
-                    style = TextStyle(platformStyle = NoFontPadding)
-                )
-            }
-
-            // Level 3: Action Buttons (Cancel & Insert)
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextButton(
-                    onClick = onCancel,
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.note_voice_dictation_cancel),
-                        fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                        fontSize = 13.sp,
-                        color = JournalMutedInk,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                if (uiState.partialDictation.isNotBlank() || uiState.isListening) {
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFFE91E63).copy(alpha = 0.85f))
-                            .clickable(role = Role.Button) { onCommit() }
-                            .padding(horizontal = 14.dp, vertical = 7.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                    ) {
-                        Text(
-                            text = "✓",
-                            color = Color.White,
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = stringResource(R.string.note_voice_dictation_insert),
-                            fontFamily = if (isRtl) TajawalFamily else PatrickHandFamily,
-                            fontSize = 13.sp,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            style = TextStyle(platformStyle = NoFontPadding)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun NoteEditorScreen(
@@ -465,20 +269,6 @@ fun NoteEditorScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showAssignGroupDialog by remember { mutableStateOf(false) }
     val titleScrollState = rememberScrollState()
-
-    val recordAudioPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            viewModel.startListening()
-        } else {
-            Toast.makeText(
-                context,
-                context.getString(R.string.permission_mic_rationale),
-                Toast.LENGTH_LONG
-            ).show()
-        }
-    }
 
     LaunchedEffect(titleScrollState.maxValue, uiState.title.text, uiState.activeInputTarget) {
         if (uiState.activeInputTarget == NoteInputTarget.TITLE) {
@@ -1114,23 +904,10 @@ fun NoteEditorScreen(
                         }
                     }
 
-                    if (uiState.isListening || uiState.partialDictation.isNotBlank() || uiState.dictationError != null) {
-                        NoteVoiceDictationBanner(
-                            uiState = uiState,
-                            isRtl = isRtl,
-                            onCommit = { viewModel.commitDictation() },
-                            onCancel = { viewModel.cancelDictation() },
-                            onToggleScript = { viewModel.cycleDictationScript() }
-                        )
-                    }
-
                     NoteAccessoryBar(
                         uiState = uiState,
                         viewModel = viewModel,
                         isRtl = isRtl,
-                        onRequestAudioPermission = {
-                            recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                        },
                         onShowToast = { resId ->
                             Toast.makeText(context, resId, Toast.LENGTH_SHORT).show()
                         }
@@ -1211,14 +988,12 @@ private fun NoteAccessoryBar(
     uiState: NoteEditorUiState,
     viewModel: NoteViewModel,
     isRtl: Boolean,
-    onRequestAudioPermission: () -> Unit,
     onShowToast: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     val scrollState = rememberScrollState()
-    val isListening = uiState.isListening
 
     val (words, chars) = remember(uiState.content.text) {
         viewModel.getStats()
@@ -1495,60 +1270,9 @@ private fun NoteAccessoryBar(
                 AccessoryVerticalDivider()
 
                 // ==========================================
-                // SEGMENT 3: VOICE & INSERTIONS
+                // SEGMENT 3: INSERTIONS
                 // ==========================================
-                // 3.1 Mic with Language Toggle Badge
-                val micBg = if (isListening) Color(0xFFFCE4EC) else Color.Transparent
-                val micTint = if (isListening) Color(0xFFE91E63) else JournalInk
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(micBg)
-                        .clickable(role = Role.Button) {
-                            val hasPermission = ContextCompat.checkSelfPermission(
-                                context,
-                                Manifest.permission.RECORD_AUDIO
-                            ) == PackageManager.PERMISSION_GRANTED
-
-                            if (isListening) {
-                                viewModel.commitDictation()
-                            } else {
-                                if (hasPermission) {
-                                    viewModel.startListening()
-                                } else {
-                                    onRequestAudioPermission()
-                                }
-                            }
-                        }
-                        .padding(horizontal = 6.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(3.dp)
-                ) {
-                    HisabiSketchIcon(
-                        symbol = HisabiSymbol.Microphone,
-                        contentDescription = stringResource(R.string.note_voice_hint),
-                        tint = micTint,
-                        size = 17.dp
-                    )
-                    Box(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(JournalMutedInk.copy(alpha = 0.12f))
-                            .clickable { viewModel.cycleDictationScript() }
-                            .padding(horizontal = 4.dp, vertical = 1.dp)
-                    ) {
-                        Text(
-                            text = if (uiState.dictationScript == AiOutputScript.ARABIC) "AR" else "FR",
-                            fontFamily = PatrickHandFamily,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp,
-                            color = if (isListening) Color(0xFFE91E63) else JournalWritingInk,
-                            style = TextStyle(platformStyle = NoFontPadding)
-                        )
-                    }
-                }
-
-                // 3.2 Timestamp (Clock)
+                // 3.1 Timestamp (Clock)
                 AccessoryIconButton(
                     symbol = HisabiSymbol.Clock,
                     contentDescription = stringResource(R.string.note_action_timestamp),
